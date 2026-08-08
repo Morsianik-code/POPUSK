@@ -1,0 +1,2220 @@
+<!--
+  =====================================================================
+   САЙТ-ПОДАРОК ДЛЯ ПОДРУГИ  ·  версия 2 (сделано под телефон)
+   Один файл. Ничего не надо устанавливать — просто открыть в браузере.
+
+   ЧТО МЕНЯТЬ ПОД СЕБЯ — блок CONFIG в начале <script>:
+     CONFIG.defaultName — имя, если она ничего не введёт
+     CONFIG.letter      — текст письма ({name} = её имя)
+     CONFIG.signature   — подпись
+     QUESTIONS          — вопросы (первые два — в «ужасном» стиле 2003 года)
+     ARCHETYPES         — 4 варианта финала
+
+   СЦЕНАРИЙ: страшный сайт из 2003 → 2 вопроса → страница ЛОМАЕТСЯ и
+   складывается в 3D → красивый мир с 3D-каруселью вопросов → результат →
+   3D-конверт, который она открывает пальцем → письмо.
+
+   ?full в адресе принудительно включает все анимации, даже если в системе
+   стоит «уменьшить анимацию».
+  =====================================================================
+-->
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0716">
+<title>Тест.html</title>
+
+<!-- личная страница: пусть не попадает в поисковики -->
+<meta name="robots" content="noindex, nofollow">
+<meta name="description" content="Психологический тест v1.0. Тест состоит из 8 вопросов. Отвечай честно!">
+
+<!-- превью для мессенджеров: выглядит как обычный тест, сюрприз внутри -->
+<meta property="og:type" content="website">
+<meta property="og:locale" content="ru_RU">
+<meta property="og:title" content="Психологический тест v1.0">
+<meta property="og:description" content="Тест состоит из 8 вопросов. Отвечай честно! Результаты не подлежат оспариванию.">
+<meta name="twitter:card" content="summary">
+
+<!-- иконка вкладки: рисуется тут же, без отдельного файла (и без 404 на хостинге) -->
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='8' fill='%23ffee00'/><text x='32' y='47' font-family='Comic Sans MS,cursive' font-size='44' font-weight='bold' text-anchor='middle' fill='%23000'>?</text></svg>">
+
+<style>
+/* ==========================================================
+   ЧАСТЬ 1. РЕТРО-МИР. Максимально страшный, почти голый HTML.
+   На телефоне таблица разваливается на блоки — выглядит ещё
+   более убито, но читается и нажимается пальцем.
+   ========================================================== */
+/* тот самый бирюзовый рабочий стол 95-го + текстура «под мрамор».
+   Фон задан и на html, и на body — чтобы на любом экране закрывал всё. */
+html {
+  -webkit-text-size-adjust: 100%;
+  background: #008080
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='40' height='40'><rect width='40' height='40' fill='%23008080'/><path d='M0 40 L40 0 M-10 30 L30 -10 M10 50 L50 10' stroke='%23019b9b' stroke-width='6'/></svg>");
+}
+body {
+  min-height: 100vh;
+  background: transparent;
+  color: #000;
+  font-family: "Times New Roman", Times, serif;
+  -webkit-tap-highlight-color: rgba(0,0,0,.15);
+}
+#retro {
+  font-size: 16px; cursor: crosshair;
+  /* viewport-fit=cover: без этого в landscape навигация уходит под вырез */
+  padding: env(safe-area-inset-top) max(0px, env(safe-area-inset-right))
+           env(safe-area-inset-bottom) max(0px, env(safe-area-inset-left));
+}
+#retro a { color: #0000ee; }
+#retro a:visited { color: #551a8b; }
+#retro a:hover { color: #ff0000; background: #ffff00; }
+#retro .blink { color: #c00; font-weight: bold; animation: rblink 1s steps(1) infinite; }
+#retro .blink2 { color: #ff00ff; font-weight: bold; animation: rblink .55s steps(1) infinite; }
+@keyframes rblink { 50% { opacity: 0; } }
+#retro .counter {
+  font-family: "Courier New", monospace;
+  background: #000; color: #0f0; padding: 2px 6px; border: 2px inset #808080;
+}
+#retro marquee { background: #ff0; color: #000080; font-weight: bold; }
+#retro marquee.m2 { background: #ff00ff; color: #ffff00; }
+/* подписи вокруг счётчика раньше сливались с сиреневым фоном */
+#retro .tiny { font-size: 12.5px; color: #000; font-weight: bold; }
+#retro .tiny i { font-weight: normal; }
+#retro .footnote {
+  color: #fff; font-size: 12px; line-height: 1.5;
+  text-shadow: 1px 1px 0 #000, -1px 0 0 #004d4d;
+}
+
+/* заголовок «радугой»: каждая буква своего цвета, как в 1999-м */
+#retro .rainbow {
+  font-family: "Comic Sans MS", "Segoe Print", cursive;
+  font-size: clamp(21px, 6.6vw, 34px); font-weight: bold;
+  text-shadow: 2px 2px 0 #000; line-height: 1.15; margin: 6px 0;
+}
+#retro .rainbow i { font-style: normal; }
+#retro .rainbow i:nth-child(6n+1) { color: #ff0000; }
+#retro .rainbow i:nth-child(6n+2) { color: #ff9900; }
+#retro .rainbow i:nth-child(6n+3) { color: #ffee00; text-shadow: 1px 1px 0 #444; }
+#retro .rainbow i:nth-child(6n+4) { color: #33cc33; }
+#retro .rainbow i:nth-child(6n+5) { color: #3366ff; }
+#retro .rainbow i:nth-child(6n+6) { color: #cc33ff; }
+
+/* «кнопки-бейджи» 88×31 — обязательный атрибут любого сайта той эпохи */
+#retro .badges { margin-top: 8px; }
+#retro .badge {
+  display: inline-block; width: 88px; height: 31px; margin: 3px;
+  font-family: Verdana, Geneva, sans-serif; font-size: 8px; font-weight: bold;
+  line-height: 1.15; text-align: center; padding: 3px 2px 0; box-sizing: border-box;
+  border: 1px outset #999; color: #fff; text-decoration: none;
+}
+#retro .b-ns { background: #000080; }
+#retro .b-ie { background: #6a0dad; }
+#retro .b-fp { background: #7a0000; }
+#retro .b-y2k { background: #006400; }
+#retro .music {
+  font-family: "Comic Sans MS", cursive; font-size: 13px;
+  background: #ffff00; border: 2px outset #cccc00; padding: 5px 9px;
+  cursor: pointer; margin-top: 8px;
+}
+#retro .undercon {
+  font-family: "Comic Sans MS", cursive; font-weight: bold; color: #000;
+  background: #ffcc00; border: 2px dashed #ff0000; padding: 4px 8px; display: inline-block;
+}
+/* пальцем по крошечным радиокнопкам — больно, поэтому чуть крупнее */
+#retro input[type=radio] { width: 19px; height: 19px; vertical-align: middle; }
+#retro label { display: inline-block; padding: 7px 0; cursor: pointer; }
+#retro input[type=text] { font-size: 16px; padding: 3px; } /* 16px — чтобы iOS не зумил */
+#retro input[type=submit] { font-size: 16px; padding: 5px 10px; }
+
+@media (max-width: 620px) {
+  /* таблица-вёрстка красиво рассыпается в столбик */
+  #retro table, #retro tbody, #retro tr, #retro td { display: block; width: auto !important; }
+  #retro td { border-top: 1px solid #000; }
+}
+/* на большом мониторе держим ширину как у сайтов под 800x600 — иначе строки
+   растягиваются на весь экран и читать невозможно */
+@media (min-width: 900px) {
+  #retro { max-width: 940px; margin: 0 auto; padding: 10px 0 26px; }
+}
+
+/* «Смерть» ретро-страницы: RGB-разрыв, дрожь, помехи */
+#retro.dying {
+  animation: rjitter .12s steps(2) infinite;
+  text-shadow: 2px 0 rgba(255,0,60,.9), -2px 0 rgba(0,220,255,.9);
+  filter: contrast(1.4) saturate(1.5);
+}
+@keyframes rjitter {
+  0%   { transform: translate(0,0) skewX(0deg); }
+  25%  { transform: translate(-4px,1px) skewX(1.2deg); }
+  50%  { transform: translate(3px,-2px) skewX(-1deg); }
+  75%  { transform: translate(-2px,2px) skewX(.6deg); }
+  100% { transform: translate(2px,0) skewX(0deg); }
+}
+/* Потеря сигнала: экран просто гаснет рывками — без разрезов и уездов наверх */
+#flicker {
+  position: fixed; inset: 0; z-index: 196; display: none;
+  background: #000; pointer-events: none;
+}
+#flicker.on { display: block; animation: flick .62s steps(1) both; }
+@keyframes flick {
+  0%, 9%    { opacity: 0; }
+  10%, 17%  { opacity: 1; }
+  18%, 27%  { opacity: 0; }
+  28%, 33%  { opacity: 1; }
+  34%, 44%  { opacity: 0; }
+  45%, 100% { opacity: 1; }
+}
+
+/* ==========================================================
+   ЧАСТЬ 2. ГЛИТЧ-ПЕРЕХОД
+   ========================================================== */
+#glitch {
+  position: fixed; top: 0; left: 0; right: 0; height: 100vh; height: 100dvh;
+  z-index: 200; background: #05060a; display: none; overflow: hidden;
+  font-family: "Courier New", monospace; perspective: 900px;
+}
+#glitch.on { display: block; }
+#glitch .scan {
+  position: absolute; inset: 0; pointer-events: none;
+  background: repeating-linear-gradient(180deg, rgba(255,255,255,.055) 0 1px, transparent 1px 3px);
+  animation: scanroll 6s linear infinite;
+}
+@keyframes scanroll { to { transform: translateY(3px); } }
+#glitch .glow { position: absolute; inset: -20%;
+  background: radial-gradient(circle at 50% 60%, rgba(120,160,255,.2), transparent 55%); }
+#term {
+  position: relative; margin: 0;
+  padding: calc(8vh + env(safe-area-inset-top)) 7vw;
+  color: #9dffc4; font-size: clamp(11px, 3.4vw, 15px); line-height: 1.8;
+  white-space: pre-wrap; text-shadow: 0 0 8px rgba(80,255,160,.55);
+  transform: rotateX(9deg); transform-origin: 50% 0;
+}
+#term .warn { color: #ff5f7a; text-shadow: 0 0 10px rgba(255,60,100,.6); }
+#term .soft { color: #7fb6ff; text-shadow: 0 0 10px rgba(120,170,255,.6); }
+#term .cur { animation: rblink .7s steps(1) infinite; }
+#crt {
+  position: fixed; inset: 0; z-index: 210; pointer-events: none;
+  background: #fff; opacity: 0; transform: scaleY(0);
+}
+#crt.collapse { animation: crtdie .55s cubic-bezier(.7,0,.3,1) forwards; }
+@keyframes crtdie {
+  0% { opacity: 0; transform: scaleY(0); }
+  35% { opacity: 1; transform: scaleY(.006); }
+  70% { opacity: 1; transform: scaleY(.006); }
+  100% { opacity: 1; transform: scaleY(1); }
+}
+#crt.flashout { animation: crtout .9s ease forwards; }
+/* from/to заданы явно: после снятия collapse базовые стили дают opacity:0
+   и scaleY(0), и без явного from вспышка обрезалась бы мгновенным срезом */
+@keyframes crtout { from { opacity: 1; transform: scaleY(1); } to { opacity: 0; transform: scaleY(1); } }
+/* ==========================================================
+   ЧАСТЬ 2.5. ДИАЛОГИ В СТИЛЕ WINDOWS 98 И «СИНИЙ ЭКРАН»
+   Это самая смешная часть: сайт сначала вежливо извиняется
+   системными окошками, и только потом умирает.
+   ========================================================== */
+#dlgwrap {
+  position: fixed; inset: 0; z-index: 190; display: none;
+  background: rgba(0,0,0,.28);
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+#dlgwrap.on { display: grid; place-items: center; }
+.win98 {
+  width: min(344px, 92vw); background: #c0c0c0; border: 0;
+  /* канонический бордюр Windows: свет сверху-слева, тень снизу-справа */
+  box-shadow:
+    inset  2px  2px 0 #fff,   inset -2px -2px 0 #000,
+    inset  4px  4px 0 #dfdfdf, inset -4px -4px 0 #808080,
+    4px 4px 0 rgba(0,0,0,.5);
+  font-family: Tahoma, "MS Sans Serif", Geneva, Verdana, sans-serif;
+  font-size: 12.5px; color: #000;
+  animation: dlgIn .08s steps(2) both;   /* появляется рывком: без масштаба текст остаётся резким */
+}
+@keyframes dlgIn { from { opacity: 0; } }
+.win98 .bar {
+  background: linear-gradient(90deg, #000080 0%, #1084d0 100%); color: #fff;
+  font-weight: bold; margin: 5px 5px 0; padding: 2px 2px 2px 5px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.win98 .bar .x {
+  position: relative;   /* + невидимая тап-зона ::after: 18px в палец не попасть */
+  background: #c0c0c0; color: #000; font-family: Tahoma, sans-serif;
+  box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #000,
+              inset 2px 2px 0 #dfdfdf, inset -2px -2px 0 #808080;
+  width: 18px; height: 17px; line-height: 15px; text-align: center;
+  font-size: 10px; font-weight: bold; cursor: pointer; flex: none;
+}
+.win98 .bar .x::after { content: ""; position: absolute; inset: -13px; }
+.win98 .in { padding: 18px 16px 14px; display: flex; gap: 14px; align-items: flex-start; }
+.win98 .ic { width: 32px; height: 32px; flex: none; display: block; }
+.win98 .tx { line-height: 1.5; padding-top: 3px; }
+.win98 .btns { padding: 4px 16px 18px; display: flex; gap: 8px; justify-content: center; }
+.win98 button {
+  font: inherit; min-width: 86px; min-height: 34px; padding: 6px 12px;
+  background: #c0c0c0; color: #000; cursor: pointer; border: 0;
+  box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #000,
+              inset 2px 2px 0 #dfdfdf, inset -2px -2px 0 #808080;
+  touch-action: manipulation;
+}
+.win98 button:active {
+  box-shadow: inset 1px 1px 0 #000, inset -1px -1px 0 #fff,
+              inset 2px 2px 0 #808080, inset -2px -2px 0 #dfdfdf;
+}
+
+#bsod {
+  position: fixed; top: 0; left: 0; right: 0; height: 100vh; height: 100dvh;
+  z-index: 195; display: none; background: #0000aa; color: #fff;
+  font-family: "Courier New", monospace;
+  font-size: clamp(11px, 3.3vw, 14.5px); line-height: 1.75;
+  padding: calc(7vh + env(safe-area-inset-top)) 6vw;
+  /* прокрутка + автоскролл в JS: в landscape панчлайн не должен печататься за краем */
+  box-sizing: border-box; overflow-y: auto; overflow-x: hidden; white-space: pre-wrap;
+}
+@media (orientation: landscape) and (max-height: 560px) {
+  #bsod { font-size: 11.5px; line-height: 1.5; padding-top: calc(12px + env(safe-area-inset-top)); }
+}
+#bsod.on { display: block; }
+#bsod .plate { background: #c0c0c0; color: #0000aa; padding: 0 10px; }
+#bsod .dim { color: #aab; }
+
+/* ==========================================================
+   ЧАСТЬ 3. КРАСИВЫЙ МИР
+   ========================================================== */
+@property --a { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
+:root {
+  --ink: #f5eefc;
+  --ink-dim: rgba(245,238,252,.68);
+  --rose: #ff8fbf;
+  --violet: #a98cff;
+  --cyan: #7fe6ff;
+  --gold: #ffd79a;
+  --stroke: rgba(255,255,255,.15);
+  --ease: cubic-bezier(.22,1,.36,1);
+
+  /* ---------- шрифты ----------
+     Ставка на гуманистические гарнитуры с мягкими формами и открытыми
+     просветами: Candara/Corbel/Gill Sans на Windows, Avenir/Optima на Mac,
+     Roboto на Android. Воздух дают не только буквы, но и лёгкое начертание,
+     разреженный трекинг и высокие интерлиньяжи ниже.                        */
+  --font-ui: Candara, Corbel, "Gill Sans MT", "Gill Sans", Optima,
+             "Avenir Next", Avenir, "Trebuchet MS", "Segoe UI", system-ui, sans-serif;
+  --font-display: Constantia, "Palatino Linotype", "Book Antiqua", Palatino,
+                  Optima, "Iowan Old Style", "Noto Serif", Georgia, serif;
+  /* письмо на русском, поэтому в цепочке только шрифты с кириллицей:
+     Bradley Hand / Apple Chancery / Lucida Handwriting латинские — на iOS
+     они дают «кашу» (рукописные запятые при системных буквах) */
+  --font-hand: "Segoe Script", "Comic Sans MS", Georgia, "Palatino Linotype", serif;
+}
+body.modern { margin: 0; overflow: hidden; overscroll-behavior: none; background: #0b0716; }
+
+#modern {
+  display: none;
+  position: fixed; top: 0; left: 0; right: 0;
+  height: 100vh; height: 100dvh;
+  z-index: 10; overflow: hidden;
+  font-family: var(--font-ui);
+  font-weight: 300; letter-spacing: .012em;
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+}
+#modern.on { display: block; }
+/* без filter/blur на контейнере: размытие во всю страницу давало белые края */
+#modern.bloom { animation: bloom 1.5s var(--ease) both; }
+@keyframes bloom {
+  0%   { opacity: 0; transform: scale(1.015); }
+  100% { opacity: 1; transform: none; }
+}
+/* свет «рождается» отдельным слоем внутри сцены — краёв не задевает */
+#birth {
+  position: absolute; inset: 0; z-index: 8; pointer-events: none; opacity: 0;
+  background:
+    radial-gradient(circle at 50% 52%, rgba(255,255,255,.9) 0%, rgba(255,214,236,.5) 22%, transparent 55%),
+    radial-gradient(circle at 50% 52%, rgba(169,140,255,.5) 0%, transparent 70%);
+}
+#birth.on { animation: birth 1.9s cubic-bezier(.16,.86,.24,1) both; }
+@keyframes birth {
+  0%   { opacity: 1; transform: scale(.35); }
+  45%  { opacity: .75; }
+  100% { opacity: 0; transform: scale(1.7); }
+}
+
+/* --- живой фон --- */
+#sky { position: absolute; inset: 0; background:
+  radial-gradient(140% 110% at 12% 6%,  #251b4f 0%, transparent 60%),
+  radial-gradient(120% 120% at 88% 94%, #3e1b41 0%, transparent 62%),
+  linear-gradient(160deg, #0d0820 0%, #160c2d 45%, #0a0617 100%);
+  animation: kenburns 40s ease-in-out infinite;
+}
+@keyframes kenburns { 50% { transform: scale(1.1) translate3d(1%, -1%, 0); } }
+.blob { position: absolute; border-radius: 50%; filter: blur(60px); opacity: .5; }
+.b1 { width: 52vmax; height: 52vmax; left: -16vmax; top: -18vmax;
+      background: radial-gradient(circle, #ff6fae, transparent 68%); animation: drift1 26s ease-in-out infinite; }
+.b2 { width: 44vmax; height: 44vmax; right: -14vmax; top: 6vmax;
+      background: radial-gradient(circle, #7a6bff, transparent 68%); animation: drift2 32s ease-in-out infinite; }
+.b3 { width: 42vmax; height: 42vmax; left: 14vmax; bottom: -20vmax;
+      background: radial-gradient(circle, #52d8ff, transparent 70%); animation: drift3 29s ease-in-out infinite; opacity: .34; }
+.b4 { width: 30vmax; height: 30vmax; right: 6vmax; bottom: -12vmax;
+      background: radial-gradient(circle, #ffc98a, transparent 70%); animation: drift1 35s ease-in-out infinite reverse; opacity: .3; }
+@keyframes drift1 { 50% { transform: translate3d(9vmax, 6vmax, 0) scale(1.16); } }
+@keyframes drift2 { 50% { transform: translate3d(-11vmax, 8vmax, 0) scale(1.1); } }
+@keyframes drift3 { 50% { transform: translate3d(6vmax, -9vmax, 0) scale(1.2); } }
+#grain {
+  position: absolute; inset: 0; opacity: .05; pointer-events: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/></filter><rect width='140' height='140' filter='url(%23n)'/></svg>");
+}
+/* canvas — replaced-элемент: inset:0 сам по себе его НЕ растягивает,
+   без явных width/height он остаётся 300x150 в левом верхнем углу */
+#fx { position: absolute; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; }
+#vignette { position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(120% 90% at 50% 45%, transparent 50%, rgba(4,2,12,.55) 100%); }
+
+/* никакой геометрии на фоне — только свет: два дополнительных мягких
+   пятна заполняют пустоту, оставаясь частью той же авроры */
+.b5 {
+  width: 62vmax; height: 62vmax; left: 50%; top: 26%;
+  margin: -31vmax 0 0 -31vmax;
+  background: radial-gradient(circle, rgba(255,214,236,.5), transparent 66%);
+  opacity: .3; filter: blur(80px); animation: drift4 46s ease-in-out infinite;
+}
+.b6 {
+  width: 50vmax; height: 50vmax; right: -8vmax; bottom: 22%;
+  background: radial-gradient(circle, rgba(140,210,255,.5), transparent 68%);
+  opacity: .24; filter: blur(80px); animation: drift5 54s ease-in-out infinite;
+}
+@keyframes drift4 { 50% { transform: translate3d(-6vmax, 7vmax, 0) scale(1.14); } }
+@keyframes drift5 { 50% { transform: translate3d(-8vmax, -6vmax, 0) scale(1.1); } }
+
+/* --- 3D-сцена --- */
+.stage {
+  position: relative; z-index: 3;         /* уходящая карточка позиционируется внутри */
+  height: 100%; display: flex; align-items: center; justify-content: center;
+  box-sizing: border-box; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  padding: calc(18px + env(safe-area-inset-top)) calc(14px + env(safe-area-inset-right))
+           calc(18px + env(safe-area-inset-bottom)) calc(14px + env(safe-area-inset-left));
+  perspective: 1100px; perspective-origin: 50% 42%;
+}
+.holder {
+  width: min(620px, 100%); transform-style: preserve-3d;
+  transform: rotateX(var(--tx, 0deg)) rotateY(var(--ty, 0deg));
+  transition: transform .6s var(--ease);
+  margin: auto;
+}
+.card {
+  position: relative; transform-style: preserve-3d;
+  background: linear-gradient(155deg, rgba(255,255,255,.115), rgba(255,255,255,.035));
+  border: 1px solid var(--stroke); border-radius: 24px;
+  padding: clamp(20px, 5.5vw, 38px);
+  box-shadow: 0 34px 80px -34px rgba(8,3,26,.95), 0 0 0 1px rgba(255,255,255,.04) inset;
+  backdrop-filter: blur(20px) saturate(1.3);
+  -webkit-backdrop-filter: blur(20px) saturate(1.3);
+  overflow: hidden;
+}
+/* вращающаяся радужная рамка */
+.card::after {
+  content: ""; position: absolute; inset: 0; border-radius: inherit;
+  padding: 1px; pointer-events: none; opacity: .5;
+  --a: 0deg;   /* фолбэк: без @property (старые Safari/Firefox) рамка хотя бы статичная */
+  background: conic-gradient(from var(--a),
+    rgba(255,143,191,.95), rgba(169,140,255,.1) 25%, rgba(127,230,255,.9) 50%,
+    rgba(255,215,154,.1) 75%, rgba(255,143,191,.95));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  animation: spinborder 9s linear infinite;
+}
+@keyframes spinborder { to { --a: 360deg; } }
+/* медленный блик поперёк карточки */
+.sweep { position: absolute; inset: 0; border-radius: inherit; overflow: hidden; pointer-events: none; }
+.sweep i {
+  position: absolute; top: -60%; left: -50%; width: 42%; height: 220%;
+  transform: rotate(17deg);
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.14), transparent);
+  animation: sweep 8s ease-in-out infinite 2.2s;
+}
+@keyframes sweep { 0% { left: -50%; } 55%, 100% { left: 135%; } }
+
+/* ---------- 3D-переходы карточек: шесть разных, чередуются ----------
+   --soft: очень мягкое ускорение, без рывка на старте и на финише     */
+.card { --soft: cubic-bezier(.16,.86,.24,1); }
+
+/* 1 · карусель: уезжает влево по кругу, новая выходит справа */
+.card.in-carousel  { animation: inCarousel 1.4s var(--soft) both; }
+.card.out-carousel { animation: outCarousel .85s var(--soft) both; }
+@keyframes inCarousel  { 0% { opacity: 0; transform: translate3d(44%, 3%, -640px) rotateY(44deg); filter: blur(8px); }
+                       100% { opacity: 1; transform: none; filter: blur(0); } }
+@keyframes outCarousel { 100% { opacity: 0; transform: translate3d(-44%, -3%, -640px) rotateY(-44deg); filter: blur(8px); } }
+
+/* 2 · перелистывание, как страницу блокнота вверх */
+.card.in-flip  { animation: inFlip 1.45s var(--soft) both; transform-origin: 50% 0%; }
+.card.out-flip { animation: outFlip .9s var(--soft) both; transform-origin: 50% 100%; }
+@keyframes inFlip  { 0% { opacity: 0; transform: rotateX(-80deg) translateZ(-170px); filter: blur(7px); }
+                   100% { opacity: 1; transform: none; filter: blur(0); } }
+@keyframes outFlip { 100% { opacity: 0; transform: rotateX(74deg) translateZ(-230px); filter: blur(9px); } }
+
+/* 3 · глубина: старая пролетает мимо зрителя, новая всплывает издалека */
+.card.in-depth  { animation: inDepth 1.5s var(--soft) both; }
+.card.out-depth { animation: outDepth .85s var(--soft) both; }
+@keyframes inDepth  { 0% { opacity: 0; transform: translateZ(-800px) rotateX(12deg) scale(.9); filter: blur(16px); }
+                    100% { opacity: 1; transform: none; filter: blur(0); } }
+@keyframes outDepth { 100% { opacity: 0; transform: translateZ(360px) rotateX(-9deg) scale(1.12); filter: blur(18px); } }
+
+/* 4 · створка: раскрывается от левого края, как книга */
+.card.in-fold  { animation: inFold 1.45s var(--soft) both; transform-origin: 0% 50%; }
+.card.out-fold { animation: outFold .9s var(--soft) both; transform-origin: 100% 50%; }
+@keyframes inFold  { 0% { opacity: 0; transform: rotateY(-88deg) translateZ(-70px); filter: blur(6px); }
+                   100% { opacity: 1; transform: none; filter: blur(0); } }
+@keyframes outFold { 100% { opacity: 0; transform: rotateY(84deg) translateZ(-70px); filter: blur(8px); } }
+
+/* 5 · подъём снизу с наклоном к зрителю */
+.card.in-rise  { animation: inRise 1.45s var(--soft) both; }
+.card.out-rise { animation: outRise .85s var(--soft) both; }
+@keyframes inRise  { 0% { opacity: 0; transform: translate3d(0, 58%, -460px) rotateX(-40deg); filter: blur(9px); }
+                   100% { opacity: 1; transform: none; filter: blur(0); } }
+@keyframes outRise { 100% { opacity: 0; transform: translate3d(0, -44%, -460px) rotateX(32deg); filter: blur(10px); } }
+
+/* 6 · мягкая спираль */
+.card.in-spiral  { animation: inSpiral 1.55s var(--soft) both; }
+.card.out-spiral { animation: outSpiral .95s var(--soft) both; }
+@keyframes inSpiral  { 0% { opacity: 0; transform: translateZ(-720px) rotateZ(-13deg) rotateY(28deg) scale(.82); filter: blur(12px); }
+                     100% { opacity: 1; transform: none; filter: blur(0); } }
+@keyframes outSpiral { 100% { opacity: 0; transform: translateZ(-720px) rotateZ(11deg) rotateY(-26deg) scale(.82); filter: blur(12px); } }
+
+/* --- шапка с прогрессом --- */
+.head { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; }
+/* кольцо не «дозаполняется» — оно сразу на своём месте, а живёт вращением */
+.ring-wrap { position: relative; flex: none; animation: ringGlow 3.6s ease-in-out infinite; }
+.ring {
+  width: 52px; height: 52px; display: block;
+  transform: rotate(-90deg);            /* базовый поворот на случай отключённых анимаций */
+  animation: ringSpin 16s linear infinite;
+}
+.ring circle { fill: none; stroke-width: 4; stroke-linecap: round; }
+.ring .bg { stroke: rgba(255,255,255,.15); }
+.ring .fg { stroke: url(#grad); }
+.ring-num {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  font-size: 12.5px; font-weight: 600; color: rgba(255,255,255,.9);
+}
+@keyframes ringSpin { from { transform: rotate(-90deg); } to { transform: rotate(270deg); } }
+@keyframes ringGlow {
+  0%, 100% { filter: drop-shadow(0 0 7px rgba(255,143,191,.4)); }
+  50%      { filter: drop-shadow(0 0 15px rgba(255,143,191,.8)); }
+}
+.step-label {
+  font-size: 13.5px; font-weight: 400; letter-spacing: .26em;
+  text-transform: uppercase; color: rgba(255,255,255,.9);
+  text-shadow: 0 0 20px rgba(255,143,191,.45);
+}
+
+/* --- вопрос --- */
+.q {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(23px, 6.6vw, 33px); line-height: 1.42;
+  margin: 0 0 24px; letter-spacing: .004em;
+}
+.q w { display: inline-block; animation: wordIn 1.05s cubic-bezier(.16,.86,.24,1) both; }
+@keyframes wordIn { from { opacity: 0; transform: translateY(16px) rotateX(-45deg); filter: blur(5px); } }
+/* градиент вешаем на каждое слово: у слов display:inline-block, и фон
+   родителя их текст не прокрасил бы — часть вопроса просто исчезла бы */
+.q .hl w {
+  background: linear-gradient(100deg, var(--rose), var(--violet) 60%, var(--cyan));
+  -webkit-background-clip: text; background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+/* своя перспектива — чтобы объём вариантов не зависел от родителя */
+.opts { display: grid; gap: 10px; perspective: 800px; }
+.opt {
+  position: relative; overflow: hidden; text-align: left; width: 100%;
+  min-height: 58px; cursor: pointer; touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  font: inherit; font-size: clamp(15.5px, 4.2vw, 17px);
+  font-weight: 300; line-height: 1.5; letter-spacing: .014em; color: var(--ink);
+  background: rgba(255,255,255,.055);
+  border: 1px solid var(--stroke); border-radius: 15px;
+  padding: 15px 16px 15px 54px;
+  --soft: cubic-bezier(.16,.86,.24,1);
+  transition: transform .6s var(--soft), opacity .5s ease, background .4s, border-color .4s, box-shadow .5s;
+}
+
+/* ---------- пять способов «выпадения» вариантов, чередуются ---------- */
+/* карты, которые кладут в руку */
+.opts.s0 .opt { animation: optCards 1.1s var(--soft) both; }
+@keyframes optCards { 0% { opacity: 0; transform: translate3d(0, 130%, -280px) rotateX(-74deg); } }
+/* домино: разворот от левого ребра */
+.opts.s1 .opt { animation: optDomino 1.05s var(--soft) both; transform-origin: 0% 50%; }
+@keyframes optDomino { 0% { opacity: 0; transform: rotateY(-90deg) translateZ(-50px); } }
+/* лестница из глубины */
+.opts.s2 .opt { animation: optDepth 1.1s var(--soft) both; }
+@keyframes optDepth { 0% { opacity: 0; transform: translate3d(-16%, 0, -460px) rotateY(-32deg); } }
+/* падение сверху с лёгким доводом */
+.opts.s3 .opt { animation: optDrop 1.15s cubic-bezier(.2,1.25,.3,1) both; transform-origin: 50% 0%; }
+@keyframes optDrop { 0% { opacity: 0; transform: translate3d(0, -150%, -140px) rotateX(60deg); } }
+/* веер */
+.opts.s4 .opt { animation: optFan 1.1s var(--soft) both; transform-origin: 0% 50%; }
+@keyframes optFan { 0% { opacity: 0; transform: rotateZ(-11deg) rotateY(-28deg) translate3d(-10%, 16%, -220px); } }
+.opt .key {
+  position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+  width: 26px; height: 26px; border-radius: 50%;
+  border: 1px solid var(--stroke); display: grid; place-items: center;
+  font-size: 11.5px; color: var(--ink-dim); transition: all .3s var(--ease);
+}
+@media (hover: hover) and (pointer: fine) {
+  .opt:hover { transform: translateX(6px) translateZ(16px);
+    background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.32);
+    box-shadow: -8px 10px 30px -12px rgba(255,143,191,.6); }
+  .opt:hover .key { color: #1b0f26; background: linear-gradient(135deg, var(--rose), var(--gold)); border-color: transparent; }
+}
+.opt:active { transform: translateZ(-8px) scale(.985); background: rgba(255,255,255,.1); }
+/* выбранный выходит вперёд; можно отметить сразу несколько */
+.opt.picked {
+  background: linear-gradient(100deg, rgba(255,143,191,.28), rgba(169,140,255,.25));
+  border-color: rgba(255,255,255,.55);
+  box-shadow: 0 0 0 1px rgba(255,255,255,.25), 0 24px 54px -20px rgba(255,143,191,.85);
+  transform: translateZ(34px) scale(1.015);
+}
+/* цифра сменяется галочкой — сразу видно, что вариант отмечен */
+.opt.picked .key {
+  color: transparent; background: linear-gradient(135deg, #fff, var(--rose)); border-color: transparent;
+}
+.opt.picked .key::after {
+  content: "✓"; position: absolute; inset: 0;
+  display: grid; place-items: center; color: #1b0f26; font-size: 14px; font-weight: 700;
+}
+/* невыбранные отъезжают назад только в момент отправки ответа */
+.opt.dim { opacity: .16; transform: translateZ(-90px) rotateX(-14deg) scale(.93); }
+
+/* кнопка «Ответить» */
+.submit-row { display: flex; justify-content: center; margin-top: 20px; }
+.btn.submit { min-width: 190px; }
+.btn[disabled] {
+  opacity: .32; cursor: default; box-shadow: none;
+  filter: saturate(.5);
+}
+.btn[disabled]:active { transform: none; }
+.ripple { position: absolute; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle, rgba(255,255,255,.6), transparent 70%);
+  animation: rip .8s ease-out forwards; }
+@keyframes rip { from { width: 0; height: 0; opacity: .9; } to { width: 560px; height: 560px; opacity: 0; } }
+.hint { margin-top: 16px; font-size: 11.5px; color: rgba(245,238,252,.34); letter-spacing: .06em; display: none; }
+@media (hover: hover) and (pointer: fine) { .hint { display: block; } }
+
+/* --- финал: неоновый земной шар (рисуется на canvas, вращается по-настоящему) --- */
+.globe-wrap {
+  position: relative; width: 168px; height: 168px; margin: 0 auto 16px;
+}
+.globe-wrap::before {           /* атмосфера вокруг планеты */
+  content: ""; position: absolute; inset: -14%;
+  border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle, rgba(127,230,255,.28) 40%, rgba(169,140,255,.16) 62%, transparent 74%);
+  filter: blur(9px);
+  animation: atmo 4.5s ease-in-out infinite;
+}
+.globe-wrap::after {            /* мягкий блик сверху-слева */
+  content: ""; position: absolute; inset: 4%;
+  border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle at 32% 26%, rgba(255,255,255,.22), transparent 52%);
+}
+#globe {
+  position: relative; z-index: 1; display: block;
+  width: 168px; height: 168px; border-radius: 50%;
+  box-shadow: 0 0 26px rgba(127,230,255,.45), 0 0 60px rgba(169,140,255,.3),
+              inset 0 0 30px rgba(10,4,40,.7);
+}
+@keyframes atmo { 50% { transform: scale(1.05); opacity: .82; } }
+@keyframes pulse { 50% { transform: scale(1.12); } }
+
+.score { font-family: var(--font-display); font-weight: 400;
+  font-size: clamp(44px, 15vw, 74px); letter-spacing: .01em;
+  line-height: 1; text-align: center; margin: 0; position: relative;
+  background: linear-gradient(100deg, var(--gold), var(--rose) 45%, var(--violet));
+  -webkit-background-clip: text; background-clip: text; color: transparent; }
+.score-cap { text-align: center; font-size: 11.5px; letter-spacing: .3em;
+  text-transform: uppercase; color: var(--ink-dim); margin: 10px 0 26px; }
+.arch { text-align: center; font-family: var(--font-display); font-weight: 400;
+  font-size: clamp(25px, 7.2vw, 35px); margin: 0 0 14px; line-height: 1.32;
+  letter-spacing: .006em; }
+.arch-sub { text-align: center; color: var(--ink-dim); font-size: clamp(14.5px, 4vw, 16px);
+  font-weight: 300; line-height: 1.78; letter-spacing: .012em; margin: 0 0 10px; }
+.joke { text-align: center; font-size: 12.5px; font-weight: 300;
+  letter-spacing: .02em; color: rgba(245,238,252,.42); margin: 0; }
+.divider { height: 1px; margin: 24px 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.3), transparent); }
+
+/* --- 3D-конверт --- */
+/* ---------- конверт: вся геометрия в SVG, поэтому линии сходятся точно ----------
+   Ключевая точка — вершина «V» на (150,112) при системе 300×200.
+   И створка, и боковые клапаны идут ровно через неё.                            */
+.env-wrap { text-align: center; margin-top: 22px; }
+.env-scene {
+  perspective: 1000px; width: min(280px, 80vw); margin: 0 auto;
+  /* парение живёт на обёртке: клик по конверту его не обрывает — иначе
+     снятие animation на середине цикла давало заметный рывок вниз */
+  animation: envFloat 5s ease-in-out infinite;
+}
+.env {
+  position: relative; display: block; width: 100%; aspect-ratio: 3 / 2;
+  background: none; border: 0; padding: 0; cursor: pointer; overflow: visible;
+  transform-style: preserve-3d; touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  filter: drop-shadow(0 22px 30px rgba(20,4,30,.55));
+}
+.env:focus-visible { outline: 2px solid rgba(255,255,255,.6); outline-offset: 10px; border-radius: 12px; }
+@keyframes envFloat { 50% { transform: translateY(-8px) rotateX(3deg); } }
+
+.env .layer { position: absolute; left: 0; top: 0; width: 100%; display: block; }
+.env .back   { z-index: 1; }
+.env .front  { z-index: 3; }
+
+/* лист письма: поднимается из конверта, нижняя часть остаётся за карманом */
+.env .paper {
+  position: absolute; left: 7.5%; right: 7.5%; bottom: 7%; height: 84%; z-index: 2;
+  border-radius: 4px;
+  background: linear-gradient(178deg, #fffefb 0%, #fff8fb 60%, #ffeef5 100%);
+  box-shadow: 0 10px 22px -12px rgba(0,0,0,.5), inset 0 0 0 1px rgba(190,140,170,.25);
+  transform: translateY(0);
+  transition: transform 1.05s var(--ease), box-shadow .8s ease;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px;
+}
+.env .paper b {
+  display: block; width: 54%; height: 2px; border-radius: 2px;
+  background: rgba(196,140,172,.5);
+}
+.env .paper b:nth-of-type(2) { width: 40%; }
+.env .paper b:nth-of-type(3) { width: 47%; }
+.env .paper i {
+  font-style: normal; color: #e0779f; font-size: 19px; line-height: 1; margin-bottom: 3px;
+}
+
+/* створка — отдельный слой, вращается вокруг верхнего ребра */
+.env .flap {
+  position: absolute; left: 0; top: 0; width: 100%; z-index: 4;
+  transform-origin: 50% 0%; transform: rotateX(0deg);
+  transition: transform 1.05s var(--ease), z-index 0s .5s;
+  display: block;
+}
+.env .seal {
+  position: absolute; left: 50%; top: 56%; width: 42px; height: 42px; margin: -21px 0 0 -21px;
+  z-index: 5; border-radius: 50%; display: grid; place-items: center;
+  background: radial-gradient(circle at 34% 28%, #ffa8c8, #e0568a 60%, #c33a70);
+  color: #fff; font-size: 17px; line-height: 1;
+  box-shadow: 0 5px 14px -5px rgba(0,0,0,.65), inset 0 0 0 1.5px rgba(255,255,255,.45);
+  transition: opacity .45s, transform .7s var(--ease);
+}
+.env.open .flap { transform: rotateX(-168deg); z-index: 0; }
+.env.open .seal { opacity: 0; transform: scale(.35) rotate(-30deg); }
+.env.rise .paper {
+  transform: translateY(-58%) scale(1.02);
+  box-shadow: 0 30px 46px -14px rgba(0,0,0,.62), inset 0 0 0 1px rgba(190,140,170,.25);
+}
+.env-tip { margin-top: 16px; font-size: 13px; color: var(--ink-dim); animation: tip 2.4s ease-in-out infinite; }
+@keyframes tip { 50% { opacity: .45; } }
+
+/* --- письмо --- */
+.letter {
+  font-family: var(--font-hand);
+  /* italic даёт «письменность» на iOS/Android (курсивная Georgia);
+     font-synthesis:none не даёт пере-наклонить Segoe Script на Windows */
+  font-style: italic; font-synthesis: none;
+  font-size: clamp(16.5px, 4.5vw, 19.5px); line-height: 2.05;
+  font-weight: 400; letter-spacing: .015em;
+  white-space: pre-wrap; min-height: 7em; color: #fff7fc;
+  text-shadow: 0 1px 14px rgba(255,180,215,.28);
+}
+.letter .cur { animation: rblink .7s steps(1) infinite; color: var(--rose); }
+.sign { text-align: right; margin-top: 16px; color: var(--ink-dim);
+  font-size: 14px; font-weight: 300; font-style: italic; letter-spacing: .02em; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 26px; }
+.btn {
+  font: inherit; font-size: 15.5px; font-weight: 400; letter-spacing: .03em;
+  cursor: pointer; color: var(--ink);
+  padding: 14px 22px; min-height: 50px; border-radius: 999px;
+  border: 1px solid var(--stroke); background: rgba(255,255,255,.07);
+  touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+  transition: transform .3s var(--ease), background .3s, box-shadow .3s;
+}
+.btn:active { transform: scale(.96); }
+.btn.primary { border-color: transparent; color: #24122c; font-weight: 600;
+  background: linear-gradient(100deg, var(--gold), var(--rose) 55%, var(--violet));
+  box-shadow: 0 14px 34px -14px rgba(255,143,191,.85); }
+.reveal { animation: up 1.25s cubic-bezier(.16,.86,.24,1) both; }
+@keyframes up { from { opacity: 0; transform: translate3d(0, 26px, -90px) rotateX(-10deg); filter: blur(7px); } }
+
+/* --- служебное --- */
+#sound {
+  position: fixed; z-index: 60; display: none; place-items: center;
+  top: calc(10px + env(safe-area-inset-top)); right: calc(10px + env(safe-area-inset-right));
+  width: 44px; height: 44px; border-radius: 50%; cursor: pointer;
+  border: 1px solid var(--stroke); background: rgba(255,255,255,.08);
+  color: var(--ink); font-size: 15px;
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+}
+#sound.on { display: grid; }
+#sound:active { transform: scale(.92); }
+#cursor { position: fixed; z-index: 5; width: 340px; height: 340px; margin: -170px 0 0 -170px;
+  pointer-events: none; opacity: 0; transition: opacity .6s;
+  background: radial-gradient(circle, rgba(255,160,205,.15), transparent 62%); }
+@media (hover: hover) and (pointer: fine) { #modern.on #cursor.live { opacity: 1; } }
+
+@media (max-width: 560px) {
+  .card { border-radius: 20px; }
+  #cursor { display: none; }
+}
+
+/* ---------- большие экраны: карточке нужно больше воздуха ---------- */
+@media (min-width: 900px) {
+  .stage { padding: 40px; perspective: 1400px; }
+  .holder { width: min(720px, 100%); }
+  .card { padding: 44px 48px; border-radius: 28px; }
+  .head { gap: 18px; margin-bottom: 26px; }
+  .q { font-size: 35px; line-height: 1.44; margin-bottom: 30px; }
+  .opts { gap: 12px; }
+  .opt { font-size: 17.5px; min-height: 66px; padding: 19px 22px 19px 62px; }
+  .opt .key { left: 18px; width: 30px; height: 30px; font-size: 12.5px; }
+  .arch { font-size: 38px; }
+  .arch-sub { font-size: 16.5px; }
+  .letter { font-size: 20.5px; line-height: 2.1; }
+  .globe-wrap, #globe { width: 190px; height: 190px; }
+  .env-scene { width: 320px; }
+  #sound { width: 46px; height: 46px;
+    top: calc(20px + env(safe-area-inset-top)); right: calc(20px + env(safe-area-inset-right)); }
+}
+@media (min-width: 1500px) {
+  .holder { width: min(790px, 100%); }
+  .q { font-size: 38px; }
+}
+
+/* ---------- телефон боком: экран низкий, всё поджимаем ---------- */
+@media (orientation: landscape) and (max-height: 560px) {
+  /* max() сохраняет safe-area: без него низ карточки уезжает под home-indicator */
+  .stage { align-items: flex-start;
+    padding: max(14px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
+             max(14px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); }
+  .card { padding: 18px 22px; border-radius: 18px; }
+  .head { gap: 12px; margin-bottom: 14px; }
+  .ring { width: 42px; height: 42px; }
+  .ring-num { font-size: 11px; }
+  .q { font-size: 21px; line-height: 1.34; margin-bottom: 14px; }
+  .opts { gap: 8px; }
+  .opt { min-height: 46px; padding: 11px 14px 11px 46px; font-size: 14.5px; line-height: 1.35; }
+  .opt .key { left: 12px; width: 22px; height: 22px; font-size: 10.5px; }
+  .globe-wrap, #globe { width: 104px; height: 104px; }
+  .globe-wrap { margin-bottom: 8px; }
+  .score { font-size: 40px; }
+  .score-cap { margin: 6px 0 14px; }
+  .arch { font-size: 22px; margin-bottom: 8px; }
+  .arch-sub { font-size: 13.5px; line-height: 1.6; }
+  .divider { margin: 14px 0; }
+  .env-scene { width: 190px; }
+  .letter { font-size: 15.5px; line-height: 1.8; }
+  .hint { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body:not(.force-motion) .blob,
+  body:not(.force-motion) #sky,
+  body:not(.force-motion) .orb3d,
+  body:not(.force-motion) .sweep i,
+  body:not(.force-motion) .card::after,
+  body:not(.force-motion) .env-scene,
+  body:not(.force-motion) .ring,
+  body:not(.force-motion) .ring-wrap,
+  body:not(.force-motion) #glitch .scan { animation: none !important; }
+  body:not(.force-motion) #retro.dying { animation: none; }
+  /* delay тоже в ноль: иначе из-за fill:both контент по секунде невидим */
+  body:not(.force-motion) .card,
+  body:not(.force-motion) .opt,
+  body:not(.force-motion) .q w,
+  body:not(.force-motion) .reveal { animation-duration: .01s !important; animation-delay: 0s !important; }
+}
+</style>
+</head>
+<body>
+
+<!-- ============================ РЕТРО-МИР ============================ -->
+<div id="retro-3d">
+<div id="retro">
+  <center>
+    <marquee width="96%" scrollamount="7">★ ★ ★  Д О Б Р О   П О Ж А Л О В А Т Ь   Н А   М О Й   С А Й Т  ★ ★ ★  ЗАХОДИТЕ ЕЩЁ !!!  ★ ★ ★</marquee>
+
+    <div class="rainbow">
+      <i>П</i><i>с</i><i>и</i><i>х</i><i>о</i><i>л</i><i>о</i><i>г</i><i>и</i><i>ч</i><i>е</i><i>с</i><i>к</i><i>и</i><i>й</i>
+      <i>т</i><i>е</i><i>с</i><i>т</i> <i>v</i><i>1</i><i>.</i><i>0</i>
+    </div>
+    <span class="undercon">*** САЙТ НАХОДИТСЯ В РАЗРАБОТКЕ ***</span>
+    <hr width="80%" size="8" color="#ff00ff">
+  </center>
+
+  <center>
+    <table border="4" cellpadding="8" cellspacing="0" width="94%" bgcolor="#ffffcc">
+      <tr>
+        <td width="26%" valign="top" bgcolor="#ccccff">
+          <b><font face="Comic Sans MS">НАВИГАЦИЯ</font></b>
+          <hr size="4" color="#0000ff">
+          <a href="#" class="nav">Главная</a> <span class="blink2">НОВОЕ!</span><br>
+          <a href="#" class="nav">Ссылки друзей</a><br>
+          <hr size="4" color="#0000ff">
+          <span class="blink">[ ВНИМАНИЕ ]</span><br>
+          <span class="tiny"><i>Сайт лучше всего смотрится<br>при разрешении 800x600</i></span>
+          <hr size="4" color="#0000ff">
+          <span class="tiny">Вы посетитель №</span><br>
+          <span class="counter">0000001</span><br>
+          <span class="tiny"><i>Вы 1-й посетитель!</i></span>
+          <br>
+          <button type="button" class="music" id="sitemusic">♪ Включить музыку сайта</button>
+        </td>
+
+        <td valign="top" id="retro-body"><!-- здесь приветствие и вопросы 1–2; текст ниже виден
+          только если скрипт не запустился (очень старый браузер) -->
+          <font size="2">Загрузка теста... Если ничего не происходит — открой эту
+          страницу в браузере поновее (Chrome или Safari).</font></td>
+      </tr>
+    </table>
+
+    <hr width="80%" size="8" color="#ff00ff">
+    <marquee class="m2" width="90%" scrollamount="4" behavior="alternate">◄ ◄ ◄  СПАСИБО ЗА ВИЗИТ, ПРИХОДИТЕ ЕЩЁ  ► ► ►</marquee>
+
+    <div class="badges">
+      <span class="badge b-ns">NETSCAPE<br>NOW!</span>
+      <span class="badge b-ie">BEST VIEWED<br>WITH IE 6</span>
+      <span class="badge b-fp">MADE WITH<br>FRONTPAGE</span>
+      <span class="badge b-y2k">Y2K<br>READY</span>
+    </div>
+
+    <div class="footnote">
+      Последнее обновление: 12.04.2003 &nbsp;|&nbsp; Сделано с любовью в Блокноте<br>
+      © 2003 Все права защищены. Копирование запрещено!!!
+    </div>
+  </center>
+</div>
+</div>
+
+
+<!-- ============================ ГЛИТЧ ============================ -->
+<div id="glitch">
+  <div class="glow"></div>
+  <pre id="term"></pre>
+  <div class="scan"></div>
+</div>
+<div id="dlgwrap"></div>
+<div id="flicker"></div>
+<pre id="bsod"></pre>
+<div id="crt"></div>
+
+
+<!-- ============================ КРАСИВЫЙ МИР ============================ -->
+<div id="modern">
+  <div id="sky">
+    <div class="blob b1"></div><div class="blob b2"></div>
+    <div class="blob b3"></div><div class="blob b4"></div>
+    <div class="blob b5"></div><div class="blob b6"></div>
+  </div>
+  <div id="grain"></div>
+  <canvas id="fx"></canvas>
+  <div id="vignette"></div>
+  <div id="cursor"></div>
+  <div class="stage" id="stage"></div>
+  <div id="birth"></div>
+</div>
+<button id="sound" title="Звук">♪</button>
+
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <linearGradient id="grad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffd79a"/>
+      <stop offset=".5" stop-color="#ff8fbf"/>
+      <stop offset="1" stop-color="#a98cff"/>
+    </linearGradient>
+  </defs>
+</svg>
+
+
+<script>
+/* ==========================================================================
+   CONFIG — здесь всё, что стоит поменять под себя
+   ========================================================================== */
+const CONFIG = {
+  /* имя всегда одно, что бы ни ввели в поле: поставь "" — и тогда
+     будет использоваться введённое, а defaultName станет запасным */
+  forceName: "Даша",
+  defaultName: "Даша",
+  signature:   "твой друн Макс, который это всё написал для подруни Даши!",
+  /* Ответы тихо уходят в личного бота автора — чтобы он увидел, что она
+     навыбирала. Для неё это невидимо: ни «отправлено», ни ошибок.
+     chatId пустой — отправки просто нет; enabled:false — сайт вообще не
+     лезет в сеть. chatId берётся из getUpdates после /start боту. */
+  tg: {
+    token:   "8722359199:AAEXSA0lF6PG20FtmpsUYjZ6NQvbtlYCXHw",
+    chatId:  "",
+    enabled: true
+  },
+  /* Не делай переносов строк внутри абзаца — текст переносится сам.
+     Пустая строка = новый абзац. {name} подставит её имя. */
+  letter:
+`{name}, привет.
+
+Всё, что было до этого — шутка. А это уже нет.
+
+Ты из тех людей, рядом с которыми я выдыхаю. Не потому, что ты умеешь красиво говорить, а потому что ты остаёшься. В моменты, когда я сам себе (и тебе) надоедаю — ты рядом. Спокойно, без пафоса, будто это само собой.
+
+Ты часто и не замечаешь, как сильно помогаешь. Одна твоя фраза иногда разворачивает мой день обратно к свету. Я не всегда говорю это вслух — поэтому написал целую страницу, чтобы точно дошло :)
+
+Спасибо, что ты есть. Это правда самое главное.`
+};
+
+/* ==========================================================================
+   ВОПРОСЫ — первые два с retro:true идут ещё на «страшном» сайте 2003.
+   Для красивых вопросов q = ["обычный текст ", "выделенный цветом"].
+   ========================================================================== */
+const QUESTIONS = [
+  { retro: true,
+    q: "Вопрос №1. Укажите Ваше отношение к автору данного сайта:",
+    opts: ["Лучшая подруга", "Просто подруга", "Зашла случайно", "Я и есть автор"] },
+
+  { retro: true,
+    q: "Вопрос №2. Оцените по шкале от 1 до 4, как часто Вы спасаете автора от его же мыслей:",
+    opts: ["1 — почти никогда", "2 — иногда", "3 — часто", "4 — это моя работа"] },
+
+  { q: ["Если бы моё настроение было погодой, ты была бы ", "тем, что её меняет"],
+    opts: ["Солнцем, которое выходит сразу после дождя",
+           "Тёплым ветром в июле",
+           "Первым снегом, от которого становится тихо",
+           "Грозой — но самой красивой"] },
+
+  { q: ["Наш идеальный вечер — это ", "который никто не планировал"],
+    opts: ["Болтать до четырёх утра",
+           "Молчать рядом, и это нормально",
+           "Ржать с мемов и не спать",
+           "Гулять без цели и маршрута"] },
+
+  { q: ["Какой суперсилой ты ", "уже владеешь"],
+    opts: ["Слышать то, что между строк",
+           "Одной фразой ставить мой страх на место",
+           "Делать любой день теплее просто фактом своего существования",
+           "Появляться именно тогда, когда нужно"] },
+
+  { q: ["Когда мне плохо, ты чаще всего ", "делаешь так"],
+    opts: ["Пишешь первая",
+           "Просто остаёшься",
+           "Смешишь до слёз",
+           "Говоришь правду, которая мне нужна"] },
+
+  { q: ["На что похожа наша дружба, если её ", "нужно нарисовать"],
+    opts: ["На костёр — рядом с ним тепло всем",
+           "На маяк — видно даже из очень далека",
+           "На плед — в него можно спрятаться",
+           "На песню, которую хочется включить снова"] },
+
+  { q: ["И самый главный вопрос. ", "Знаешь ли ты, насколько ты для меня важна?"],
+    opts: ["Знаю", "Догадываюсь", "Честно — не очень", "Скажи ещё раз"] }
+];
+
+/* финал теперь один — каким бы ни был набор ответов */
+const RESULT = {
+  title: "Ты — моё солнце",
+  sub: "Тебя слишком много для одного человека, и это лучшее, что могло случиться. Ты согреваешь, даже когда сама устала."
+};
+
+/* ==========================================================================
+   БАЗА
+   ========================================================================== */
+const state = { name: "", idx: 0, answers: [], done: false };
+/* Анимации — суть этого сайта-подарка, а не украшение, поэтому системная
+   настройка «уменьшить анимацию» НЕ выключает их сама по себе (раньше из-за
+   неё всё становилось мгновенным и плоским). Спокойный режим — явно: ?calm */
+const CALM = location.search.indexOf("calm") >= 0;
+let REDUCED = CALM;
+if (!CALM) document.body.classList.add("force-motion");
+const TOUCH = matchMedia("(hover: none)").matches;
+const TOTAL = QUESTIONS.length;
+const $ = s => document.querySelector(s);
+const sleep = ms => new Promise(r => setTimeout(r, REDUCED ? Math.min(ms, 60) : ms));
+const esc = s => String(s).replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c]);
+/* вибрация — только после первого настоящего касания, иначе браузер её глушит */
+let tapped = false;
+addEventListener("pointerdown", e => { if (e.isTrusted) tapped = true; }, { passive: true, capture: true });
+const buzz = p => { if (!tapped) return; try { navigator.vibrate && navigator.vibrate(p); } catch (e) {} };
+
+/* ==========================================================================
+   ЗВУК — всё синтезируется на месте, никаких файлов
+   ========================================================================== */
+/* нота пентатоники C — что бы ни нажали, диссонанса не будет */
+const SCALE = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25, 784.00, 880.00];
+
+const Sound = {
+  ctx: null, muted: false, master: null, lp: null, wet: null, dry: null, conv: null,
+
+  init() {
+    if (!this.ctx) {
+      const A = window.AudioContext || window.webkitAudioContext;
+      if (!A) return;
+      const c = this.ctx = new A();
+      /* мастер-тракт: всё идёт через мягкий фильтр и небольшой зал,
+         поэтому звуки не «пищат», а дышат */
+      this.master = c.createGain(); this.master.gain.value = .9;
+      this.lp = c.createBiquadFilter();
+      this.lp.type = "lowpass"; this.lp.frequency.value = 3600; this.lp.Q.value = .3;
+      this.dry = c.createGain(); this.dry.gain.value = .8;
+      this.wet = c.createGain(); this.wet.gain.value = .38;
+      this.conv = c.createConvolver(); this.conv.buffer = this.makeIR(2.8, 2.4);
+      this.lp.connect(this.dry).connect(this.master);
+      this.lp.connect(this.conv).connect(this.wet).connect(this.master);
+      this.master.connect(c.destination);
+    }
+    /* не только "suspended": iOS после звонка/Siri оставляет контекст в
+       нестандартном "interrupted" — иначе звук молчал бы до перезагрузки */
+    if (this.ctx && this.ctx.state !== "running" && this.ctx.resume) {
+      const p = this.ctx.resume();
+      if (p && p.catch) p.catch(() => {});
+    }
+  },
+
+  /* импульс для реверба — затухающий шум, генерируется на месте */
+  makeIR(dur, decay) {
+    const c = this.ctx, len = Math.floor(c.sampleRate * dur);
+    const buf = c.createBuffer(2, len, c.sampleRate);
+    for (let ch = 0; ch < 2; ch++) {
+      const d = buf.getChannelData(ch);
+      let last = 0;
+      for (let i = 0; i < len; i++) {
+        const env = Math.pow(1 - i / len, decay);
+        last = (last * .72) + (Math.random() * 2 - 1) * .28;   /* приглушаем «песок» */
+        d[i] = last * env;
+      }
+    }
+    return buf;
+  },
+
+  /* один мягкий голос: медленная атака, длинный хвост, лёгкая расстройка */
+  voice(o) {
+    this.init(); if (!this.ctx || this.muted) return;
+    const c = this.ctx, t = c.currentTime + (o.when || 0);
+    const dur = o.dur == null ? 1.2 : o.dur;
+    const peak = o.gain == null ? .07 : o.gain;
+    const atk = o.attack == null ? .05 : o.attack;
+    const g = c.createGain();
+    g.gain.setValueAtTime(.0001, t);
+    g.gain.linearRampToValueAtTime(peak, t + atk);
+    g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+    g.connect(this.lp);
+    const mk = det => {
+      const osc = c.createOscillator();
+      osc.type = o.type || "sine";
+      osc.frequency.setValueAtTime(o.freq, t);
+      if (o.to) osc.frequency.exponentialRampToValueAtTime(o.to, t + dur * .85);
+      if (det) osc.detune.setValueAtTime(det, t);
+      osc.connect(g); osc.start(t); osc.stop(t + dur + .1);
+    };
+    mk(0);
+    if (o.warm) mk(o.warm);          /* второй чуть расстроенный — «толще» и теплее */
+  },
+
+  /* мягкий шум с фильтром: шорох бумаги, воздух, гул */
+  noise(o) {
+    this.init(); if (!this.ctx || this.muted) return;
+    const c = this.ctx, t = c.currentTime + (o.when || 0);
+    const dur = o.dur || 1;
+    const buf = c.createBuffer(1, Math.max(1, Math.floor(c.sampleRate * dur)), c.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    const src = c.createBufferSource(); src.buffer = buf;
+    const f = c.createBiquadFilter();
+    f.type = o.type || "bandpass";
+    f.frequency.setValueAtTime(o.from || 800, t);
+    if (o.fto) f.frequency.exponentialRampToValueAtTime(o.fto, t + dur);
+    f.Q.value = o.q == null ? .8 : o.q;
+    const g = c.createGain();
+    g.gain.setValueAtTime(.0001, t);
+    g.gain.linearRampToValueAtTime(o.gain == null ? .05 : o.gain, t + (o.attack || .08));
+    g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+    src.connect(f).connect(g).connect(this.lp);
+    src.start(t); src.stop(t + dur + .05);
+  },
+
+  /* ретро-часть: специально дешёвый писк, но тихий — это часть шутки */
+  beep() { this.voice({ freq: 320, dur: .1, type: "square", gain: .035, attack: .004 }); },
+
+  /* выбор ответа: колокольчик, каждый раз следующая нота вверх — прогрессия */
+  pick(step) {
+    const f = SCALE[(step || 0) % SCALE.length];
+    this.voice({ freq: f, dur: 1.5, gain: .075, attack: .02, warm: 6 });
+    this.voice({ freq: f * 2, dur: 1.1, gain: .028, attack: .03, when: .015 });
+    this.voice({ freq: f * 3, dur: .7, gain: .012, attack: .04, when: .03 });
+  },
+
+  /* шаги «сноса» фейкового сайта — глухие, без визга */
+  thud() {
+    this.voice({ freq: 90, to: 42, dur: 1.1, type: "sine", gain: .12, attack: .006 });
+    this.noise({ from: 500, fto: 90, dur: .8, gain: .045, q: .5 });
+  },
+  glitchTick() { this.noise({ from: 1800, fto: 900, dur: .1, gain: .022, q: 1.2 }); },
+  dialogBlip() { this.voice({ freq: 520, dur: .16, type: "triangle", gain: .04, attack: .008 }); },
+
+  /* уход старого мира: длинный мягкий спад вниз */
+  sweepDown() {
+    this.voice({ freq: 420, to: 60, dur: 2.6, type: "sine", gain: .075, attack: .35 });
+    this.noise({ from: 2200, fto: 120, dur: 2.4, gain: .05, q: .4, attack: .5 });
+  },
+  /* рождение нового мира: тёплый пэд-аккорд, атака почти секунда */
+  bloom() {
+    [261.63, 329.63, 392.00, 523.25, 659.25].forEach((f, i) =>
+      this.voice({ freq: f, dur: 4.4, gain: .05, attack: .9, when: i * .18, warm: 5 }));
+    this.noise({ from: 300, fto: 2600, dur: 2.6, gain: .03, q: .3, attack: 1.2 });
+  },
+  /* конверт: шорох бумаги + два нежных тона */
+  paper() {
+    this.noise({ from: 2600, fto: 1100, dur: .9, gain: .04, q: .7, attack: .12 });
+    this.voice({ freq: 523.25, dur: 1.8, gain: .05, attack: .12, warm: 7 });
+    this.voice({ freq: 659.25, dur: 2.2, gain: .04, attack: .2, when: .18, warm: 7 });
+  },
+  finish() {
+    [392.00, 523.25, 659.25, 784.00, 880.00, 1046.5].forEach((f, i) =>
+      this.voice({ freq: f, dur: 3, gain: .05, attack: .12, when: i * .16, warm: 6 }));
+  },
+  /* печать письма: очень тихий тёплый клик */
+  keyTick() { this.voice({ freq: 620 + Math.random() * 140, dur: .06, type: "triangle", gain: .008, attack: .004 }); },
+
+  /* «музыка сайта» из 2003-го: намеренно дешёвый квадрат МИМО фильтра и реверба */
+  uglyNote(freq, dur, when) {
+    this.init(); if (!this.ctx || this.muted) return;   /* mute глушит и «музыку сайта» */
+    const c = this.ctx, t = c.currentTime + when;
+    const o = c.createOscillator(), g = c.createGain();
+    o.type = "square"; o.frequency.setValueAtTime(freq, t);
+    g.gain.setValueAtTime(.028, t);
+    g.gain.setValueAtTime(.028, t + dur * .85);
+    g.gain.linearRampToValueAtTime(0, t + dur);
+    o.connect(g).connect(c.destination);       /* напрямую — без всякой обработки */
+    o.start(t); o.stop(t + dur);
+    this.uglyNodes.push(o);
+  },
+  uglyNodes: [], uglyTimer: null,
+  uglyTune(on) {
+    if (!on) {
+      clearInterval(this.uglyTimer); this.uglyTimer = null;
+      this.uglyNodes.forEach(o => { try { o.stop(); } catch (e) {} });
+      this.uglyNodes = [];
+      return;
+    }
+    /* кривой мотивчик, зацикленный без пощады */
+    const M = [[523,.22],[523,.22],[587,.22],[659,.44],[587,.22],[523,.22],[440,.44],
+               [494,.22],[523,.22],[587,.44],[523,.66]];
+    const len = M.reduce((s, n) => s + n[1], 0);
+    const play = () => {
+      /* замороженный контекст (iOS "interrupted", фон): не планируем ноты,
+         иначе они копятся на одном timestamp и выстреливают залпом при resume */
+      if (!this.ctx || this.muted || this.ctx.state !== "running") return;
+      this.uglyNodes = [];
+      let t = 0;
+      M.forEach(([f, d]) => { this.uglyNote(f, d * .92, t); t += d; });
+    };
+    this.init();
+    play();
+    this.uglyTimer = setInterval(play, len * 1000 + 250);
+  }
+};
+$("#sound").onclick = () => {
+  Sound.muted = !Sound.muted;
+  $("#sound").textContent = Sound.muted ? "✕" : "♪";
+  if (!Sound.muted) Sound.pick(4);
+};
+
+/* ==========================================================================
+   РЕТРО-ЭКРАНЫ
+   ========================================================================== */
+function retroIntro() {
+  $("#retro-body").innerHTML = `
+    <b><font size="4">Приветствую тебя, посетитель!</font></b>
+    <p>Данный тест был разработан специально для того, чтобы определить
+    уровень твоей важности в моей жизни. Тест состоит из ${TOTAL} вопросов.
+    Отвечай честно!</p>
+    <p><i>Внимание: результаты теста не подлежат оспариванию.</i></p>
+    <hr>
+    <form onsubmit="return false">
+      <b>Введите Ваше имя:</b><br>
+      <input type="text" id="nm" size="22" maxlength="24" autocomplete="off">
+      <p><input type="submit" id="go" value="НАЧАТЬ ТЕСТ &gt;&gt;"></p>
+    </form>
+    <hr>
+    <font size="1" color="#666666">Ваши данные никуда не отправляются,<br>потому что я не умею это делать.</font>`;
+  const nm = $("#nm");
+  if (!TOUCH) nm.focus();               /* на телефоне не выдёргиваем клавиатуру сразу */
+  const start = () => {
+    state.name = CONFIG.forceName || (nm.value || "").trim().slice(0, 24) || CONFIG.defaultName;
+    Sound.beep(); buzz(10);
+    state.idx = 0;
+    retroQuestion();
+  };
+  $("#go").onclick = start;
+  nm.onkeydown = e => { if (e.key === "Enter") { e.preventDefault(); start(); } };
+}
+
+function retroQuestion() {
+  const item = QUESTIONS[state.idx];
+  const note = state.idx === 1
+    ? `<p><span class="blink">ВНИМАНИЕ: обнаружена ошибка отображения #0x8f2</span></p>` : "";
+  $("#retro-body").innerHTML = `
+    <font size="2" color="#666666">Вопрос ${state.idx + 1} из ${TOTAL}</font>
+    <hr>
+    <b><font size="3">${esc(item.q)}</font></b>
+    <form onsubmit="return false">
+      <table border="0" cellpadding="2">
+        ${item.opts.map((o, i) => `
+          <tr><td valign="top"><input type="radio" name="a" id="o${i}" value="${i}"></td>
+              <td><label for="o${i}">${esc(o)}</label></td></tr>`).join("")}
+      </table>
+      <p><input type="submit" id="next" value="ДАЛЕЕ &gt;&gt;"></p>
+    </form>
+    ${note}
+    <font size="1" color="#666666">Привет, ${esc(state.name)}. Осталось совсем немного.</font>`;
+
+  $("#next").onclick = () => {
+    const sel = document.querySelector('input[name="a"]:checked');
+    if (!sel) { alert("Пожалуйста, выберите вариант ответа!"); return; }
+    state.answers[state.idx] = +sel.value;
+    Sound.beep(); buzz(10);
+    state.idx++;
+    if (QUESTIONS[state.idx] && QUESTIONS[state.idx].retro) retroQuestion();
+    else breakTheSite();
+  };
+}
+
+document.querySelectorAll("#retro a.nav").forEach(a => {
+  a.onclick = e => { e.preventDefault(); Sound.beep(); alert("Раздел находится в разработке. Приносим извинения!"); };
+});
+
+/* «музыка сайта» — выключена по умолчанию, иначе это было бы слишком жестоко */
+let musicOn = false;
+$("#sitemusic").onclick = () => {
+  musicOn = !musicOn;
+  Sound.uglyTune(musicOn);
+  $("#sitemusic").textContent = musicOn ? "♪ Выключить музыку сайта" : "♪ Включить музыку сайта";
+};
+
+/* ==========================================================================
+   ПОЛОМКА САЙТА (3D-складывание + терминал + CRT)
+   ========================================================================== */
+let dlgResolve = null;
+
+/* иконки окошек рисуем вектором — так они остаются резкими на любом экране */
+const DLG_ICON = {
+  warn: `<svg class="ic" viewBox="0 0 32 32" aria-hidden="true">
+    <polygon points="16,2 31,29 1,29" fill="#ffdf20" stroke="#000" stroke-width="1.5" stroke-linejoin="round"/>
+    <rect x="14.4" y="11" width="3.2" height="9.5" fill="#000"/>
+    <rect x="14.4" y="22.5" width="3.2" height="3.2" fill="#000"/>
+  </svg>`,
+  err: `<svg class="ic" viewBox="0 0 32 32" aria-hidden="true">
+    <circle cx="16" cy="16" r="14" fill="#d40000" stroke="#7c0000" stroke-width="1.5"/>
+    <path d="M10.5 10.5 L21.5 21.5 M21.5 10.5 L10.5 21.5"
+          stroke="#fff" stroke-width="3.6" stroke-linecap="round"/>
+  </svg>`
+};
+
+/* системное окошко из 1998-го. Возвращает индекс нажатой кнопки */
+function retroDialog(title, text, buttons, icon) {
+  return new Promise(res => {
+    const w = $("#dlgwrap");
+    w.innerHTML = `
+      <div class="win98" role="dialog" aria-label="${esc(title)}">
+        <div class="bar"><b>${esc(title)}</b><span class="x" role="button" aria-label="Закрыть">✕</span></div>
+        <div class="in">${DLG_ICON[icon || "warn"]}<div class="tx">${text}</div></div>
+        <div class="btns">
+          ${buttons.map((b, i) => `<button data-i="${i}">${esc(b)}</button>`).join("")}
+        </div>
+      </div>`;
+    w.classList.add("on");
+    Sound.dialogBlip(); buzz(12);
+    const done = i => {
+      if (!dlgResolve) return;
+      dlgResolve = null;
+      w.classList.remove("on");
+      w.innerHTML = "";
+      Sound.beep();
+      res(i);
+    };
+    dlgResolve = () => done(0);                        /* «пропустить» закрывает окно */
+    w.querySelectorAll("button").forEach(b => { b.onclick = () => done(+b.dataset.i); });
+    w.querySelector(".x").onclick = () => done(0);
+  });
+}
+
+/* строки «синего экрана» — печатаются по одной */
+function bsodLines(name) {
+  return [
+    { t: "" },
+    { t: "Ошибка 0x000000BEAUTY" },
+    { t: "" },
+    { t: "Страница не может быть отображена, потому что она" },
+    { t: "недостойна человека, который её открыл." },
+    { t: "" },
+    { t: "  МОДУЛЬ:   times_new_roman.dll", c: "dim" },
+    { t: "  ПРИЧИНА:  2003 год", c: "dim" },
+    { t: "  РЕШЕНИЕ:  удалить 2003 год", c: "dim" },
+    { t: "" },
+    { t: "Удаляю 2003 год ................... готово" },
+    { t: "Удаляю жёлтый маркиз .............. с удовольствием" },
+    { t: "Ищу что-нибудь, достойное " + name + " ..." },
+    { t: "Найдено: 1 результат." },
+    { t: "" },
+    { t: "Собираю нормальный сайт. Это займёт 3 секунды" },
+    { t: "и все мои силы." }
+  ];
+}
+
+let breaking = false;
+async function breakTheSite() {
+  /* guard: двойной тап по «ДАЛЕЕ» запускал бы вторую параллельную поломку —
+     диалоги перетирали бы друг друга вплоть до зависшей подложки */
+  if (breaking) return;
+  breaking = true;
+  const retro = $("#retro"), crt = $("#crt");
+  retro.style.pointerEvents = "none";      /* ретро-мир больше не кликабелен */
+  const nap = ms => sleep(ms);
+
+  /* музыку сайта здесь выключаем принудительно — дальше начинается красота */
+  musicOn = false; Sound.uglyTune(false);
+  $("#sitemusic").textContent = "♪ Включить музыку сайта";
+
+  /* ---- 1. сайт делает вид, что просто споткнулся ---- */
+  Sound.glitchTick();
+  await nap(420);
+  await retroDialog("Ошибка", "Не удалось загрузить <b>вопрос №3</b>.", ["OK"], "err");
+  await nap(260);
+  await retroDialog("Ошибка", "Не удалось загрузить сообщение об ошибке.", ["OK"], "err");
+  await nap(300);
+
+  /* ---- 2. и признаётся ---- */
+  const shame = await retroDialog("Внимание",
+    "Этот сайт только что понял, <b>кто</b> его открыл,<br>и ему стало стыдно.",
+    ["Понятно", "Не стыдно"], "warn");
+  if (shame === 1) {
+    await nap(220);
+    await retroDialog("Внимание", "Всё равно стыдно. Times New Roman не прощают.", ["Ладно"], "warn");
+  }
+  await nap(300);
+
+  /* ---- 3. страница начинает разваливаться прямо под окошком ---- */
+  retro.classList.add("dying");
+  Sound.thud(); buzz([26, 50, 26]);
+  await nap(700);
+
+  const ask = await retroDialog("Система",
+    "Разрешить полностью переделать этот сайт?<br><span style='font-size:11px'>(рекомендуется)</span>",
+    ["Разрешить", "Отмена"], "warn");
+  if (ask === 1) {
+    await nap(200);
+    await retroDialog("Система", "Отмена недоступна: ты слишком важна.", ["Ладно"], "warn");
+  }
+
+  /* ---- 4. сигнал пропадает рывками ---- */
+  await nap(260);
+  Sound.glitchTick();
+  $("#flicker").classList.add("on");
+  Sound.thud();
+  await nap(620);
+
+  /* ---- 5. и сразу синий экран, как при настоящем крахе ---- */
+  $("#retro-3d").style.display = "none";
+  $("#flicker").classList.remove("on");
+  const b = $("#bsod");
+  b.classList.add("on");
+  b.innerHTML = `<span class="plate">ВСЁ_СЛОМАЛОСЬ</span>\n`;
+  for (const line of bsodLines(state.name)) {
+    const div = document.createElement("div");
+    if (line.c) div.className = line.c;
+    div.textContent = line.t || " ";      /* пустая строка тоже должна занимать место */
+    b.appendChild(div);
+    b.scrollTop = b.scrollHeight;          /* на низком экране доскролливаем к панчлайну */
+    if (line.t) Sound.glitchTick();
+    await nap(line.t ? 900 : 390);
+  }
+  b.insertAdjacentHTML("beforeend", '<div class="cur">_</div>');
+  await nap(2700);
+
+  /* ---- 6. премиальная часть: экран гаснет, и в тишине рождается свет ---- */
+  Sound.sweepDown();
+  crt.classList.add("collapse");
+  await sleep(600);
+  b.classList.remove("on");
+  b.innerHTML = "";
+  await sleep(520);                                    /* пауза в темноте — она нужна */
+
+  musicOn = false; Sound.uglyTune(false);  /* страховка: луп не должен пролезть в красоту */
+  document.body.classList.add("modern");
+  document.documentElement.style.background = "#0b0716";   /* чтобы по краям не мигнул бирюзовый */
+  $("#modern").classList.add("on", "bloom");
+  $("#birth").classList.add("on");
+  startFx();
+  state.idx = 2;
+  renderQuestion();
+  crt.classList.remove("collapse");
+  crt.classList.add("flashout");
+  Sound.bloom(); buzz(45);
+  await sleep(1400);
+  crt.classList.remove("flashout");
+  crt.style.opacity = "0";
+  $("#birth").classList.remove("on");
+  $("#sound").classList.add("on");
+  $("#cursor").classList.add("live");
+}
+
+/* ==========================================================================
+   КРАСИВЫЕ ЭКРАНЫ
+   ========================================================================== */
+const R = 23, CIRC = 2 * Math.PI * R;
+
+function ringHTML(done, total) {
+  const off = CIRC * (1 - done / total);
+  return `<div class="ring-wrap">
+    <svg class="ring" viewBox="0 0 50 50">
+      <circle class="bg" cx="25" cy="25" r="${R}"></circle>
+      <circle class="fg" cx="25" cy="25" r="${R}"
+        stroke-dasharray="${CIRC.toFixed(2)}" stroke-dashoffset="${off.toFixed(2)}"></circle>
+    </svg>
+    <div class="ring-num">${done}/${total}</div>
+  </div>`;
+}
+
+/* слова появляются по одному — по этому и держится «дорогое» ощущение */
+function words(text, cls, start) {
+  let d = start;
+  const out = text.split(" ").filter(Boolean).map(w => {
+    const s = `<w style="animation-delay:${d.toFixed(2)}s">${esc(w)}</w>`;
+    d += .055;
+    return s;
+  }).join(" ");
+  return { html: cls ? `<span class="${cls}">${out}</span>` : out, next: d };
+}
+
+/* шесть парных 3D-переходов; каждый вопрос получает свой */
+const TRANSITIONS = ["carousel", "flip", "depth", "fold", "rise", "spiral"];
+
+async function swap(inner, kind) {
+  const stage = $("#stage");
+  const k = TRANSITIONS.indexOf(kind) >= 0 ? kind : "carousel";
+  /* уходит ПОСЛЕДНИЙ холдер (актуальная карточка). Первый querySelector здесь
+     брал бы ещё не удалённый прошлый холдер — при быстрых ответах (и всегда
+     при «уменьшить анимацию») текущая карточка застревала бы на экране */
+  const holders = stage.querySelectorAll(".holder");
+  const oldHolder = holders.length ? holders[holders.length - 1] : null;
+  holders.forEach(h => { if (h !== oldHolder) h.remove(); });
+
+  if (oldHolder) {
+    const old = oldHolder.querySelector(".card");
+    const outKind = (old && old.dataset.kind) || k;
+    /* выводим уходящую карточку из потока: тогда новая может въезжать
+       одновременно, и на экране не остаётся пустой дыры. Метрики берём
+       layout-ные (offset*), а не projected bbox наклонённого 3D-холдера,
+       и компенсируем текущий скролл ДО его сброса */
+    const left = oldHolder.offsetLeft;
+    const top = oldHolder.offsetTop - stage.scrollTop;
+    const width = oldHolder.offsetWidth;
+    stage.scrollTop = 0;
+    oldHolder.style.position = "absolute";
+    oldHolder.style.left = left + "px";
+    oldHolder.style.top = top + "px";
+    oldHolder.style.width = width + "px";
+    oldHolder.style.margin = "0";
+    oldHolder.style.pointerEvents = "none";
+    if (old) {
+      TRANSITIONS.forEach(t => old.classList.remove("in-" + t));
+      old.classList.add("out-" + outKind);
+    }
+    setTimeout(() => oldHolder.remove(), 1100);
+    await sleep(300);                       /* переходы намеренно перекрываются */
+  }
+
+  const holder = document.createElement("div");
+  holder.className = "holder";
+  holder.innerHTML = `<section class="card">
+      <div class="sweep"><i></i></div>${inner}
+    </section>`;
+  stage.appendChild(holder);
+  const card = holder.querySelector(".card");
+  card.dataset.kind = k;
+  card.classList.add("in-" + k);
+  tiltReset();
+  return card;
+}
+
+function renderQuestion() {
+  const item = QUESTIONS[state.idx];
+  const step = state.idx - 2;                                  /* 0 для первого красивого вопроса */
+  const kind = TRANSITIONS[step % TRANSITIONS.length];         /* переход — свой у каждого вопроса */
+  const scheme = step % 5;                                     /* и своя схема выпадения вариантов */
+  let title;
+  if (Array.isArray(item.q)) {
+    const a = words(item.q[0], null, .1);
+    const b = words(item.q[1], "hl", a.next);
+    title = a.html + " " + b.html;
+  } else {
+    title = words(item.q, null, .1).html;
+  }
+
+  chosen.clear();
+  /* возвращаем promise: submitAnswer() держит locked до монтажа новой карточки */
+  return swap(`
+    <div class="head">
+      ${ringHTML(state.idx, TOTAL)}
+      <div class="step-label">Вопрос ${state.idx + 1}</div>
+    </div>
+    <h2 class="q">${title}</h2>
+    <div class="opts s${scheme}">
+      ${item.opts.map((o, i) => `
+        <button class="opt" data-i="${i}" style="animation-delay:${(.55 + i * .14).toFixed(2)}s">
+          <span class="key">${i + 1}</span>${esc(o)}
+        </button>`).join("")}
+    </div>
+    <div class="submit-row reveal" style="animation-delay:${(.55 + item.opts.length * .14).toFixed(2)}s">
+      <button class="btn primary submit" id="submit" disabled>Ответить</button>
+    </div>
+    <div class="hint">можно отметить несколько · клавиши 1–${item.opts.length} · Enter — ответить</div>
+  `, kind).then(card => {
+    card.querySelectorAll(".opt").forEach(btn => {
+      btn.onclick = e => toggleOpt(btn, +btn.dataset.i, e);
+      /* как только вариант «доехал», снимаем анимацию — иначе её последний
+         кадр перебьёт transform выбора. Фильтр по target обязателен:
+         animationend от .ripple всплывает и обрывал бы въезд варианта */
+      btn.addEventListener("animationend", e => {
+        if (e.target !== btn) return;
+        btn.style.animation = "none";
+      });
+    });
+    card.querySelector("#submit").onclick = () => submitAnswer();
+    return card;
+  });
+}
+
+let locked = false;
+const chosen = new Set();          /* отмеченные варианты текущего вопроса */
+
+/* отметить/снять вариант — переход дальше только по кнопке «Ответить» */
+function toggleOpt(btn, i, evt) {
+  if (locked) return;
+  const card = btn.closest(".card");
+  const on = !btn.classList.contains("picked");
+  btn.classList.toggle("picked", on);
+
+  if (on) {
+    chosen.add(i);
+    const r = btn.getBoundingClientRect();
+    const rip = document.createElement("span");
+    rip.className = "ripple";
+    const x = (evt && evt.clientX ? evt.clientX - r.left : r.width / 2);
+    const y = (evt && evt.clientY ? evt.clientY - r.top : r.height / 2);
+    rip.style.left = x + "px"; rip.style.top = y + "px";
+    rip.style.transform = "translate(-50%,-50%)";
+    btn.appendChild(rip);
+    Sound.pick(i); buzz(12);
+    burst(r.left + x, r.top + y);
+  } else {
+    chosen.delete(i);
+    Sound.voice({ freq: 300, dur: .3, gain: .04, attack: .02 });   /* мягкое «снял» */
+    buzz(8);
+  }
+
+  const sub = card.querySelector("#submit");
+  if (sub) sub.disabled = chosen.size === 0;
+}
+
+async function submitAnswer() {
+  if (locked || !chosen.size) return;
+  locked = true;
+  const h = liveHolder();
+  const card = h && h.querySelector(".card");
+  if (card) {
+    card.querySelectorAll(".opt").forEach(b => {
+      if (!b.classList.contains("picked")) b.classList.add("dim");
+    });
+    const sub = card.querySelector("#submit");
+    if (sub) { sub.disabled = true; sub.textContent = "Принято ♥"; }
+  }
+
+  state.answers[state.idx] = [...chosen].sort((a, b) => a - b);
+  Sound.pick(state.idx - 2 + 3); buzz([14, 40, 14]);
+
+  await sleep(760);
+  state.idx++;
+  /* locked снимаем ТОЛЬКО когда новая карточка смонтирована: иначе в окне
+     перекрытия переходов клавиши кликали бы по уезжающей карточке */
+  if (state.idx < TOTAL) await renderQuestion(); else await showResult();
+  locked = false;
+}
+
+document.addEventListener("keydown", e => {
+  if (!$("#modern").classList.contains("on") || state.done || locked) return;
+  const h = liveHolder();
+  if (!h || h.style.pointerEvents === "none") return;   /* карточка уже уезжает */
+  if (e.key === "Enter") { e.preventDefault(); submitAnswer(); return; }
+  const n = parseInt(e.key, 10);
+  if (n >= 1 && n <= 4) {
+    const btn = h.querySelector(`.opt[data-i="${n - 1}"]`);
+    if (btn) btn.click();
+  }
+});
+
+/* ==========================================================================
+   TELEGRAM — ответы уходят автору в личного бота.
+   Сайт — подарок, он обязан доигрываться до письма при любом раскладе,
+   поэтому здесь всё молча: нет сети, режет CORS, ошибся токен — неважно,
+   исключение проглатывается и на экране не появляется ничего.
+   ========================================================================== */
+let tgSent = false;
+
+function tgMessage() {
+  const out = [
+    "<b>Ответы: " + esc(state.name || CONFIG.defaultName) + "</b>",
+    "<i>" + esc(new Date().toLocaleString("ru-RU")) + "</i>"
+  ];
+  QUESTIONS.forEach((q, i) => {
+    /* у ретро-вопросов q — строка и ответ один; у красивых q — две части,
+       а ответ — массив индексов (там множественный выбор) */
+    /* первая часть уже заканчивается пробелом — схлопываем, чтобы не было двойных */
+    const title = (Array.isArray(q.q) ? q.q.join(" ") : q.q).replace(/\s+/g, " ").trim();
+    const a = state.answers[i];
+    const picked = Array.isArray(a) ? a : (typeof a === "number" ? [a] : []);
+    out.push("");
+    out.push("<b>" + (i + 1) + ".</b> " + esc(title) + (q.retro ? " <i>(ретро)</i>" : ""));
+    out.push(picked.length ? picked.map(n => "• " + esc(q.opts[n])).join("\n") : "• —");
+  });
+  return out.join("\n");
+}
+
+/* «выстрелил и забыл» — вызывающий не ждёт ответа, показ результата не тормозит */
+function tgSend() {
+  try {
+    const tg = CONFIG.tg;
+    if (!tg || !tg.enabled || !tg.token || !tg.chatId || tgSent) return;
+    tgSent = true;
+    fetch("https://api.telegram.org/bot" + tg.token + "/sendMessage", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: tg.chatId,
+        text: tgMessage(),
+        parse_mode: "HTML",
+        disable_web_page_preview: true
+      })
+    }).catch(() => {});
+  } catch (e) {}
+}
+
+/* --- результат --- */
+async function showResult() {
+  state.done = true;
+  tgSend();
+  const arch = RESULT;
+  const card = await swap(`
+    <div class="globe-wrap"><canvas id="globe" width="168" height="168"></canvas></div>
+    <p class="score" id="pct">0%</p>
+    <div class="score-cap">совместимость</div>
+    <h2 class="arch reveal" style="animation-delay:.45s">${esc(arch.title)}</h2>
+    <p class="arch-sub reveal" style="animation-delay:.65s">${esc(arch.sub)}</p>
+    <p class="joke reveal" style="animation-delay:.85s">и да — тест был подстроен. как и вся эта страница.</p>
+    <div class="divider reveal" style="animation-delay:1s"></div>
+    <div class="env-wrap reveal" style="animation-delay:1.15s;pointer-events:none">
+      <div class="env-scene">
+        <div class="env" id="env" role="button" tabindex="0" aria-label="Открыть письмо">
+          <!-- корпус конверта -->
+          <svg class="layer back" viewBox="0 0 300 200" aria-hidden="true">
+            <defs>
+              <linearGradient id="envBody" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#e7bcd4"/><stop offset="1" stop-color="#cf9ab8"/>
+              </linearGradient>
+            </defs>
+            <rect x="0" y="0" width="300" height="200" rx="7" fill="url(#envBody)"/>
+          </svg>
+
+          <!-- лист письма -->
+          <div class="paper"><i>♥</i><b></b><b></b><b></b></div>
+
+          <!-- передняя часть: боковые клапаны и нижний, все через точку (150,112) -->
+          <svg class="layer front" viewBox="0 0 300 200" aria-hidden="true">
+            <defs>
+              <linearGradient id="envBottom" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#fce9f2"/><stop offset="1" stop-color="#f0cbdf"/>
+              </linearGradient>
+            </defs>
+            <path d="M0 6 L150 112 L300 6 L300 193 Q300 200 293 200 L7 200 Q0 200 0 193 Z" fill="url(#envBottom)"/>
+            <path d="M0 6 L150 112 L0 197 Z" fill="#e3b3cd" opacity=".85"/>
+            <path d="M300 6 L150 112 L300 197 Z" fill="#e3b3cd" opacity=".85"/>
+            <path d="M4 199 L150 112 L296 199 Z" fill="#fbe4ee"/>
+            <path d="M0 6 L150 112 L300 6" fill="none" stroke="rgba(255,255,255,.75)" stroke-width="1.4"/>
+            <path d="M4 199 L150 112 L296 199" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="1.2"/>
+          </svg>
+
+          <!-- створка: тот же треугольник, что и «V» кармана -->
+          <svg class="flap" viewBox="0 0 300 116" aria-hidden="true">
+            <defs>
+              <linearGradient id="envFlap" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#f2d2e2"/><stop offset=".7" stop-color="#dda9c6"/>
+                <stop offset="1" stop-color="#c891ae"/>
+              </linearGradient>
+            </defs>
+            <path d="M7 0 L293 0 Q300 0 300 6 L150 112 L0 6 Q0 0 7 0 Z" fill="url(#envFlap)"/>
+            <path d="M0 6 L150 112 L300 6" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="1.2"/>
+          </svg>
+
+          <span class="seal">♥</span>
+        </div>
+      </div>
+      <div class="env-tip" id="envtip">${TOUCH ? "нажми на конверт" : "нажми на конверт"}</div>
+    </div>
+  `, "depth");
+
+  Sound.finish(); buzz([16, 50, 16]);
+  confettiRain();
+  startGlobe();
+  countUp($("#pct"), 100, 2100);
+
+  /* конверт невидим первые ~1.2 с (reveal-задержка), но события ловил бы:
+     случайный тап уносил бы на письмо, не показав результат */
+  setTimeout(() => {
+    const w = card.querySelector(".env-wrap");
+    if (w) w.style.pointerEvents = "";
+  }, 1300);
+
+  const env = card.querySelector("#env");
+  let opened = false;
+  const openEnvelope = async () => {
+    if (opened) return;
+    opened = true;
+    Sound.paper(); buzz([12, 40, 12]);
+    env.classList.add("open");
+    $("#envtip").textContent = "…";
+    await sleep(760);
+    env.classList.add("rise");
+    heartRain(18);
+    await sleep(820);
+    renderLetter();
+  };
+  env.onclick = openEnvelope;
+  env.onkeydown = e => {
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openEnvelope(); }
+  };
+}
+
+/* ==========================================================================
+   НЕОНОВЫЙ ЗЕМНОЙ ШАР
+   Контуры материков заданы грубо, в градусах [долгота, широта].
+   Проекция ортографическая: то, что на обратной стороне, не рисуем.
+   ========================================================================== */
+const LAND = [
+  /* Африка */
+  [[-17,14],[-16,20],[-5,25],[10,32],[20,32],[32,31],[35,23],[38,18],[43,12],[51,12],[45,5],
+   [41,-2],[40,-16],[35,-24],[27,-33],[20,-34],[14,-22],[12,-5],[9,4],[-4,5],[-11,7],[-17,14]],
+  /* Европа */
+  [[-9,43],[-2,48],[3,51],[8,54],[12,55],[20,54],[28,56],[30,60],[24,65],[30,70],[15,68],
+   [10,63],[5,58],[0,50],[-5,45],[-9,43]],
+  /* Азия */
+  [[28,56],[45,48],[52,42],[60,44],[70,42],[78,36],[88,30],[98,28],[105,22],[110,20],
+   [120,32],[122,40],[130,43],[141,45],[145,44],[142,52],[152,60],[168,66],[178,68],
+   [160,70],[140,73],[110,76],[85,76],[68,73],[55,70],[45,66],[35,62],[30,60],[28,56]],
+  /* Индия */
+  [[68,24],[72,20],[75,14],[78,8],[81,12],[87,21],[92,22],[89,26],[80,27],[72,28],[68,24]],
+  /* Северная Америка */
+  [[-168,65],[-160,58],[-148,60],[-135,57],[-127,50],[-124,40],[-118,33],[-110,24],
+   [-97,17],[-90,20],[-83,22],[-81,27],[-80,32],[-75,36],[-70,42],[-64,45],[-56,50],
+   [-63,58],[-78,63],[-95,69],[-120,70],[-145,70],[-160,71],[-168,65]],
+  /* Гренландия */
+  [[-45,60],[-32,65],[-22,71],[-25,78],[-38,83],[-55,81],[-60,74],[-52,66],[-45,60]],
+  /* Южная Америка */
+  [[-81,-4],[-77,-10],[-72,-18],[-70,-24],[-72,-38],[-74,-46],[-70,-55],[-64,-54],
+   [-62,-42],[-57,-34],[-52,-30],[-48,-25],[-40,-21],[-35,-9],[-42,-2],[-50,2],
+   [-58,8],[-68,11],[-76,8],[-81,-4]],
+  /* Австралия */
+  [[113,-22],[114,-30],[118,-34],[128,-32],[137,-35],[144,-38],[150,-37],[153,-28],
+   [148,-20],[142,-12],[133,-12],[125,-14],[117,-20],[113,-22]]
+];
+
+/* Уплотняем контуры: между вершинами добавляем точки каждые ~2.5°.
+   Без этого линия «прыгает» при уходе за горизонт — именно это и выглядело странно. */
+const LAND_D = LAND.map(poly => {
+  const out = [];
+  for (let i = 0; i < poly.length; i++) {
+    const a = poly[i], b = poly[(i + 1) % poly.length];
+    const span = Math.max(Math.abs(b[0] - a[0]), Math.abs(b[1] - a[1]));
+    const n = Math.max(1, Math.ceil(span / 2.5));
+    for (let s = 0; s < n; s++) {
+      out.push([a[0] + (b[0] - a[0]) * s / n, a[1] + (b[1] - a[1]) * s / n]);
+    }
+  }
+  return out;
+});
+
+let globeRaf = 0, globeRot = -20;
+function startGlobe() {
+  const cv = $("#globe");
+  if (!cv) return;
+  const g = cv.getContext("2d");
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  const S = Math.round(cv.clientWidth || 168);   /* размер берём из CSS: разный на ПК и телефоне */
+  cv.width = Math.round(S * dpr); cv.height = Math.round(S * dpr);
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const cx0 = S / 2, cy0 = S / 2, R = S / 2 - 6;
+  const rad = d => d * Math.PI / 180;
+
+  /* точка сферы → единичный вектор и экранные координаты; z>0 значит «к нам лицом» */
+  const vec = (lon, lat) => {
+    const la = rad(lat), lo = rad(lon - globeRot);
+    return { vx: Math.cos(la) * Math.sin(lo), vy: -Math.sin(la), vz: Math.cos(la) * Math.cos(lo) };
+  };
+  const scr = v => ({ x: cx0 + R * v.vx, y: cy0 + R * v.vy, z: v.vz });
+  /* точка ровно на горизонте между видимой и скрытой — линия доходит до края, а не прыгает */
+  const edge = (a, b) => {
+    const t = a.vz / (a.vz - b.vz);
+    const vx = a.vx + (b.vx - a.vx) * t, vy = a.vy + (b.vy - a.vy) * t;
+    const len = Math.hypot(vx, vy) || 1;
+    return { x: cx0 + R * vx / len, y: cy0 + R * vy / len, z: 0 };
+  };
+
+  /* обводка списка точек с аккуратным обрезанием по горизонту */
+  const strokePath = (vs, close) => {
+    const n = vs.length;
+    let open = false;
+    g.beginPath();
+    for (let i = 0; i < n; i++) {
+      const a = vs[i], b = vs[(i + 1) % n];
+      if (!close && i === n - 1) break;
+      const av = a.vz > 0, bv = b.vz > 0;
+      if (av && bv) {
+        const pa = scr(a), pb = scr(b);
+        if (!open) { g.moveTo(pa.x, pa.y); open = true; }
+        g.lineTo(pb.x, pb.y);
+      } else if (av && !bv) {
+        const pa = scr(a), pe = edge(a, b);
+        if (!open) { g.moveTo(pa.x, pa.y); open = true; }
+        g.lineTo(pe.x, pe.y);
+        open = false;
+      } else if (!av && bv) {
+        const pe = edge(b, a), pb = scr(b);
+        g.moveTo(pe.x, pe.y); open = true;
+        g.lineTo(pb.x, pb.y);
+      } else {
+        open = false;
+      }
+    }
+    g.stroke();
+  };
+
+  const draw = () => {
+    if (!cv.isConnected) { globeRaf = 0; return; }   /* экран сменился — останавливаемся */
+    g.clearRect(0, 0, S, S);
+
+    /* океан */
+    const oc = g.createRadialGradient(cx0 - R * .3, cy0 - R * .35, R * .1, cx0, cy0, R);
+    oc.addColorStop(0, "rgba(46,32,96,.95)");
+    oc.addColorStop(.65, "rgba(22,14,58,.95)");
+    oc.addColorStop(1, "rgba(9,5,30,.98)");
+    g.save();
+    g.beginPath(); g.arc(cx0, cy0, R, 0, 6.2832); g.closePath();
+    g.fillStyle = oc; g.fill();
+    g.clip();                                        /* всё дальше — только внутри диска */
+
+    /* сетка меридианов и параллелей */
+    g.lineWidth = .7;
+    g.strokeStyle = "rgba(127,230,255,.28)";
+    g.shadowColor = "rgba(127,230,255,.5)"; g.shadowBlur = 4;
+    for (let lat = -60; lat <= 60; lat += 30) {
+      const vs = [];
+      for (let lon = -180; lon <= 180; lon += 4) vs.push(vec(lon, lat));
+      strokePath(vs, false);
+    }
+    for (let lon = 0; lon < 360; lon += 30) {
+      const vs = [];
+      for (let lat = -90; lat <= 90; lat += 4) vs.push(vec(lon, lat));
+      strokePath(vs, false);
+    }
+
+    /* материки: только неоновые контуры, в два прохода — мягкое гало и чёткая линия.
+       Заливку не рисуем: у полигона, наполовину ушедшего за горизонт, она схлопывалась. */
+    for (const poly of LAND_D) {
+      const vs = poly.map(p => vec(p[0], p[1]));
+      if (!vs.some(v => v.vz > 0)) continue;
+      g.lineWidth = 4;
+      g.strokeStyle = "rgba(127,230,255,.16)";
+      g.shadowColor = "rgba(127,230,255,.8)"; g.shadowBlur = 12;
+      strokePath(vs, true);
+      g.lineWidth = 1.5;
+      g.strokeStyle = "rgba(178,248,255,.95)";
+      g.shadowBlur = 7;
+      strokePath(vs, true);
+    }
+
+    /* тёплая подсветка у края — «рассвет» */
+    g.shadowBlur = 0;
+    const rim = g.createRadialGradient(cx0, cy0, R * .72, cx0, cy0, R);
+    rim.addColorStop(0, "rgba(255,143,191,0)");
+    rim.addColorStop(1, "rgba(255,143,191,.3)");
+    g.fillStyle = rim;
+    g.beginPath(); g.arc(cx0, cy0, R, 0, 6.2832); g.fill();
+    g.restore();
+
+    globeRot += REDUCED ? 0 : .12;                   /* полный оборот примерно за 50 секунд */
+    globeRaf = requestAnimationFrame(draw);
+  };
+  cancelAnimationFrame(globeRaf);
+  draw();
+}
+
+function countUp(el, to, dur) {
+  const t0 = performance.now();
+  (function tick(now) {
+    const p = Math.min(1, ((now || t0) - t0) / dur);
+    el.textContent = Math.round((1 - Math.pow(1 - p, 3)) * to) + "%";
+    if (p < 1) requestAnimationFrame(tick);
+  })(t0);
+}
+
+async function renderLetter() {
+  await swap(`
+    <div class="letter" id="letter"></div>
+    <div class="sign" id="sign" style="opacity:0">— ${esc(CONFIG.signature)}</div>
+    <div class="row" id="endrow" style="opacity:0;pointer-events:none">
+      <button class="btn primary" id="hearts">Ещё раз спасибо ♥</button>
+      <button class="btn" id="again">Пройти заново</button>
+    </div>
+  `, "flip");
+  await sleep(700);
+  await typeLetter(CONFIG.letter.replace(/\{name\}/g, state.name));
+  const sign = $("#sign"), row = $("#endrow");
+  sign.style.transition = "opacity 1s"; sign.style.opacity = "1";
+  row.style.transition = "opacity 1s"; row.style.opacity = "1";
+  row.style.pointerEvents = "auto";
+  $("#again").onclick = restart;
+  $("#hearts").onclick = () => { Sound.pick(9); buzz(14); heartRain(46); };
+}
+
+/* полный перезапуск — снова с самого страшного экрана, без перезагрузки */
+function restart() {
+  typing = false; locked = false; dlgResolve = null;
+  breaking = false; chosen.clear();
+  $("#dlgwrap").classList.remove("on"); $("#dlgwrap").innerHTML = "";
+  $("#bsod").classList.remove("on"); $("#bsod").innerHTML = "";
+  state.name = ""; state.idx = 0; state.answers = []; state.done = false;
+  tgSent = false;   /* повторное прохождение — это новое сообщение в бота */
+  /* фоновые эффекты красивого мира выключаем целиком: невидимый canvas
+     не должен молотить 60 fps весь второй ретро-прогон */
+  parts.length = 0;
+  running = false;
+  clearInterval(window.__starTimer); window.__starTimer = null;
+  $("#stage").innerHTML = "";
+  $("#modern").classList.remove("on", "bloom");
+  $("#birth").classList.remove("on");
+  document.body.classList.remove("modern");
+  document.documentElement.style.background = "";
+  $("#sound").classList.remove("on");
+  $("#cursor").classList.remove("live");
+  const retro = $("#retro");
+  retro.classList.remove("dying");
+  retro.style.pointerEvents = "";
+  $("#flicker").classList.remove("on");
+  $("#retro-3d").style.display = "";
+  $("#crt").style.opacity = "0";
+  window.scrollTo(0, 0);
+  retroIntro();
+}
+
+let typing = false;
+function typeLetter(text) {
+  return new Promise(resolve => {
+    const el = $("#letter");
+    typing = true;
+    let i = 0;
+    const t0 = performance.now();
+    const finish = () => {
+      typing = false;
+      el.textContent = text;
+      document.removeEventListener("click", skipType);
+      resolve();
+    };
+    /* скип — по «click», а не pointerdown: на телефоне жест прокрутки
+       начинается с pointerdown, и попытка отскроллить письмо (или тап по
+       кнопке звука) вываливала бы весь текст разом */
+    const skipType = e => {
+      if (e.target && e.target.closest && e.target.closest("#sound")) return;
+      if (performance.now() - t0 < 600) return;
+      if (typing) finish();
+    };
+    document.addEventListener("click", skipType);
+    if (REDUCED) return finish();
+    (function step() {
+      if (!typing) return;
+      if (i >= text.length) return finish();
+      const ch = text[i];
+      i += 1;
+      el.innerHTML = esc(text.slice(0, i)) + '<span class="cur">|</span>';
+      /* мягко едем за текстом, но не мешаем, если она отскроллила сама */
+      const st = $("#stage");
+      if (st.scrollHeight - st.scrollTop - st.clientHeight < 220) st.scrollTop = st.scrollHeight;
+      if (i % 9 === 0) Sound.keyTick();
+      const d = ch === "\n" ? 180 : ".,!?—".indexOf(ch) >= 0 ? 150 : 22 + Math.random() * 20;
+      setTimeout(step, d);
+    })();
+  });
+}
+
+/* ==========================================================================
+   3D-НАКЛОН КАРТОЧКИ ЗА ПАЛЬЦЕМ / КУРСОРОМ
+   ========================================================================== */
+let tiltRaf = 0;
+/* всегда берём последнюю карточку — предыдущая может ещё уезжать */
+const liveHolder = () => $("#stage").querySelector(".holder:last-child");
+function setTilt(nx, ny) {
+  if (REDUCED) return;
+  const h = liveHolder();
+  if (!h) return;
+  cancelAnimationFrame(tiltRaf);
+  tiltRaf = requestAnimationFrame(() => {
+    h.style.setProperty("--ty", (nx * 7).toFixed(2) + "deg");
+    h.style.setProperty("--tx", (-ny * 5).toFixed(2) + "deg");
+  });
+}
+function tiltReset() {
+  const h = liveHolder();
+  if (h) { h.style.setProperty("--ty", "0deg"); h.style.setProperty("--tx", "0deg"); }
+}
+addEventListener("pointermove", e => {
+  $("#cursor").style.transform = `translate(${e.clientX}px, ${e.clientY}px)`;
+  if (!$("#modern").classList.contains("on")) return;
+  setTilt((e.clientX / innerWidth - .5) * 2, (e.clientY / innerHeight - .5) * 2);
+}, { passive: true });
+addEventListener("touchend", tiltReset, { passive: true });
+/* наклон телефона в руке — где браузер разрешает без запроса */
+addEventListener("deviceorientation", e => {
+  if (e.gamma == null || !$("#modern").classList.contains("on")) return;
+  const g = Math.max(-30, Math.min(30, e.gamma)) / 30;
+  const b = Math.max(-30, Math.min(30, (e.beta || 0) - 35)) / 30;
+  setTilt(g, b);
+}, { passive: true });
+
+/* ==========================================================================
+   CANVAS: пылинки, вспышки, конфетти, сердечки, падающие звёзды
+   ========================================================================== */
+const cv = $("#fx"), cx = cv.getContext("2d");
+let W = 0, H = 0, dust = [], parts = [], running = false;
+
+function resize() {
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  W = cv.clientWidth || innerWidth; H = cv.clientHeight || innerHeight;
+  cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+  cx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+/* при смене размера/поворота пересобираем частицы и глобус под новый размер */
+const refit = () => { resize(); seedDust(); if ($("#globe")) startGlobe(); };
+addEventListener("resize", refit);
+addEventListener("orientationchange", () => setTimeout(refit, 250));
+
+function seedDust() {
+  const n = REDUCED ? 12 : Math.min(95, Math.round(W * H / 15000));
+  dust = Array.from({ length: n }, () => ({
+    x: Math.random() * W, y: Math.random() * H,
+    r: .6 + Math.random() * 2, vx: (Math.random() - .5) * .16,
+    vy: -.08 - Math.random() * .3, a: .12 + Math.random() * .48, ph: Math.random() * 6.28
+  }));
+}
+
+function startFx() {
+  resize(); seedDust();
+  if (!running) { running = true; requestAnimationFrame(loop); }
+  if (!REDUCED && !window.__starTimer)
+    window.__starTimer = setInterval(() => { if (Math.random() < .55) shootingStar(); }, 9000);
+}
+
+function loop(t) {
+  if (!running) return;          /* restart() гасит цикл — не жжём батарею в ретро-мире */
+  cx.clearRect(0, 0, W, H);
+  for (const d of dust) {
+    d.x += d.vx + Math.sin(t / 2600 + d.ph) * .15;
+    d.y += d.vy;
+    if (d.y < -12) { d.y = H + 10; d.x = Math.random() * W; }
+    if (d.x < -12) d.x = W + 10; else if (d.x > W + 12) d.x = -10;
+    const tw = .55 + .45 * Math.sin(t / 700 + d.ph);
+    cx.beginPath(); cx.arc(d.x, d.y, d.r, 0, 6.2832);
+    cx.fillStyle = `rgba(255,235,250,${(d.a * tw).toFixed(3)})`;
+    cx.fill();
+  }
+  for (let i = parts.length - 1; i >= 0; i--) {
+    const p = parts[i];
+    p.vy += p.g; p.vx *= .995;
+    p.x += p.vx; p.y += p.vy; p.rot += p.vr; p.life--;
+    /* за нижним краем отсеиваем только ПАДАЮЩИЕ: сердечки стартуют из-под
+       экрана и летят вверх — без проверки vy две трети гибли на первом кадре */
+    if (p.life <= 0 || (p.vy > 0 && p.y > H + 80)) { parts.splice(i, 1); continue; }
+    const al = Math.max(0, Math.min(1, p.life / p.fade));
+    cx.save();
+    cx.translate(p.x, p.y); cx.rotate(p.rot); cx.globalAlpha = al;
+    if (p.kind === "heart") { cx.fillStyle = p.c; heartPath(cx, p.s); cx.fill(); }
+    else if (p.kind === "spark") { cx.beginPath(); cx.arc(0, 0, p.s, 0, 6.2832); cx.fillStyle = p.c; cx.fill(); }
+    else if (p.kind === "star") {
+      const grd = cx.createLinearGradient(0, 0, -p.len, 0);
+      grd.addColorStop(0, "rgba(255,255,255,.95)"); grd.addColorStop(1, "rgba(255,255,255,0)");
+      cx.strokeStyle = grd; cx.lineWidth = 1.6; cx.lineCap = "round";
+      cx.beginPath(); cx.moveTo(0, 0); cx.lineTo(-p.len, 0); cx.stroke();
+    } else { cx.fillStyle = p.c; cx.fillRect(-p.s / 2, -p.s / 4, p.s, p.s / 2); }
+    cx.restore();
+  }
+  requestAnimationFrame(loop);
+}
+
+function heartPath(c, s) {
+  c.beginPath();
+  c.moveTo(0, s * .3);
+  c.bezierCurveTo(-s, -s * .5, -s * .5, -s * 1.1, 0, -s * .45);
+  c.bezierCurveTo(s * .5, -s * 1.1, s, -s * .5, 0, s * .3);
+  c.closePath();
+}
+
+const PALETTE = ["#ff8fbf", "#a98cff", "#7fe6ff", "#ffd79a", "#ffffff"];
+const rnd = (a, b) => a + Math.random() * (b - a);
+const pick = a => a[(Math.random() * a.length) | 0];
+
+function burst(x, y) {
+  if (REDUCED) return;
+  for (let i = 0; i < 18; i++) parts.push({
+    kind: "spark", x, y, s: rnd(1, 3), vx: rnd(-2.8, 2.8), vy: rnd(-3.2, .6),
+    g: .045, rot: 0, vr: 0, c: pick(PALETTE), life: rnd(34, 64), fade: 56
+  });
+}
+function confettiRain() {
+  const n = REDUCED ? 24 : (TOUCH ? 110 : 170);
+  for (let i = 0; i < n; i++) parts.push({
+    kind: i % 5 === 0 ? "heart" : "conf",
+    x: rnd(0, W), y: rnd(-H * .6, -20), s: rnd(5, 12),
+    vx: rnd(-1.1, 1.1), vy: rnd(1, 3.4), g: .028,
+    rot: rnd(0, 6.28), vr: rnd(-.13, .13), c: pick(PALETTE), life: rnd(240, 460), fade: 90
+  });
+}
+function heartRain(n) {
+  if (parts.length > 700) return;          /* спам по «Ещё раз спасибо» не копит тысячи частиц */
+  const k = REDUCED ? Math.min(10, n) : n;
+  for (let i = 0; i < k; i++) parts.push({
+    kind: "heart", x: rnd(W * .08, W * .92), y: H + rnd(10, 220), s: rnd(7, 17),
+    vx: rnd(-.5, .5), vy: rnd(-3.6, -1.9), g: .012, rot: rnd(-.3, .3), vr: rnd(-.03, .03),
+    c: pick(["#ff8fbf", "#ff5f97", "#ffd79a", "#ffffff"]), life: rnd(160, 270), fade: 80
+  });
+}
+function shootingStar() {
+  const y = rnd(0, H * .45);
+  parts.push({
+    kind: "star", x: rnd(W * .1, W), y, s: 1, len: rnd(90, 190),
+    vx: rnd(-7, -4.5), vy: rnd(1.6, 3), g: 0,
+    rot: Math.atan2(2.3, -5.5), vr: 0, c: "#fff", life: 110, fade: 60
+  });
+}
+
+/* ==========================================================================
+   СТАРТ
+   ========================================================================== */
+/* мягкая ловушка «назад»: случайный свайп от края (частый жест на телефоне)
+   не должен стирать прогресс теста — страница остаётся, выход со второго раза */
+try {
+  history.pushState(null, "");
+  addEventListener("popstate", () => { try { history.pushState(null, ""); } catch (e) {} });
+} catch (e) {}
+
+retroIntro();
+</script>
+</body>
+</html>
