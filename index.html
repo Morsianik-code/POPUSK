@@ -711,6 +711,45 @@ body.modern { margin: 0; overflow: hidden; overscroll-behavior: none; background
 .env-tip { margin-top: 16px; font-size: 13px; color: var(--ink-dim); animation: tip 2.4s ease-in-out infinite; }
 @keyframes tip { 50% { opacity: .45; } }
 
+/* --- торт со свечкой: финальный экран --- */
+.cake-wrap { position: relative; width: min(210px, 62vw); margin: 0 auto 6px; }
+.cake { display: block; width: 100%; height: auto; overflow: visible;
+  filter: drop-shadow(0 20px 26px rgba(18,4,30,.55)); }
+/* пламя качается вокруг основания фитиля, а не вокруг своего центра */
+.cake .flame { transform-origin: 100px 44px; animation: flame 1.7s ease-in-out infinite; }
+@keyframes flame {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  30%      { transform: scale(1.06, .94) rotate(-3.5deg); }
+  60%      { transform: scale(.95, 1.08) rotate(3deg); }
+}
+.cake .halo { transform-origin: 100px 30px; animation: haloBeat 1.7s ease-in-out infinite; }
+@keyframes haloBeat { 50% { transform: scale(1.16); opacity: .75; } }
+/* тёплый свет от свечки ложится на верхний ярус */
+.cake-wrap::after {
+  content: ""; position: absolute; left: 50%; top: 4%;
+  width: 62%; height: 46%; margin-left: -31%;
+  border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle, rgba(255,215,154,.4), transparent 66%);
+  filter: blur(14px); animation: haloBeat 1.7s ease-in-out infinite;
+}
+.bday-title {
+  text-align: center; font-family: var(--font-display); font-weight: 400;
+  font-size: clamp(27px, 7.6vw, 38px); line-height: 1.28; margin: 0 0 6px;
+  background: linear-gradient(100deg, var(--gold), var(--rose) 50%, var(--violet));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.bday-text {
+  font-family: var(--font-hand); font-style: italic; font-synthesis: none;
+  font-size: clamp(16px, 4.4vw, 19px); line-height: 2; letter-spacing: .015em;
+  white-space: pre-wrap; color: #fff7fc; text-align: center;
+  text-shadow: 0 1px 14px rgba(255,180,215,.28); margin: 0;
+}
+@media (orientation: landscape) and (max-height: 560px) {
+  .cake-wrap { width: 118px; margin-bottom: 2px; }
+  .bday-title { font-size: 22px; }
+  .bday-text { font-size: 14.5px; line-height: 1.75; }
+}
+
 /* --- письмо --- */
 .letter {
   font-family: var(--font-hand);
@@ -938,9 +977,9 @@ body.modern { margin: 0; overflow: hidden; overscroll-behavior: none; background
 const CONFIG = {
   /* имя всегда одно, что бы ни ввели в поле: поставь "" — и тогда
      будет использоваться введённое, а defaultName станет запасным */
-  forceName: "Саша",
-  defaultName: "Саша",
-  signature:   "твой друн Макс, который это всё написал для подруни Саши!",
+  forceName: "Даша",
+  defaultName: "Даша",
+  signature:   "твой друн Макс, который это всё написал для подруни Даши!",
   /* Ответы тихо уходят в личного бота автора — чтобы он увидел, что она
      навыбирала. Для неё это невидимо: ни «отправлено», ни ошибок.
      chatId пустой — отправки просто нет; enabled:false — сайт вообще не
@@ -957,11 +996,13 @@ const CONFIG = {
 
 Всё, что было до этого — шутка. А это уже нет.
 
-Ты из тех людей, рядом с которыми я выдыхаю. Не потому, что ты умеешь красиво говорить, а потому что ты остаёшься. В моменты, когда я сам себе (и тебе) надоедаю — ты рядом. Спокойно, без пафоса, будто это само собой.
+Знаешь, есть люди, с которыми можно просто быть. Не подбирать слова, не играть роль, не напрягаться. Ты — из таких. Рядом с тобой я чувствую, что можно быть собой, и это нормально.
 
-Ты часто и не замечаешь, как сильно помогаешь. Одна твоя фраза иногда разворачивает мой день обратно к свету. Я не всегда говорю это вслух — поэтому написал целую страницу, чтобы точно дошло :)
+Ты можешь написать одну фразу — и день, который шёл куда-то не туда, вдруг разворачивается. Ты даже не замечаешь, когда это делаешь. А я замечаю.
 
-Спасибо, что ты есть. Это правда самое главное.`
+Я не часто говорю такие вещи вслух — мне проще написать целый сайт, чем сказать «спасибо, что ты есть». Но ты правда делаешь мою жизнь лучше. Просто тем, что ты в ней есть.
+
+Спасибо за то, что ты — это ты. Не меняйся.`
 };
 
 /* ==========================================================================
@@ -1423,7 +1464,7 @@ async function breakTheSite() {
   for (const line of bsodLines(state.name)) {
     const div = document.createElement("div");
     if (line.c) div.className = line.c;
-    div.textContent = line.t || " ";      /* пустая строка тоже должна занимать место */
+    div.textContent = line.t || " ";      /* пустая строка тоже должна занимать место */
     b.appendChild(div);
     b.scrollTop = b.scrollHeight;          /* на низком экране доскролливаем к панчлайну */
     if (line.t) Sound.glitchTick();
@@ -1972,7 +2013,7 @@ async function renderLetter() {
     <div class="letter" id="letter"></div>
     <div class="sign" id="sign" style="opacity:0">— ${esc(CONFIG.signature)}</div>
     <div class="row" id="endrow" style="opacity:0;pointer-events:none">
-      <button class="btn primary" id="hearts">Ещё раз спасибо ♥</button>
+      <button class="btn primary" id="hearts">Спасибо, что ты есть ♥</button>
       <button class="btn" id="again">Пройти заново</button>
     </div>
   `, "flip");
@@ -1982,6 +2023,7 @@ async function renderLetter() {
   sign.style.transition = "opacity 1s"; sign.style.opacity = "1";
   row.style.transition = "opacity 1s"; row.style.opacity = "1";
   row.style.pointerEvents = "auto";
+  heartRain(26);
   $("#again").onclick = restart;
   $("#hearts").onclick = () => { Sound.pick(9); buzz(14); heartRain(46); };
 }
