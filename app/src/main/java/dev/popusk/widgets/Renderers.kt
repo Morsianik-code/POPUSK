@@ -17,7 +17,7 @@ object Renderers {
     private fun dp(ctx: Context, v: Float) = v * ctx.resources.displayMetrics.density
 
     /** Концентрические кольца: [0] — внешнее. */
-    fun rings(ctx: Context, sizeDp: Float, progress: FloatArray): Bitmap {
+    fun rings(ctx: Context, sizeDp: Float, progress: FloatArray, colors: IntArray = RING_COLORS): Bitmap {
         val size = dp(ctx, sizeDp).toInt()
         val bmp = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
         val c = Canvas(bmp)
@@ -30,7 +30,7 @@ object Renderers {
         }
         val center = size / 2f
         progress.forEachIndexed { i, p ->
-            val color = RING_COLORS[i % RING_COLORS.size]
+            val color = colors[i % colors.size]
             val r = center - stroke / 2f - i * (stroke + gap)
             val rect = RectF(center - r, center - r, center + r, center + r)
             paint.color = withAlpha(color, 0x45)
@@ -76,6 +76,46 @@ object Renderers {
             c.drawCircle(sx, sy, stroke * 0.95f, fill)
             fill.color = 0xFFF5A245.toInt()
             c.drawCircle(sx, sy, stroke * 0.6f, fill)
+        }
+        return bmp
+    }
+
+    /** Горизонтальная полоска прогресса со скруглёнными концами. */
+    fun bar(ctx: Context, widthDp: Float, heightDp: Float, progress: Float, color: Int, track: Int): Bitmap {
+        val w = dp(ctx, widthDp)
+        val h = dp(ctx, heightDp)
+        val bmp = Bitmap.createBitmap(w.toInt(), h.toInt(), Bitmap.Config.ARGB_8888)
+        val c = Canvas(bmp)
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = track }
+        c.drawRoundRect(RectF(0f, 0f, w, h), h / 2f, h / 2f, paint)
+        val p = progress.coerceIn(0f, 1f)
+        if (p > 0f) {
+            paint.color = color
+            c.drawRoundRect(RectF(0f, 0f, (w * p).coerceAtLeast(h), h), h / 2f, h / 2f, paint)
+        }
+        return bmp
+    }
+
+    /** «Линия дня»: от восхода до заката, с маркером солнца. progress = null — ночь. */
+    fun dayBar(ctx: Context, widthDp: Float, heightDp: Float, progress: Float?, accent: Int, track: Int): Bitmap {
+        val w = dp(ctx, widthDp)
+        val h = dp(ctx, heightDp)
+        val bmp = Bitmap.createBitmap(w.toInt(), h.toInt(), Bitmap.Config.ARGB_8888)
+        val c = Canvas(bmp)
+        val lineH = h * 0.28f
+        val cy = h / 2f
+        val r = h / 2f
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = track }
+        c.drawRoundRect(RectF(r, cy - lineH / 2f, w - r, cy + lineH / 2f), lineH, lineH, paint)
+        if (progress != null) {
+            val p = progress.coerceIn(0f, 1f)
+            val x = r + (w - 2 * r) * p
+            paint.color = accent
+            c.drawRoundRect(RectF(r, cy - lineH / 2f, x.coerceAtLeast(r + lineH), cy + lineH / 2f), lineH, lineH, paint)
+            paint.color = Color.WHITE
+            c.drawCircle(x, cy, r, paint)
+            paint.color = accent
+            c.drawCircle(x, cy, r * 0.62f, paint)
         }
         return bmp
     }

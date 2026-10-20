@@ -10,6 +10,10 @@ class Prefs(context: Context) {
         get() = WidgetTheme.fromKey(sp.getString("theme", null))
         set(v) = sp.edit().putString("theme", v.key).apply()
 
+    var style: WidgetStyle
+        get() = WidgetStyle.fromKey(sp.getString("style", null))
+        set(v) = sp.edit().putString("style", v.key).apply()
+
     var stepGoal: Int
         get() = sp.getInt("goal_steps", 8000)
         set(v) = sp.edit().putInt("goal_steps", v).apply()

@@ -18,6 +18,7 @@ import kotlin.concurrent.thread
 class MainActivity : Activity() {
     private lateinit var prefs: Prefs
     private lateinit var themeButtons: Map<WidgetTheme, TextView>
+    private lateinit var styleButtons: Map<WidgetStyle, TextView>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -27,6 +28,18 @@ class MainActivity : Activity() {
         click(R.id.btn_add_clock) { pin(ClockWidget::class.java) }
         click(R.id.btn_add_activity) { pin(ActivityWidget::class.java) }
         click(R.id.btn_add_weather) { pin(WeatherWidget::class.java) }
+
+        styleButtons = mapOf(
+            WidgetStyle.ORIGIN to findViewById(R.id.style_origin),
+            WidgetStyle.IOS to findViewById(R.id.style_ios),
+            WidgetStyle.POPUSK to findViewById(R.id.style_popusk),
+        )
+        styleButtons.forEach { (style, button) ->
+            button.setOnClickListener {
+                prefs.style = style
+                applyChanges()
+            }
+        }
 
         themeButtons = mapOf(
             WidgetTheme.LIGHT to findViewById(R.id.theme_light),
@@ -152,11 +165,8 @@ class MainActivity : Activity() {
         put(R.id.preview_activity, WidgetViews.activity(this))
         put(R.id.preview_weather, WidgetViews.weather(this))
 
-        themeButtons.forEach { (theme, button) ->
-            val selected = theme == prefs.theme
-            button.setBackgroundResource(if (selected) R.drawable.ui_button_primary else R.drawable.ui_button)
-            button.setTextColor(if (selected) 0xFF111111.toInt() else getColor(R.color.ui_text))
-        }
+        styleButtons.forEach { (style, button) -> highlight(button, style == prefs.style) }
+        themeButtons.forEach { (theme, button) -> highlight(button, theme == prefs.theme) }
 
         findViewById<TextView>(R.id.status_location).text = when {
             prefs.lat == null -> "Место не выбрано — найдите город или включите геолокацию"
@@ -172,6 +182,11 @@ class MainActivity : Activity() {
         }
         findViewById<TextView>(R.id.btn_perm_steps).visibility =
             if (stepsOk || !StepTracker.isSupported(this)) android.view.View.GONE else android.view.View.VISIBLE
+    }
+
+    private fun highlight(button: TextView, selected: Boolean) {
+        button.setBackgroundResource(if (selected) R.drawable.ui_button_primary else R.drawable.ui_button)
+        button.setTextColor(if (selected) 0xFF111111.toInt() else getColor(R.color.ui_text))
     }
 
     private fun put(containerId: Int, views: RemoteViews) {
