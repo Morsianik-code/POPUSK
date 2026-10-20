@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Popusk Widgets</string>
+    <string name="widget_clock_name">Часы и погода</string>
+    <string name="widget_clock_desc">Время, дата, погода и восход/закат</string>
+    <string name="widget_activity_name">Активность</string>
+    <string name="widget_activity_desc">Шаги, калории и тренировка с кольцами</string>
+    <string name="widget_weather_name">Погода</string>
+    <string name="widget_weather_desc">Температура, город и световой день</string>
+</resources>

@@ -1,0 +1,245 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/ui_bg"
+    android:fitsSystemWindows="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingStart="16dp"
+        android:paddingTop="20dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="32dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="sans-serif-medium"
+            android:text="Виджеты"
+            android:textColor="@color/ui_text"
+            android:textSize="30sp" />
+
+        <TextView
+            style="@style/Hint"
+            android:text="Выбери виджет и добавь его на рабочий экран. Настройки ниже применяются ко всем виджетам сразу." />
+
+        <!-- Превью: настоящие RemoteViews на «обоях» -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:background="@drawable/preview_wallpaper"
+            android:orientation="vertical"
+            android:padding="14dp">
+
+            <FrameLayout
+                android:id="@+id/preview_clock"
+                android:layout_width="match_parent"
+                android:layout_height="92dp" />
+
+            <TextView
+                android:id="@+id/btn_add_clock"
+                style="@style/UiButton.Primary"
+                android:layout_gravity="end"
+                android:layout_marginTop="8dp"
+                android:text="+ Часы и погода" />
+
+            <FrameLayout
+                android:id="@+id/preview_activity"
+                android:layout_width="match_parent"
+                android:layout_height="150dp"
+                android:layout_marginTop="18dp" />
+
+            <TextView
+                android:id="@+id/btn_add_activity"
+                style="@style/UiButton.Primary"
+                android:layout_gravity="end"
+                android:layout_marginTop="8dp"
+                android:text="+ Активность" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <FrameLayout
+                    android:id="@+id/preview_weather"
+                    android:layout_width="150dp"
+                    android:layout_height="150dp" />
+
+                <TextView
+                    android:id="@+id/btn_add_weather"
+                    style="@style/UiButton.Primary"
+                    android:layout_marginStart="14dp"
+                    android:text="+ Погода" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Стиль -->
+        <LinearLayout style="@style/Card">
+
+            <TextView
+                style="@style/CardTitle"
+                android:text="Стиль виджетов" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/theme_light"
+                    style="@style/UiButton"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:text="Светлый" />
+
+                <TextView
+                    android:id="@+id/theme_dark"
+                    style="@style/UiButton"
+                    android:layout_width="0dp"
+                    android:layout_marginStart="8dp"
+                    android:layout_weight="1"
+                    android:text="Тёмный" />
+
+                <TextView
+                    android:id="@+id/theme_glass"
+                    style="@style/UiButton"
+                    android:layout_width="0dp"
+                    android:layout_marginStart="8dp"
+                    android:layout_weight="1"
+                    android:text="Стекло" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Город -->
+        <LinearLayout style="@style/Card">
+
+            <TextView
+                style="@style/CardTitle"
+                android:text="Погода" />
+
+            <TextView
+                android:id="@+id/status_location"
+                style="@style/Hint"
+                android:text="Место не выбрано" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:orientation="horizontal">
+
+                <EditText
+                    android:id="@+id/edit_city"
+                    style="@style/UiInput"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:hint="Город"
+                    android:imeOptions="actionSearch"
+                    android:inputType="textCapWords" />
+
+                <TextView
+                    android:id="@+id/btn_city_search"
+                    style="@style/UiButton"
+                    android:layout_height="48dp"
+                    android:layout_marginStart="8dp"
+                    android:text="Найти" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/btn_city_gps"
+                style="@style/UiButton"
+                android:layout_marginTop="8dp"
+                android:text="Определить по геолокации" />
+        </LinearLayout>
+
+        <!-- Активность -->
+        <LinearLayout style="@style/Card">
+
+            <TextView
+                style="@style/CardTitle"
+                android:text="Активность" />
+
+            <TextView
+                android:id="@+id/status_steps"
+                style="@style/Hint"
+                android:text="" />
+
+            <TextView
+                android:id="@+id/btn_perm_steps"
+                style="@style/UiButton"
+                android:layout_marginTop="10dp"
+                android:text="Разрешить подсчёт шагов" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    style="@style/GoalLabel"
+                    android:text="Цель: шаги" />
+
+                <EditText
+                    android:id="@+id/goal_steps"
+                    style="@style/UiInput"
+                    android:layout_width="110dp"
+                    android:gravity="end|center_vertical"
+                    android:inputType="number" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    style="@style/GoalLabel"
+                    android:text="Цель: калории, ккал" />
+
+                <EditText
+                    android:id="@+id/goal_calories"
+                    style="@style/UiInput"
+                    android:layout_width="110dp"
+                    android:gravity="end|center_vertical"
+                    android:inputType="number" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    style="@style/GoalLabel"
+                    android:text="Цель: тренировка, мин" />
+
+                <EditText
+                    android:id="@+id/goal_active"
+                    style="@style/UiInput"
+                    android:layout_width="110dp"
+                    android:gravity="end|center_vertical"
+                    android:inputType="number" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/btn_save_goals"
+                style="@style/UiButton.Primary"
+                android:layout_marginTop="12dp"
+                android:text="Сохранить цели" />
+        </LinearLayout>
+    </LinearLayout>
+</ScrollView>

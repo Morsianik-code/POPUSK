@@ -1,2 +1,9 @@
 .DS_Store
 Thumbs.db
+.gradle/
+build/
+local.properties
+.idea/
+*.iml
+captures/
+.kotlin/
