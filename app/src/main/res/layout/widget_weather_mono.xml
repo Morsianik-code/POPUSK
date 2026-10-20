@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_mono_dark"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:id="@+id/w_city"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ellipsize="end"
+        android:letterSpacing="0.2"
+        android:maxLines="1"
+        android:text="Москва"
+        android:textAllCaps="true"
+        android:textColor="#80FFFFFF"
+        android:textSize="10sp" />
+
+    <View
+        android:id="@+id/w_hair"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginTop="6dp"
+        android:background="#30FFFFFF" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <TextView
+        android:id="@+id/w_temp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="sans-serif-thin"
+        android:includeFontPadding="false"
+        android:letterSpacing="-0.05"
+        android:maxLines="1"
+        android:text="7°"
+        android:textColor="#FFFFFF"
+        android:textSize="54sp" />
+
+    <TextView
+        android:id="@+id/w_desc"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:ellipsize="end"
+        android:letterSpacing="0.2"
+        android:maxLines="1"
+        android:text="Пасмурно"
+        android:textAllCaps="true"
+        android:textColor="#FFFFFF"
+        android:textSize="10sp" />
+
+    <TextView
+        android:id="@+id/w_range"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="3dp"
+        android:letterSpacing="0.1"
+        android:maxLines="1"
+        android:text="↑12°  ↓3°"
+        android:textColor="#80FFFFFF"
+        android:textSize="10sp" />
+
+    <ImageView
+        android:id="@+id/w_daybar"
+        android:layout_width="match_parent"
+        android:layout_height="12dp"
+        android:layout_marginTop="10dp"
+        android:scaleType="fitXY" />
+</LinearLayout>

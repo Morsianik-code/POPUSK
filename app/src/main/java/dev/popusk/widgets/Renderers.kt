@@ -120,6 +120,53 @@ object Renderers {
         return bmp
     }
 
+    /** Линейка суток: 24 штриха, до «сейчас» — яркие, после — тусклые; светлое время выше. */
+    fun ruler(ctx: Context, widthDp: Float, heightDp: Float, now: Float, rise: Float?, set: Float?, ink: Int, dim: Int): Bitmap {
+        val w = dp(ctx, widthDp)
+        val h = dp(ctx, heightDp)
+        val bmp = Bitmap.createBitmap(w.toInt(), h.toInt(), Bitmap.Config.ARGB_8888)
+        val c = Canvas(bmp)
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { strokeWidth = dp(ctx, 1f); strokeCap = Paint.Cap.ROUND }
+        val n = 48
+        val inset = dp(ctx, 1f)
+        for (i in 0..n) {
+            val f = i.toFloat() / n
+            val x = inset + (w - 2 * inset) * f
+            val daylight = rise != null && set != null && f >= rise && f <= set
+            val major = i % 12 == 0
+            val len = when {
+                major -> h
+                daylight -> h * 0.62f
+                else -> h * 0.35f
+            }
+            paint.color = if (f <= now) ink else dim
+            c.drawLine(x, h, x, h - len, paint)
+        }
+        // маркер «сейчас»
+        val x = inset + (w - 2 * inset) * now.coerceIn(0f, 1f)
+        paint.color = ink
+        paint.strokeWidth = dp(ctx, 2f)
+        c.drawLine(x, h, x, 0f, paint)
+        return bmp
+    }
+
+    /** Шкала из точек: заполненные — выполненная часть. */
+    fun dots(ctx: Context, widthDp: Float, heightDp: Float, progress: Float, ink: Int, dim: Int, count: Int = 10): Bitmap {
+        val w = dp(ctx, widthDp)
+        val h = dp(ctx, heightDp)
+        val bmp = Bitmap.createBitmap(w.toInt(), h.toInt(), Bitmap.Config.ARGB_8888)
+        val c = Canvas(bmp)
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+        val r = h / 2f
+        val step = (w - h) / (count - 1)
+        val filled = Math.round(progress.coerceIn(0f, 1f) * count)
+        for (i in 0 until count) {
+            paint.color = if (i < filled) ink else dim
+            c.drawCircle(r + step * i, r, r, paint)
+        }
+        return bmp
+    }
+
     private fun withAlpha(color: Int, alpha: Int) =
         Color.argb(alpha, Color.red(color), Color.green(color), Color.blue(color))
 }

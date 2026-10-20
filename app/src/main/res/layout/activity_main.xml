@@ -98,7 +98,7 @@
                     style="@style/UiButton"
                     android:layout_width="0dp"
                     android:layout_weight="1"
-                    android:text="OriginOS" />
+                    android:text="Origin" />
 
                 <TextView
                     android:id="@+id/style_ios"
@@ -106,7 +106,7 @@
                     android:layout_width="0dp"
                     android:layout_marginStart="8dp"
                     android:layout_weight="1"
-                    android:text="iOS 17" />
+                    android:text="iOS" />
 
                 <TextView
                     android:id="@+id/style_popusk"
@@ -115,6 +115,14 @@
                     android:layout_marginStart="8dp"
                     android:layout_weight="1"
                     android:text="Popusk" />
+
+                <TextView
+                    android:id="@+id/style_mono"
+                    style="@style/UiButton"
+                    android:layout_width="0dp"
+                    android:layout_marginStart="8dp"
+                    android:layout_weight="1"
+                    android:text="Mono" />
             </LinearLayout>
 
             <TextView

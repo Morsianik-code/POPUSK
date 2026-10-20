@@ -64,6 +64,25 @@ object WidgetViews {
                 v.setTextViewText(R.id.clock_sun_label, if (w != null && set != null) w.formatTime(set) else "--:--")
                 v.setImageViewBitmap(R.id.clock_sun_arc, Renderers.dayBar(ctx, 300f, 12f, sun?.progress, t.accent, t.arcTrack))
             }
+            WidgetStyle.MONO -> {
+                val ink = monoInk(t)
+                val dim = withAlpha(ink, 0x80)
+                v.setTextColor(R.id.clock_time, ink)
+                v.setTextColor(R.id.clock_weather, ink)
+                v.setTextColor(R.id.clock_desc, ink)
+                v.setTextColor(R.id.clock_date, dim)
+                v.setTextColor(R.id.clock_sun_time, dim)
+                v.setInt(R.id.clock_hair, "setBackgroundColor", withAlpha(ink, 0x30))
+                v.setTextViewText(R.id.clock_weather, w?.let { "${it.temp}°" } ?: "—°")
+                v.setTextViewText(R.id.clock_desc, w?.description ?: "Нет данных")
+                val rise = w?.sunrises?.firstOrNull()
+                val set = w?.sunsets?.firstOrNull()
+                v.setTextViewText(
+                    R.id.clock_sun_time,
+                    if (w != null && rise != null && set != null) "↑ ${w.formatTime(rise)}   ↓ ${w.formatTime(set)}" else "",
+                )
+                v.setImageViewBitmap(R.id.clock_sun_arc, monoRuler(ctx, w, 320f, 12f, ink, withAlpha(ink, 0x40)))
+            }
         }
 
         v.setOnClickPendingIntent(R.id.clock_time, alarmsIntent(ctx))
@@ -132,6 +151,34 @@ object WidgetViews {
                     v.setImageViewBitmap(bars[i], Renderers.bar(ctx, 140f, 5f, progress[i], colors[i], withAlpha(t.secondary, 0x40)))
                 }
             }
+            WidgetStyle.MONO -> {
+                val ink = monoInk(t)
+                val dim = withAlpha(ink, 0x80)
+                val hair = withAlpha(ink, 0x30)
+                v.setInt(R.id.root, "setBackgroundResource", s.background(t))
+                intArrayOf(R.id.act_hair1, R.id.act_hair2, R.id.act_hair3).forEach { v.setInt(it, "setBackgroundColor", hair) }
+                val cols = listOf(
+                    Triple(R.id.act_steps, a.steps, p.stepGoal),
+                    Triple(R.id.act_calories, a.calories, p.calorieGoal),
+                    Triple(R.id.act_active, a.activeMinutes, p.activeGoal),
+                )
+                val labels = intArrayOf(R.id.act_steps_label, R.id.act_calories_label, R.id.act_active_label)
+                val goals = intArrayOf(R.id.act_steps_goal, R.id.act_calories_goal, R.id.act_active_goal)
+                val bars = intArrayOf(R.id.act_steps_bar, R.id.act_calories_bar, R.id.act_active_bar)
+                cols.forEachIndexed { i, (id, value, goal) ->
+                    v.setTextColor(id, ink)
+                    v.setTextColor(labels[i], dim)
+                    v.setTextColor(goals[i], dim)
+                    v.setTextViewText(id, value.toString())
+                    v.setTextViewText(goals[i], "/ $goal")
+                    v.setImageViewBitmap(bars[i], Renderers.dots(ctx, 80f, 5f, progress[i], ink, withAlpha(ink, 0x38)))
+                }
+                v.setTextColor(R.id.act_chip, dim)
+                v.setTextViewText(
+                    R.id.act_chip,
+                    status ?: String.format(Locale.getDefault(), "%.2f км · обновлено %tR", a.distanceKm, System.currentTimeMillis()),
+                )
+            }
         }
 
         v.setOnClickPendingIntent(
@@ -163,6 +210,16 @@ object WidgetViews {
                     },
                 )
             }
+            WidgetStyle.MONO -> {
+                val ink = monoInk(t)
+                val dim = withAlpha(ink, 0x80)
+                v.setInt(R.id.root, "setBackgroundResource", s.background(t))
+                v.setInt(R.id.w_hair, "setBackgroundColor", withAlpha(ink, 0x30))
+                v.setTextColor(R.id.w_city, dim)
+                v.setTextColor(R.id.w_temp, ink)
+                v.setTextColor(R.id.w_desc, ink)
+                v.setTextColor(R.id.w_range, dim)
+            }
             else -> {
                 v.setInt(R.id.root, "setBackgroundResource", s.background(t))
                 v.setTextColor(R.id.w_city, t.secondary)
@@ -173,7 +230,7 @@ object WidgetViews {
         }
 
         v.setTextViewText(R.id.w_city, city)
-        v.setTextViewText(R.id.w_icon, w?.emoji ?: "🌡️")
+        if (s != WidgetStyle.MONO) v.setTextViewText(R.id.w_icon, w?.emoji ?: "🌡️")
         v.setTextViewText(R.id.w_temp, w?.let { "${it.temp}°" } ?: "—°")
         v.setTextViewText(R.id.w_desc, w?.description ?: "Нет данных")
         v.setTextViewText(
@@ -198,6 +255,10 @@ object WidgetViews {
             WidgetStyle.POPUSK -> {
                 v.setImageViewBitmap(R.id.w_daybar, Renderers.dayBar(ctx, 200f, 12f, w?.sunState()?.progress, t.accent, t.arcTrack))
             }
+            WidgetStyle.MONO -> {
+                val ink = monoInk(t)
+                v.setImageViewBitmap(R.id.w_daybar, monoRuler(ctx, w, 200f, 12f, ink, withAlpha(ink, 0x40)))
+            }
             WidgetStyle.IOS -> Unit
         }
 
@@ -218,6 +279,20 @@ object WidgetViews {
                 ForegroundColorSpan(if (flip) t.primary else t.secondary),
                 Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
             )
+
+    private fun monoInk(t: WidgetTheme) = if (t == WidgetTheme.LIGHT) 0xFF111111.toInt() else 0xFFFFFFFF.toInt()
+
+    /** Линейка суток для стиля Mono: «сейчас» и светлое время — в часовом поясе места. */
+    private fun monoRuler(ctx: Context, w: Weather?, widthDp: Float, heightDp: Float, ink: Int, dim: Int): android.graphics.Bitmap {
+        val zone = w?.zone ?: java.time.ZoneId.systemDefault()
+        val now = java.time.ZonedDateTime.now(zone)
+        fun frac(millis: Long?): Float? = millis?.let {
+            val t = java.time.Instant.ofEpochMilli(it).atZone(zone)
+            (t.hour * 60 + t.minute) / 1440f
+        }
+        val nowF = (now.hour * 60 + now.minute) / 1440f
+        return Renderers.ruler(ctx, widthDp, heightDp, nowF, frac(w?.sunrises?.firstOrNull()), frac(w?.sunsets?.firstOrNull()), ink, dim)
+    }
 
     private fun withAlpha(color: Int, alpha: Int) =
         Color.argb(alpha, Color.red(color), Color.green(color), Color.blue(color))

@@ -33,6 +33,7 @@ class MainActivity : Activity() {
             WidgetStyle.ORIGIN to findViewById(R.id.style_origin),
             WidgetStyle.IOS to findViewById(R.id.style_ios),
             WidgetStyle.POPUSK to findViewById(R.id.style_popusk),
+            WidgetStyle.MONO to findViewById(R.id.style_mono),
         )
         styleButtons.forEach { (style, button) ->
             button.setOnClickListener {
