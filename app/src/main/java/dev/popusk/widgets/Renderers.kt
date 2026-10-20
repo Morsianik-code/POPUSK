@@ -45,7 +45,7 @@ object Renderers {
     }
 
     /** Дуга над подписью восхода/заката. progress = null — солнце за горизонтом. */
-    fun sunArc(ctx: Context, widthDp: Float, heightDp: Float, progress: Float?, track: Int): Bitmap {
+    fun sunArc(ctx: Context, widthDp: Float, heightDp: Float, progress: Float?, track: Int, accent: Int = 0xFFF5A245.toInt(), crossMarker: Boolean = false): Bitmap {
         val w = dp(ctx, widthDp)
         val h = dp(ctx, heightDp)
         val bmp = Bitmap.createBitmap(w.toInt(), h.toInt(), Bitmap.Config.ARGB_8888)
@@ -67,15 +67,22 @@ object Renderers {
 
         if (progress != null) {
             val p = progress.coerceIn(0f, 1f)
-            paint.color = 0xFFF5A245.toInt()
+            paint.color = accent
             c.drawArc(rect, startAngle, sweepAngle * p, false, paint)
             val a = Math.toRadians((startAngle + sweepAngle * p).toDouble())
             val sx = cx + r * cos(a).toFloat()
             val sy = cy + r * sin(a).toFloat()
-            val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.WHITE }
-            c.drawCircle(sx, sy, stroke * 0.95f, fill)
-            fill.color = 0xFFF5A245.toInt()
-            c.drawCircle(sx, sy, stroke * 0.6f, fill)
+            if (crossMarker) {
+                val cp = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.WHITE; strokeWidth = stroke * 0.5f; strokeCap = Paint.Cap.ROUND }
+                val l = stroke * 1.6f
+                c.drawLine(sx, sy - l, sx, sy + l, cp)
+                c.drawLine(sx - l * 0.6f, sy - l * 0.35f, sx + l * 0.6f, sy - l * 0.35f, cp)
+            } else {
+                val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.WHITE }
+                c.drawCircle(sx, sy, stroke * 0.95f, fill)
+                fill.color = accent
+                c.drawCircle(sx, sy, stroke * 0.6f, fill)
+            }
         }
         return bmp
     }
@@ -163,6 +170,120 @@ object Renderers {
         for (i in 0 until count) {
             paint.color = if (i < filled) ink else dim
             c.drawCircle(r + step * i, r, r, paint)
+        }
+        return bmp
+    }
+
+    /** Стрельчатая (готическая) арка: две дуги, сходящиеся в острие. Солнце идёт по ней. */
+    fun pointedArch(ctx: Context, widthDp: Float, heightDp: Float, progress: Float?, track: Int, accent: Int, marker: Int): Bitmap {
+        val w = dp(ctx, widthDp)
+        val h = dp(ctx, heightDp)
+        val bmp = Bitmap.createBitmap(w.toInt(), h.toInt(), Bitmap.Config.ARGB_8888)
+        val c = Canvas(bmp)
+        val stroke = dp(ctx, 2f)
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.STROKE
+            strokeWidth = stroke
+            strokeCap = Paint.Cap.ROUND
+            color = track
+        }
+        // Равносторонняя арка: радиус = пролёт; центры дуг — в противоположных пятах.
+        val baseY = h - stroke
+        val span = (w - 2 * stroke) * 0.92f
+        val left = (w - span) / 2f
+        val right = left + span
+        val r = span
+        val apexY = baseY - Math.sqrt((r * r - (span / 2f) * (span / 2f)).toDouble()).toFloat()
+        val scale = (baseY - stroke) / (baseY - apexY)   // вписать в высоту
+        fun y(v: Float) = baseY - (baseY - v) * scale
+        val sweep = Math.toDegrees(Math.asin(((baseY - apexY) / r).toDouble())).toFloat()
+        val path = android.graphics.Path()
+        val m = android.graphics.Matrix().apply { setScale(1f, scale, 0f, baseY) }
+        // левая дуга: центр в правой пяте
+        val leftArc = android.graphics.Path().apply { addArc(RectF(right - r, baseY - r, right + r, baseY + r), 180f, sweep) }
+        val rightArc = android.graphics.Path().apply { addArc(RectF(left - r, baseY - r, left + r, baseY + r), 360f - sweep, sweep) }
+        path.addPath(leftArc); path.addPath(rightArc)
+        path.transform(m)
+        c.drawPath(path, paint)
+
+        if (progress != null) {
+            val p = progress.coerceIn(0f, 1f)
+            val pm = android.graphics.PathMeasure(leftArc, false)
+            val pm2 = android.graphics.PathMeasure(rightArc, false)
+            val pos = FloatArray(2)
+            val done = android.graphics.Path()
+            if (p <= 0.5f) {
+                pm.getSegment(0f, pm.length * (p / 0.5f), done, true)
+                pm.getPosTan(pm.length * (p / 0.5f), pos, null)
+            } else {
+                done.addPath(leftArc)
+                val seg = android.graphics.Path()
+                pm2.getSegment(0f, pm2.length * ((p - 0.5f) / 0.5f), seg, true)
+                done.addPath(seg)
+                pm2.getPosTan(pm2.length * ((p - 0.5f) / 0.5f), pos, null)
+            }
+            done.transform(m)
+            paint.color = accent
+            c.drawPath(done, paint)
+            val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = marker }
+            c.drawCircle(pos[0], y(pos[1]), dp(ctx, 4f), fill)
+        }
+        return bmp
+    }
+
+    /** Кольца-«роза»: каждое кольцо из 24 сегментов, заполненные — ярче. */
+    fun roseRings(ctx: Context, sizeDp: Float, progress: FloatArray, colors: IntArray, dim: Int): Bitmap {
+        val size = dp(ctx, sizeDp).toInt()
+        val bmp = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+        val c = Canvas(bmp)
+        val stroke = size * 0.09f
+        val gap = stroke * 0.4f
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.STROKE
+            strokeWidth = stroke
+            strokeCap = Paint.Cap.BUTT
+        }
+        val center = size / 2f
+        val n = 24
+        val seg = 360f / n
+        progress.forEachIndexed { i, p ->
+            val r = center - stroke / 2f - i * (stroke + gap)
+            val rect = RectF(center - r, center - r, center + r, center + r)
+            val filled = Math.round(p.coerceIn(0f, 1f) * n)
+            for (k in 0 until n) {
+                paint.color = if (k < filled) colors[i % colors.size] else dim
+                c.drawArc(rect, -90f + k * seg + 1.5f, seg - 3f, false, paint)
+            }
+        }
+        // крестик в центре
+        paint.color = colors[0]
+        paint.strokeWidth = dp(ctx, 1.5f)
+        val cr = (center - stroke / 2f - 2 * (stroke + gap)) * 0.45f
+        c.drawLine(center, center - cr, center, center + cr, paint)
+        c.drawLine(center - cr * 0.6f, center - cr * 0.35f, center + cr * 0.6f, center - cr * 0.35f, paint)
+        return bmp
+    }
+
+    /** Крест, заполняющийся снизу вверх. */
+    fun crossBar(ctx: Context, widthDp: Float, heightDp: Float, progress: Float, ink: Int, dim: Int): Bitmap {
+        val w = dp(ctx, widthDp)
+        val h = dp(ctx, heightDp)
+        val bmp = Bitmap.createBitmap(w.toInt(), h.toInt(), Bitmap.Config.ARGB_8888)
+        val c = Canvas(bmp)
+        val t = w * 0.22f                      // толщина перекладин
+        val cross = android.graphics.Path().apply {
+            addRoundRect(RectF(w / 2f - t / 2f, 0f, w / 2f + t / 2f, h), t / 2f, t / 2f, android.graphics.Path.Direction.CW)
+            addRoundRect(RectF(0f, h * 0.22f, w, h * 0.22f + t), t / 2f, t / 2f, android.graphics.Path.Direction.CW)
+        }
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = dim }
+        c.drawPath(cross, paint)
+        val p = progress.coerceIn(0f, 1f)
+        if (p > 0f) {
+            c.save()
+            c.clipRect(0f, h * (1f - p), w, h)
+            paint.color = ink
+            c.drawPath(cross, paint)
+            c.restore()
         }
         return bmp
     }

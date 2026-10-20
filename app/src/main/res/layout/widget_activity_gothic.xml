@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_gothic_dark"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingStart="20dp"
+    android:paddingTop="14dp"
+    android:paddingEnd="18dp"
+    android:paddingBottom="14dp">
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/act_big"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/pirata_one"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:text="0"
+            android:textColor="#E8E0D0"
+            android:textSize="38sp" />
+
+        <TextView
+            android:id="@+id/act_steps"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:ellipsize="end"
+            android:fontFamily="serif"
+            android:maxLines="1"
+            android:text="† Шаги 0 / 0"
+            android:textColor="#E8E0D0"
+            android:textSize="15sp" />
+
+        <TextView
+            android:id="@+id/act_calories"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:ellipsize="end"
+            android:fontFamily="serif"
+            android:maxLines="1"
+            android:text="† Шаги 0 / 0"
+            android:textColor="#E8E0D0"
+            android:textSize="15sp" />
+
+        <TextView
+            android:id="@+id/act_active"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:ellipsize="end"
+            android:fontFamily="serif"
+            android:maxLines="1"
+            android:text="† Шаги 0 / 0"
+            android:textColor="#E8E0D0"
+            android:textSize="15sp" />
+
+        <TextView
+            android:id="@+id/act_chip"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:fontFamily="serif"
+            android:maxLines="1"
+            android:text="0 км"
+            android:textColor="#B8963E"
+            android:textSize="11sp" />
+    </LinearLayout>
+
+    <ImageView
+        android:id="@+id/act_rings"
+        android:layout_width="116dp"
+        android:layout_height="116dp"
+        android:layout_marginStart="8dp"
+        android:scaleType="fitCenter" />
+</LinearLayout>

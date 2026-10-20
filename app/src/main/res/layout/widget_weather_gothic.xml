@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_gothic_dark"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:id="@+id/w_city"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ellipsize="end"
+        android:fontFamily="serif"
+        android:maxLines="1"
+        android:text="✠ Москва"
+        android:textColor="#B8963E"
+        android:textSize="12sp" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <TextView
+        android:id="@+id/w_temp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="@font/pirata_one"
+        android:includeFontPadding="false"
+        android:maxLines="1"
+        android:text="7°"
+        android:textColor="#E8E0D0"
+        android:textSize="50sp" />
+
+    <TextView
+        android:id="@+id/w_desc"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:ellipsize="end"
+        android:fontFamily="serif"
+        android:maxLines="1"
+        android:text="Пасмурно"
+        android:textColor="#E8E0D0"
+        android:textSize="14sp" />
+
+    <TextView
+        android:id="@+id/w_range"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:fontFamily="serif"
+        android:maxLines="1"
+        android:text="↑12°  ↓3°"
+        android:textColor="#9A8F80"
+        android:textSize="11sp" />
+
+    <TextView
+        android:id="@+id/w_sun"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:fontFamily="serif"
+        android:maxLines="1"
+        android:text="† 07:15 — 17:52"
+        android:textColor="#B8963E"
+        android:textSize="11sp" />
+</LinearLayout>

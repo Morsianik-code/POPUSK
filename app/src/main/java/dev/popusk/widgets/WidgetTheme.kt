@@ -29,7 +29,9 @@ enum class WidgetStyle(
     ORIGIN("origin", "OriginOS", R.layout.widget_clock, R.layout.widget_activity, R.layout.widget_weather),
     IOS("ios", "iOS 17", R.layout.widget_clock_ios, R.layout.widget_activity_ios, R.layout.widget_weather_ios),
     POPUSK("popusk", "Popusk", R.layout.widget_clock_popusk, R.layout.widget_activity_popusk, R.layout.widget_weather_popusk),
-    MONO("mono", "Mono", R.layout.widget_clock_mono, R.layout.widget_activity_mono, R.layout.widget_weather_mono);
+    MONO("mono", "Mono", R.layout.widget_clock_mono, R.layout.widget_activity_mono, R.layout.widget_weather_mono),
+    GOTHIC("gothic", "Gothic", R.layout.widget_clock_gothic, R.layout.widget_activity_gothic, R.layout.widget_weather_gothic),
+    FOG("fog", "Fog", R.layout.widget_clock_fog, R.layout.widget_activity_fog, R.layout.widget_weather_fog);
 
     fun background(theme: WidgetTheme): Int = when (this) {
         ORIGIN -> when (theme) {
@@ -51,6 +53,16 @@ enum class WidgetStyle(
             WidgetTheme.LIGHT -> R.drawable.bg_mono_light
             WidgetTheme.DARK -> R.drawable.bg_mono_dark
             WidgetTheme.GLASS -> R.drawable.bg_mono_glass
+        }
+        GOTHIC -> when (theme) {
+            WidgetTheme.LIGHT -> R.drawable.bg_gothic_light
+            WidgetTheme.DARK -> R.drawable.bg_gothic_dark
+            WidgetTheme.GLASS -> R.drawable.bg_gothic_glass
+        }
+        FOG -> when (theme) {
+            WidgetTheme.LIGHT -> R.drawable.bg_fog_light
+            WidgetTheme.DARK -> R.drawable.bg_fog_dark
+            WidgetTheme.GLASS -> R.drawable.bg_fog_glass
         }
     }
 

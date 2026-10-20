@@ -34,6 +34,8 @@ class MainActivity : Activity() {
             WidgetStyle.IOS to findViewById(R.id.style_ios),
             WidgetStyle.POPUSK to findViewById(R.id.style_popusk),
             WidgetStyle.MONO to findViewById(R.id.style_mono),
+            WidgetStyle.GOTHIC to findViewById(R.id.style_gothic),
+            WidgetStyle.FOG to findViewById(R.id.style_fog),
         )
         styleButtons.forEach { (style, button) ->
             button.setOnClickListener {

@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_fog_dark"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:id="@+id/w_city"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ellipsize="end"
+        android:letterSpacing="0.15"
+        android:maxLines="1"
+        android:text="† Москва"
+        android:textColor="#AEB3B8"
+        android:textSize="11sp" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <TextView
+        android:id="@+id/w_temp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="sans-serif-light"
+        android:includeFontPadding="false"
+        android:letterSpacing="-0.03"
+        android:maxLines="1"
+        android:text="7°"
+        android:textColor="#E3E5E8"
+        android:textSize="50sp" />
+
+    <TextView
+        android:id="@+id/w_desc"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:ellipsize="end"
+        android:letterSpacing="0.1"
+        android:maxLines="1"
+        android:text="пасмурно"
+        android:textColor="#E3E5E8"
+        android:textSize="13sp" />
+
+    <TextView
+        android:id="@+id/w_range"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:letterSpacing="0.1"
+        android:maxLines="1"
+        android:text="↑12°  ↓3°"
+        android:textColor="#AEB3B8"
+        android:textSize="11sp" />
+
+    <TextView
+        android:id="@+id/w_sun"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:letterSpacing="0.1"
+        android:maxLines="1"
+        android:text="† 07:15 — 17:52"
+        android:textColor="#AEB3B8"
+        android:textSize="11sp" />
+</LinearLayout>

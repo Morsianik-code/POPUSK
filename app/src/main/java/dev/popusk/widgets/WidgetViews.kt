@@ -83,6 +83,30 @@ object WidgetViews {
                 )
                 v.setImageViewBitmap(R.id.clock_sun_arc, monoRuler(ctx, w, 320f, 12f, ink, withAlpha(ink, 0x40)))
             }
+            WidgetStyle.GOTHIC -> {
+                val g = gothic(t)
+                v.setTextColor(R.id.clock_time, g.ink)
+                v.setTextColor(R.id.clock_date, g.gold)
+                v.setTextColor(R.id.clock_weather, g.ink)
+                v.setTextColor(R.id.clock_sun_time, g.ink)
+                v.setTextColor(R.id.clock_sun_label, g.gold)
+                v.setTextViewText(R.id.clock_weather, w?.let { "${it.temp}° · ${it.description}" } ?: "—°")
+                v.setTextViewText(R.id.clock_sun_time, sunTime)
+                v.setTextViewText(R.id.clock_sun_label, sunLabel.lowercase())
+                v.setImageViewBitmap(R.id.clock_sun_arc, Renderers.pointedArch(ctx, 120f, 66f, sun?.progress, withAlpha(g.gold, 0x70), g.gold, g.blood))
+            }
+            WidgetStyle.FOG -> {
+                val f = fog(t)
+                v.setTextColor(R.id.clock_time, f.ink)
+                v.setTextColor(R.id.clock_date, f.dim)
+                v.setTextColor(R.id.clock_weather, f.dim)
+                v.setTextColor(R.id.clock_sun_time, f.ink)
+                v.setTextColor(R.id.clock_sun_label, f.dim)
+                v.setTextViewText(R.id.clock_weather, w?.let { "† ${it.temp}° ${it.description.lowercase()}" } ?: "† —°")
+                v.setTextViewText(R.id.clock_sun_time, sunTime)
+                v.setTextViewText(R.id.clock_sun_label, sunLabel.lowercase())
+                v.setImageViewBitmap(R.id.clock_sun_arc, Renderers.sunArc(ctx, 130f, 64f, sun?.progress, withAlpha(f.ink, 0x40), f.ink, crossMarker = true))
+            }
         }
 
         v.setOnClickPendingIntent(R.id.clock_time, alarmsIntent(ctx))
@@ -179,6 +203,50 @@ object WidgetViews {
                     status ?: String.format(Locale.getDefault(), "%.2f км · обновлено %tR", a.distanceKm, System.currentTimeMillis()),
                 )
             }
+            WidgetStyle.GOTHIC -> {
+                val g = gothic(t)
+                v.setInt(R.id.root, "setBackgroundResource", s.background(t))
+                v.setTextColor(R.id.act_big, g.ink)
+                v.setTextViewText(R.id.act_big, a.steps.toString())
+                listOf(
+                    Triple(R.id.act_steps, "Шаги", "${a.steps} / ${p.stepGoal}"),
+                    Triple(R.id.act_calories, "Калории", "${a.calories} / ${p.calorieGoal}"),
+                    Triple(R.id.act_active, "Тренировка", "${a.activeMinutes} / ${p.activeGoal} мин"),
+                ).forEach { (id, label, value) ->
+                    v.setTextViewText(
+                        id,
+                        SpannableStringBuilder()
+                            .append("† ", ForegroundColorSpan(g.blood), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                            .append("$label ", ForegroundColorSpan(g.gold), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                            .append(value, ForegroundColorSpan(g.ink), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE),
+                    )
+                }
+                v.setTextColor(R.id.act_chip, g.gold)
+                v.setTextViewText(R.id.act_chip, status ?: String.format(Locale.getDefault(), "%.2f км", a.distanceKm))
+                v.setImageViewBitmap(
+                    R.id.act_rings,
+                    Renderers.roseRings(ctx, 116f, progress, intArrayOf(g.blood, g.gold, g.ink), withAlpha(g.ink, 0x22)),
+                )
+            }
+            WidgetStyle.FOG -> {
+                val f = fog(t)
+                v.setInt(R.id.root, "setBackgroundResource", s.background(t))
+                v.setTextColor(R.id.act_big, f.ink)
+                v.setTextColor(R.id.act_chip, f.dim)
+                v.setTextViewText(R.id.act_big, a.steps.toString())
+                v.setTextViewText(
+                    R.id.act_chip,
+                    status ?: String.format(Locale.getDefault(), "%.2f км · %d ккал · %d мин", a.distanceKm, a.calories, a.activeMinutes),
+                )
+                val ids = intArrayOf(R.id.act_steps, R.id.act_calories, R.id.act_active)
+                val bars = intArrayOf(R.id.act_steps_bar, R.id.act_calories_bar, R.id.act_active_bar)
+                val values = intArrayOf(a.steps, a.calories, a.activeMinutes)
+                for (i in 0..2) {
+                    v.setTextColor(ids[i], f.dim)
+                    v.setTextViewText(ids[i], values[i].toString())
+                    v.setImageViewBitmap(bars[i], Renderers.crossBar(ctx, 30f, 78f, progress[i], f.ink, withAlpha(f.ink, 0x30)))
+                }
+            }
         }
 
         v.setOnClickPendingIntent(
@@ -220,6 +288,24 @@ object WidgetViews {
                 v.setTextColor(R.id.w_desc, ink)
                 v.setTextColor(R.id.w_range, dim)
             }
+            WidgetStyle.GOTHIC -> {
+                val g = gothic(t)
+                v.setInt(R.id.root, "setBackgroundResource", s.background(t))
+                v.setTextColor(R.id.w_city, g.gold)
+                v.setTextColor(R.id.w_temp, g.ink)
+                v.setTextColor(R.id.w_desc, g.ink)
+                v.setTextColor(R.id.w_range, g.dim)
+                v.setTextColor(R.id.w_sun, g.gold)
+            }
+            WidgetStyle.FOG -> {
+                val f = fog(t)
+                v.setInt(R.id.root, "setBackgroundResource", s.background(t))
+                v.setTextColor(R.id.w_city, f.dim)
+                v.setTextColor(R.id.w_temp, f.ink)
+                v.setTextColor(R.id.w_desc, f.ink)
+                v.setTextColor(R.id.w_range, f.dim)
+                v.setTextColor(R.id.w_sun, f.dim)
+            }
             else -> {
                 v.setInt(R.id.root, "setBackgroundResource", s.background(t))
                 v.setTextColor(R.id.w_city, t.secondary)
@@ -229,10 +315,17 @@ object WidgetViews {
             }
         }
 
-        v.setTextViewText(R.id.w_city, city)
-        if (s != WidgetStyle.MONO) v.setTextViewText(R.id.w_icon, w?.emoji ?: "🌡️")
+        v.setTextViewText(
+            R.id.w_city,
+            when (s) {
+                WidgetStyle.GOTHIC -> "✠ $city"
+                WidgetStyle.FOG -> "† ${city.lowercase()}"
+                else -> city
+            },
+        )
+        if (s in setOf(WidgetStyle.ORIGIN, WidgetStyle.IOS, WidgetStyle.POPUSK)) v.setTextViewText(R.id.w_icon, w?.emoji ?: "🌡️")
         v.setTextViewText(R.id.w_temp, w?.let { "${it.temp}°" } ?: "—°")
-        v.setTextViewText(R.id.w_desc, w?.description ?: "Нет данных")
+        v.setTextViewText(R.id.w_desc, (w?.description ?: "Нет данных").let { if (s == WidgetStyle.FOG) it.lowercase() else it })
         v.setTextViewText(
             R.id.w_range,
             when {
@@ -259,6 +352,12 @@ object WidgetViews {
                 val ink = monoInk(t)
                 v.setImageViewBitmap(R.id.w_daybar, monoRuler(ctx, w, 200f, 12f, ink, withAlpha(ink, 0x40)))
             }
+            WidgetStyle.GOTHIC, WidgetStyle.FOG -> {
+                v.setTextViewText(
+                    R.id.w_sun,
+                    if (w != null && rise != null && set != null) "† ${w.formatTime(rise)} — ${w.formatTime(set)}" else "",
+                )
+            }
             WidgetStyle.IOS -> Unit
         }
 
@@ -279,6 +378,20 @@ object WidgetViews {
                 ForegroundColorSpan(if (flip) t.primary else t.secondary),
                 Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
             )
+
+    private class Gothic(val ink: Int, val gold: Int, val blood: Int, val dim: Int)
+    private fun gothic(t: WidgetTheme) = if (t == WidgetTheme.LIGHT) {
+        Gothic(0xFF2A1F22.toInt(), 0xFF8E6F22.toInt(), 0xFF8B1E2B.toInt(), 0xFF7A6E62.toInt())
+    } else {
+        Gothic(0xFFE8E0D0.toInt(), 0xFFB8963E.toInt(), 0xFFB3283A.toInt(), 0xFF9A8F80.toInt())
+    }
+
+    private class Fog(val ink: Int, val dim: Int)
+    private fun fog(t: WidgetTheme) = if (t == WidgetTheme.LIGHT) {
+        Fog(0xFF2E3236.toInt(), 0xFF6A7076.toInt())
+    } else {
+        Fog(0xFFE3E5E8.toInt(), 0xFFC4C8CC.toInt())
+    }
 
     private fun monoInk(t: WidgetTheme) = if (t == WidgetTheme.LIGHT) 0xFF111111.toInt() else 0xFFFFFFFF.toInt()
 
