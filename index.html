@@ -24,7 +24,7 @@
 :root{
   --bg:#0b0a20;
   --ink:#f8f4ff;
-  --muted:rgba(248,244,255,.68);
+  --muted:rgba(248,244,255,.82);
   --rose:#ff6fa9;
   --peach:#ffb088;
   --violet:#8b6cff;
@@ -65,7 +65,7 @@ html.no-webgl #bg{display:none}
 html.no-webgl .fallback{display:block}
 @keyframes drift{from{transform:translate3d(0,0,0) scale(1)}to{transform:translate3d(10vmax,6vmax,0) scale(1.15)}}
 
-.grain{position:fixed;inset:-50%;width:200%;height:200%;z-index:2;pointer-events:none;opacity:.06;mix-blend-mode:soft-light;
+.grain{position:fixed;inset:-50%;width:200%;height:200%;z-index:2;pointer-events:none;opacity:.045;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   animation:grain 1.4s steps(5) infinite}
 @keyframes grain{0%{transform:translate(0,0)}20%{transform:translate(-3%,2%)}40%{transform:translate(2%,-4%)}60%{transform:translate(-4%,-1%)}80%{transform:translate(3%,3%)}100%{transform:translate(0,0)}}
@@ -92,9 +92,10 @@ main{position:fixed;inset:0;z-index:3}
   position:relative;isolation:isolate;
   border-radius:var(--r,34px);
   background:
-    linear-gradient(135deg,rgba(255,255,255,.17) 0%,rgba(255,255,255,.06) 38%,rgba(255,255,255,.025) 62%,rgba(255,255,255,.11) 100%);
-  -webkit-backdrop-filter:blur(22px) saturate(180%) brightness(1.05);
-  backdrop-filter:blur(22px) saturate(180%) brightness(1.05);
+    linear-gradient(135deg,rgba(255,255,255,.16) 0%,rgba(255,255,255,.05) 38%,rgba(255,255,255,.02) 62%,rgba(255,255,255,.10) 100%),
+    linear-gradient(180deg,rgba(24,14,52,.46),rgba(24,14,52,.56));
+  -webkit-backdrop-filter:blur(18px) saturate(150%);
+  backdrop-filter:blur(18px) saturate(150%);
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,.55),
     inset 0 -1px 0 rgba(255,255,255,.09),
@@ -144,7 +145,7 @@ h1 em .w,.display em .w,h1 em:not(:has(.w)),.display em:not(:has(.w)){background
 .row{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
 
 /* пословное появление */
-.w{display:inline-block;opacity:0;filter:blur(9px);transform:translateY(.32em)}
+.w{display:inline-block;opacity:0;filter:blur(6px);transform:translateY(.32em)}
 .w.on{animation:wIn .85s var(--ease-out) forwards;animation-delay:calc(var(--i) * var(--stagger,42ms) + var(--d,0ms))}
 @keyframes wIn{to{opacity:1;filter:blur(0);transform:translateY(0)}}
 
@@ -156,8 +157,7 @@ h1 em .w,.display em .w,h1 em:not(:has(.w)),.display em:not(:has(.w)){background
   display:inline-flex;align-items:center;gap:.6em;
   padding:1rem 1.75rem;border-radius:999px;border:1px solid rgba(255,255,255,.36);
   font-family:var(--font-ui);font-weight:600;font-size:1rem;letter-spacing:.01em;line-height:1;
-  background:linear-gradient(135deg,rgba(255,255,255,.26),rgba(255,255,255,.08));
-  -webkit-backdrop-filter:blur(14px) saturate(160%);backdrop-filter:blur(14px) saturate(160%);
+  background:linear-gradient(135deg,rgba(255,255,255,.3),rgba(255,255,255,.12));
   box-shadow:inset 0 1px 0 rgba(255,255,255,.65),inset 0 -1px 0 rgba(255,255,255,.08),0 14px 34px -14px rgba(0,0,0,.7);
   transition:transform .45s var(--ease-out),box-shadow .45s var(--ease-out),background .45s;
   -webkit-user-select:none;user-select:none;
@@ -189,7 +189,7 @@ h1 em .w,.display em .w,h1 em:not(:has(.w)),.display em:not(:has(.w)){background
   display:flex;align-items:center;gap:14px;
   padding:15px 18px 15px 16px;border-radius:20px;border:1px solid rgba(255,255,255,.22);
   font-family:var(--font-ui);font-weight:500;font-size:clamp(.96rem,2.2vw,1.04rem);line-height:1.35;color:var(--ink);
-  background:linear-gradient(135deg,rgba(255,255,255,.14),rgba(255,255,255,.04));
+  background:linear-gradient(135deg,rgba(255,255,255,.16),rgba(255,255,255,.05)),linear-gradient(180deg,rgba(24,14,52,.22),rgba(24,14,52,.3));
   box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 10px 26px -18px rgba(0,0,0,.8);
   transition:transform .55s var(--ease-out),opacity .55s var(--ease-out),background .55s,border-color .55s,box-shadow .55s;
   opacity:0;transform:translate3d(0,18px,-40px) rotateX(-12deg);
@@ -230,7 +230,6 @@ h1 em .w,.display em .w,h1 em:not(:has(.w)),.display em:not(:has(.w)){background
   font-family:var(--font-num);font-weight:700;font-size:clamp(4.6rem,17vw,8.8rem);line-height:.95;letter-spacing:-.045em;margin:.05em 0 .1em;
   background:linear-gradient(120deg,#fff 0%,var(--rose) 35%,var(--peach) 60%,#fff 100%);background-size:220% 100%;
   -webkit-background-clip:text;background-clip:text;color:transparent;animation:shimmer 5s linear infinite;
-  filter:drop-shadow(0 10px 30px rgba(255,111,169,.35));
 }
 .num small{font-size:.42em;letter-spacing:-.02em}
 @keyframes shimmer{to{background-position:-220% 0}}
@@ -251,11 +250,10 @@ h1 em .w,.display em .w,h1 em:not(:has(.w)),.display em:not(:has(.w)){background
 .heart-btn{
   position:relative;width:92px;height:92px;border-radius:50%;border:1px solid rgba(255,255,255,.5);cursor:pointer;display:grid;place-items:center;
   background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.55),rgba(255,255,255,.08) 55%),linear-gradient(135deg,rgba(255,111,169,.5),rgba(255,176,136,.35));
-  -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
   box-shadow:inset 0 2px 0 rgba(255,255,255,.7),0 20px 50px -14px rgba(255,111,169,.8);
   animation:beat 1.6s ease-in-out infinite;transition:transform .4s var(--ease-spring);
 }
-.heart-btn svg{width:42px;height:42px;fill:url(#hg);filter:drop-shadow(0 6px 14px rgba(255,80,140,.6))}
+.heart-btn svg{width:42px;height:42px;fill:url(#hg)}
 .heart-btn:hover{animation-play-state:paused;transform:scale(1.1)}
 .heart-btn:active{transform:scale(.94)}
 @keyframes beat{0%,100%{transform:scale(1)}14%{transform:scale(1.07)}28%{transform:scale(1)}42%{transform:scale(1.05)}70%{transform:scale(1)}}
@@ -263,13 +261,20 @@ h1 em .w,.display em .w,h1 em:not(:has(.w)),.display em:not(:has(.w)){background
 
 /* финал */
 .finale-stage{text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:12px;height:100%;padding-bottom:clamp(24px,6vh,64px)}
-.finale-stage .display{font-size:clamp(2.6rem,8vw,5.2rem);margin:0;text-shadow:0 10px 50px rgba(0,0,0,.45)}
-.finale-stage .eyebrow{font-size:clamp(1.5rem,3.4vw,2.1rem);margin:0 0 .3em}
+.finale-stage{position:relative}
+.finale-stage::before{content:"";position:absolute;left:-50vw;right:-50vw;bottom:-20px;height:62%;pointer-events:none;background:linear-gradient(180deg,rgba(40,8,36,0),rgba(40,8,36,.42) 55%,rgba(40,8,36,.55))}
+.finale-stage>*{position:relative}
+.finale-stage .display{font-size:clamp(2.6rem,8vw,5.2rem);margin:0;text-shadow:0 2px 6px rgba(40,8,36,.55),0 12px 50px rgba(40,8,36,.6)}
+.finale-stage .eyebrow{font-size:clamp(1.5rem,3.4vw,2.1rem);margin:0 0 .3em;text-shadow:0 2px 6px rgba(40,8,36,.55),0 8px 30px rgba(40,8,36,.6)}
 .finale-stage .btn{margin-top:1.4rem}
 
 /* ============================================================
    МОБИЛЬНОЕ / ДОСТУПНОСТЬ
    ============================================================ */
+@media (pointer:coarse){
+  .grain{display:none}
+  .glass{-webkit-backdrop-filter:blur(14px) saturate(150%);backdrop-filter:blur(14px) saturate(150%)}
+}
 @media (max-width:480px){
   .card{padding:30px 22px 28px}
   .opt{padding:13px 14px;gap:12px}
@@ -379,40 +384,54 @@ window.CONFIG = {
   intro: {
     eyebrow: "маленький тест",
     title:   "Привет, <em>{name}</em>",
-    lead:    "У меня для тебя <strong>три вопроса</strong> и один очень важный ответ. Отвечай честно — результат обжалованию не подлежит.",
+    lead:    "У меня для тебя <strong>несколько вопросов</strong> и один очень важный ответ. Отвечай честно — результат обжалованию не подлежит.",
     button:  "Начать",
-    note:    "займёт минуту ✦",
+    note:    "займёт пару минут ✦",
   },
 
   quiz: {
     eyebrow: "вопрос {n}",
+    // Черновик: 10 вопросов. Лишние можно просто удалить, порядок — как в списке.
     questions: [
       {
         title: "Какое утро тебе нравится больше всего?",
-        options: [
-          "Долго валяться под одеялом",
-          "Кофе и музыка на весь дом",
-          "Выйти на улицу, пока город спит",
-          "Утро? Я проснулась в двенадцать",
-        ],
+        options: ["Долго валяться под одеялом", "Кофе и музыка на весь дом", "Выйти на улицу, пока город спит", "Утро? Я проснулась в двенадцать"],
       },
       {
         title: "Свободный вечер и телепорт в руках. Куда?",
-        options: [
-          "На крышу — смотреть на город",
-          "В маленькое кафе, где нас никто не знает",
-          "К морю, даже если холодно",
-          "Домой. Но чтобы кто-то был рядом",
-        ],
+        options: ["На крышу — смотреть на город", "В маленькое кафе, где нас никто не знает", "К морю, даже если холодно", "Домой. Но чтобы кто-то был рядом"],
+      },
+      {
+        title: "Что для тебя самое уютное?",
+        options: ["Плед, дождь за окном и чай", "Тёплые руки в холодный день", "Когда тебя понимают без слов", "Смеяться так, что болит живот"],
+      },
+      {
+        title: "Если бы ты была погодой, то какой?",
+        options: ["Первый снег", "Тёплый летний ливень", "Солнце в семь утра", "Мягкий туман, в котором всё тихо"],
+      },
+      {
+        title: "Идеальное воскресенье — это…",
+        options: ["Проспать всё и ни о чём не жалеть", "Ехать куда глаза глядят", "Готовить что-то долгое и вкусное", "Весь день болтать ни о чём"],
+      },
+      {
+        title: "Что бы ты выбрала?",
+        options: ["Тысячу маленьких радостей", "Одно большое приключение", "Чтобы всё шло по плану", "Чтобы всё было неожиданно"],
+      },
+      {
+        title: "Какая у тебя суперсила?",
+        options: ["Чувствовать, когда кому-то плохо", "Находить смешное во всём", "Делать любое место уютным", "Появляться в нужный момент"],
+      },
+      {
+        title: "Если бы ты была десертом?",
+        options: ["Тирамису", "Клубника со сливками", "Горячий шоколад с зефирками", "Что-то, чего ещё не придумали"],
+      },
+      {
+        title: "Какая музыка у тебя внутри прямо сейчас?",
+        options: ["Что-то тихое и тёплое", "Такое, под что хочется танцевать", "Грустное, но очень красивое", "Тишина. Хорошая тишина"],
       },
       {
         title: "Как думаешь, зачем я всё это сделал?",
-        options: [
-          "Тебе было скучно",
-          "Ты что-то задумал",
-          "Хочешь мне что-то сказать",
-          "Не знаю, но мне уже нравится",
-        ],
+        options: ["Тебе было скучно", "Ты что-то задумал", "Хочешь мне что-то сказать", "Не знаю, но мне уже нравится"],
       },
     ],
   },
@@ -541,9 +560,9 @@ window.CONFIG = {
       card.style.setProperty("--my", ((e.clientY - r.top) / r.height * 100).toFixed(1) + "%");
     }
   }, { passive: true });
-  (function tiltLoop() {
+  if (fine) (function tiltLoop() {
     px += (tx - px) * 0.055; py += (ty - py) * 0.055;
-    if (fine) {
+    {
       const el = $(".scene.is-active .tilt");
       if (el) el.style.transform = `rotateY(${(px * 6.5).toFixed(2)}deg) rotateX(${(-py * 5.5).toFixed(2)}deg)`;
       const card = $(".scene.is-active .glass");
@@ -728,7 +747,6 @@ window.CONFIG = {
 </script>
 <script type="module">
 import * as THREE from "three";
-import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import { mergeVertices } from "three/addons/utils/BufferGeometryUtils.js";
 
 const canvas = document.getElementById("bg");
@@ -737,54 +755,19 @@ const reduced = matchMedia("(prefers-reduced-motion:reduce)").matches;
 
 let renderer;
 try {
-  renderer = new THREE.WebGLRenderer({ canvas, antialias: !isMobile, alpha: false, powerPreference: "high-performance" });
+  renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, stencil: false, powerPreference: "high-performance" });
 } catch (e) {
   document.documentElement.classList.add("no-webgl");
   throw e;
 }
-renderer.setPixelRatio(Math.min(devicePixelRatio || 1, isMobile ? 1.5 : 1.75));
+renderer.setPixelRatio(Math.min(devicePixelRatio || 1, isMobile ? 1.25 : 1.5));
 renderer.setSize(innerWidth, innerHeight, false);
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.05;
-if ("transmissionResolutionScale" in renderer) renderer.transmissionResolutionScale = isMobile ? 0.65 : 0.85;
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(42, innerWidth / innerHeight, 0.1, 100);
 camera.position.set(0, 0, 8.5);
-
-const pmrem = new THREE.PMREMGenerator(renderer);
-scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-
-const sun = new THREE.DirectionalLight(0xffffff, 2.4); sun.position.set(3, 5, 4); scene.add(sun);
-const pink = new THREE.PointLight(0xff6fa9, 40, 25, 2); pink.position.set(-4, 2, 3); scene.add(pink);
-const blue = new THREE.PointLight(0x5de0ff, 25, 25, 2); blue.position.set(4, -3, 2); scene.add(blue);
-
-/* ---------- шум (simplex 3D) для «жидкой» капли ---------- */
-const noise3 = (() => {
-  const grad3 = [[1,1,0],[-1,1,0],[1,-1,0],[-1,-1,0],[1,0,1],[-1,0,1],[1,0,-1],[-1,0,-1],[0,1,1],[0,-1,1],[0,1,-1],[0,-1,-1]];
-  const p = new Uint8Array(256); for (let i = 0; i < 256; i++) p[i] = i;
-  let seed = 1337; for (let i = 255; i > 0; i--) { seed = (seed * 16807) % 2147483647; const j = seed % (i + 1); [p[i], p[j]] = [p[j], p[i]]; }
-  const perm = new Uint8Array(512), pm = new Uint8Array(512);
-  for (let i = 0; i < 512; i++) { perm[i] = p[i & 255]; pm[i] = perm[i] % 12; }
-  const F3 = 1 / 3, G3 = 1 / 6;
-  return (x, y, z) => {
-    const s = (x + y + z) * F3, i = Math.floor(x + s), j = Math.floor(y + s), k = Math.floor(z + s);
-    const t = (i + j + k) * G3, x0 = x - (i - t), y0 = y - (j - t), z0 = z - (k - t);
-    let i1, j1, k1, i2, j2, k2;
-    if (x0 >= y0) { if (y0 >= z0) { i1=1;j1=0;k1=0;i2=1;j2=1;k2=0; } else if (x0 >= z0) { i1=1;j1=0;k1=0;i2=1;j2=0;k2=1; } else { i1=0;j1=0;k1=1;i2=1;j2=0;k2=1; } }
-    else { if (y0 < z0) { i1=0;j1=0;k1=1;i2=0;j2=1;k2=1; } else if (x0 < z0) { i1=0;j1=1;k1=0;i2=0;j2=1;k2=1; } else { i1=0;j1=1;k1=0;i2=1;j2=1;k2=0; } }
-    const x1 = x0 - i1 + G3, y1 = y0 - j1 + G3, z1 = z0 - k1 + G3;
-    const x2 = x0 - i2 + 2*G3, y2 = y0 - j2 + 2*G3, z2 = z0 - k2 + 2*G3;
-    const x3 = x0 - 1 + 3*G3, y3 = y0 - 1 + 3*G3, z3 = z0 - 1 + 3*G3;
-    const ii = i & 255, jj = j & 255, kk = k & 255;
-    let n = 0, t0;
-    t0 = .6 - x0*x0 - y0*y0 - z0*z0; if (t0 > 0) { const g = grad3[pm[ii+perm[jj+perm[kk]]]]; t0 *= t0; n += t0*t0*(g[0]*x0+g[1]*y0+g[2]*z0); }
-    t0 = .6 - x1*x1 - y1*y1 - z1*z1; if (t0 > 0) { const g = grad3[pm[ii+i1+perm[jj+j1+perm[kk+k1]]]]; t0 *= t0; n += t0*t0*(g[0]*x1+g[1]*y1+g[2]*z1); }
-    t0 = .6 - x2*x2 - y2*y2 - z2*z2; if (t0 > 0) { const g = grad3[pm[ii+i2+perm[jj+j2+perm[kk+k2]]]]; t0 *= t0; n += t0*t0*(g[0]*x2+g[1]*y2+g[2]*z2); }
-    t0 = .6 - x3*x3 - y3*y3 - z3*z3; if (t0 > 0) { const g = grad3[pm[ii+1+perm[jj+1+perm[kk+1]]]]; t0 *= t0; n += t0*t0*(g[0]*x3+g[1]*y3+g[2]*z3); }
-    return 32 * n;
-  };
-})();
 
 /* ---------- фон: живой градиент ---------- */
 const PALETTES = {
@@ -801,7 +784,7 @@ const bgUniforms = {
   uD: { value: new THREE.Color(PALETTES.intro.d) },
 };
 const bgMat = new THREE.ShaderMaterial({
-  uniforms: bgUniforms, depthWrite: false,
+  uniforms: bgUniforms, depthWrite: false, depthTest: false,
   vertexShader: `varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
   fragmentShader: `
     uniform float uTime; uniform float uAspect; uniform vec3 uBase,uA,uB,uC,uD; varying vec2 vUv;
@@ -838,7 +821,7 @@ const bgMat = new THREE.ShaderMaterial({
     }`,
 });
 const bgPlane = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), bgMat);
-bgPlane.position.z = -22; scene.add(bgPlane);
+bgPlane.position.z = -22; bgPlane.renderOrder = -1; scene.add(bgPlane);
 function fitBg() {
   const d = camera.position.z - bgPlane.position.z;
   const h = 2 * d * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * 1.25;
@@ -846,68 +829,145 @@ function fitBg() {
   bgUniforms.uAspect.value = camera.aspect;
 }
 
-/* ---------- стекло ---------- */
-const glass = new THREE.MeshPhysicalMaterial({
-  color: 0xffffff, metalness: 0, roughness: 0.06, transmission: 1, thickness: 1.2, ior: 1.42,
-  clearcoat: 1, clearcoatRoughness: 0.08, iridescence: 0.6, iridescenceIOR: 1.35, iridescenceThicknessRange: [120, 520],
-  attenuationColor: new THREE.Color(0xffe1ef), attenuationDistance: 4.0, envMapIntensity: 1.2, specularIntensity: 1,
-});
-const pinkGlass = new THREE.MeshPhysicalMaterial({
-  color: 0xff9ccd, metalness: 0, roughness: 0.14, transmission: 0.92, thickness: 1.4, ior: 1.42,
-  clearcoat: 1, clearcoatRoughness: 0.1, iridescence: 0.35, iridescenceIOR: 1.3,
-  attenuationColor: new THREE.Color(0xff4f93), attenuationDistance: 1.1, envMapIntensity: 1.35, emissive: 0x2a0616,
-});
-
-/* капля — сфера с шумовым смещением вершин */
-let blobGeo = new THREE.SphereGeometry(1, isMobile ? 92 : 112, isMobile ? 62 : 76);
-blobGeo.deleteAttribute("uv"); blobGeo = mergeVertices(blobGeo);
-const blobBase = blobGeo.attributes.position.array.slice();
-const blob = new THREE.Mesh(blobGeo, glass); scene.add(blob);
-function updateBlob(t) {
-  const pos = blobGeo.attributes.position, a = pos.array;
-  for (let i = 0; i < pos.count; i++) {
-    const ix = i * 3, x = blobBase[ix], y = blobBase[ix + 1], z = blobBase[ix + 2];
-    const n = noise3(x * 0.72 + t * 0.3, y * 0.72 + t * 0.2, z * 0.72 - t * 0.26);
-    const n2 = noise3(x * 1.6 - t * 0.4, y * 1.6 + t * 0.35, z * 1.6 + t * 0.2);
-    const r = 1 + 0.17 * n + 0.022 * n2;
-    a[ix] = x * r; a[ix + 1] = y * r; a[ix + 2] = z * r;
+/* ---------- «пузыри»: мягкое полупрозрачное стекло, окрашенное фоном ----------
+   Без преломления и карт окружения: один проход, дёшево для телефона.
+   Цвет берётся из палитры сцены, свет только по кромке + два мягких блика. */
+const BUBBLE_VERT = `
+  uniform float uTime, uAmp, uFreq, uSeed;
+  varying vec3 vN, vV;
+  vec3 mod289(vec3 x){return x-floor(x*(1.0/289.0))*289.0;}
+  vec4 mod289(vec4 x){return x-floor(x*(1.0/289.0))*289.0;}
+  vec4 permute(vec4 x){return mod289(((x*34.0)+1.0)*x);}
+  vec4 taylorInvSqrt(vec4 r){return 1.79284291400159-0.85373472095314*r;}
+  float snoise(vec3 v){
+    const vec2 C=vec2(1.0/6.0,1.0/3.0); const vec4 D=vec4(0.0,0.5,1.0,2.0);
+    vec3 i=floor(v+dot(v,C.yyy)); vec3 x0=v-i+dot(i,C.xxx);
+    vec3 g=step(x0.yzx,x0.xyz); vec3 l=1.0-g; vec3 i1=min(g.xyz,l.zxy); vec3 i2=max(g.xyz,l.zxy);
+    vec3 x1=x0-i1+C.xxx; vec3 x2=x0-i2+C.yyy; vec3 x3=x0-D.yyy;
+    i=mod289(i);
+    vec4 p=permute(permute(permute(i.z+vec4(0.0,i1.z,i2.z,1.0))+i.y+vec4(0.0,i1.y,i2.y,1.0))+i.x+vec4(0.0,i1.x,i2.x,1.0));
+    float n_=0.142857142857; vec3 ns=n_*D.wyz-D.xzx;
+    vec4 j=p-49.0*floor(p*ns.z*ns.z);
+    vec4 x_=floor(j*ns.z); vec4 y_=floor(j-7.0*x_);
+    vec4 x=x_*ns.x+ns.yyyy; vec4 y=y_*ns.x+ns.yyyy; vec4 h=1.0-abs(x)-abs(y);
+    vec4 b0=vec4(x.xy,y.xy); vec4 b1=vec4(x.zw,y.zw);
+    vec4 s0=floor(b0)*2.0+1.0; vec4 s1=floor(b1)*2.0+1.0; vec4 sh=-step(h,vec4(0.0));
+    vec4 a0=b0.xzyw+s0.xzyw*sh.xxyy; vec4 a1=b1.xzyw+s1.xzyw*sh.zzww;
+    vec3 p0=vec3(a0.xy,h.x); vec3 p1=vec3(a0.zw,h.y); vec3 p2=vec3(a1.xy,h.z); vec3 p3=vec3(a1.zw,h.w);
+    vec4 norm=taylorInvSqrt(vec4(dot(p0,p0),dot(p1,p1),dot(p2,p2),dot(p3,p3)));
+    p0*=norm.x; p1*=norm.y; p2*=norm.z; p3*=norm.w;
+    vec4 m=max(0.6-vec4(dot(x0,x0),dot(x1,x1),dot(x2,x2),dot(x3,x3)),0.0); m=m*m;
+    return 42.0*dot(m*m,vec4(dot(p0,x0),dot(p1,x1),dot(p2,x2),dot(p3,x3)));
   }
-  pos.needsUpdate = true; blobGeo.computeVertexNormals();
+  float disp(vec3 p){ return snoise(p*uFreq+vec3(uTime*0.22+uSeed,uTime*0.17,-uTime*0.19)) + 0.12*snoise(p*uFreq*1.9-vec3(uTime*0.3,0.0,uTime*0.25)); }
+  void main(){
+    vec3 n = normalize(normal); vec3 p = position;
+    if (uAmp > 0.0) {
+      vec3 t = normalize(abs(n.y) < 0.99 ? cross(n, vec3(0.0,1.0,0.0)) : cross(n, vec3(1.0,0.0,0.0)));
+      vec3 b = cross(n, t); float e = 0.06;
+      vec3 p1 = normalize(p + t*e), p2 = normalize(p + b*e);
+      vec3 q  = p  * (1.0 + uAmp*disp(p));
+      vec3 q1 = p1 * (1.0 + uAmp*disp(p1));
+      vec3 q2 = p2 * (1.0 + uAmp*disp(p2));
+      n = normalize(cross(q1 - q, q2 - q)); p = q;
+    }
+    vec4 mv = modelViewMatrix * vec4(p, 1.0);
+    vN = normalize(normalMatrix * n); vV = normalize(-mv.xyz);
+    gl_Position = projectionMatrix * mv;
+  }`;
+const BUBBLE_FRAG = `
+  uniform vec3 uTint, uRim; uniform float uAlpha, uRimPow;
+  varying vec3 vN, vV;
+  void main(){
+    vec3 n = normalize(vN), v = normalize(vV);
+    float ndv = max(dot(n, v), 0.0);
+    float fr = pow(1.0 - ndv, uRimPow);
+    vec3 l1 = normalize(vec3(-0.45, 0.8, 0.55)); float s1 = pow(max(dot(n, normalize(l1 + v)), 0.0), 70.0);
+    vec3 l2 = normalize(vec3(0.6, -0.35, 0.5));  float s2 = pow(max(dot(n, normalize(l2 + v)), 0.0), 22.0) * 0.3;
+    vec3 col = mix(uTint, uRim, fr) + vec3(1.0) * (s1 * 0.7 + s2);
+    float a = (uAlpha + fr * (1.0 - uAlpha) * 0.9 + s1 * 0.45) * smoothstep(0.0, 0.1, ndv);
+    gl_FragColor = vec4(col, clamp(a, 0.0, 1.0));
+    #include <colorspace_fragment>
+  }`;
+function bubbleMat(alpha, amp = 0, freq = 1, seed = 0, rimPow = 2.6) {
+  return new THREE.ShaderMaterial({
+    uniforms: {
+      uTime: { value: 0 }, uAmp: { value: amp }, uFreq: { value: freq }, uSeed: { value: seed },
+      uTint: { value: new THREE.Color(0xff6fa9) }, uRim: { value: new THREE.Color(0xffffff) },
+      uAlpha: { value: alpha }, uRimPow: { value: rimPow },
+    },
+    vertexShader: BUBBLE_VERT, fragmentShader: BUBBLE_FRAG,
+    transparent: true, depthWrite: false, toneMapped: false,
+  });
 }
 
-/* сердце */
-const heart = (() => {
-  const s = new THREE.Shape(), x = 0, y = 0;
-  s.moveTo(x + 5, y + 5);
-  s.bezierCurveTo(x + 5, y + 5, x + 4, y, x, y);
-  s.bezierCurveTo(x - 6, y, x - 6, y + 7, x - 6, y + 7);
-  s.bezierCurveTo(x - 6, y + 11, x - 3, y + 15.4, x + 5, y + 19);
-  s.bezierCurveTo(x + 12, y + 15.4, x + 16, y + 11, x + 16, y + 7);
-  s.bezierCurveTo(x + 16, y + 7, x + 16, y, x + 10, y);
-  s.bezierCurveTo(x + 7, y, x + 5, y + 5, x + 5, y + 5);
-  let g = new THREE.ExtrudeGeometry(s, { depth: 5, bevelEnabled: true, bevelThickness: 2.6, bevelSize: 2.4, bevelSegments: 14, curveSegments: 40 });
-  g.deleteAttribute("normal"); g.deleteAttribute("uv"); g = mergeVertices(g); g.computeVertexNormals();
-  g.center(); g.rotateZ(Math.PI); g.scale(0.062, 0.062, 0.062);
-  return new THREE.Mesh(g, pinkGlass);
+/* сердце: «подушка» — сфера, растянутая по контуру сердца (без самопересечений) */
+const heartGeo = (() => {
+  const sh = new THREE.Shape(), x = 0, y = 0;
+  sh.moveTo(x + 5, y + 5);
+  sh.bezierCurveTo(x + 5, y + 5, x + 4, y, x, y);
+  sh.bezierCurveTo(x - 6, y, x - 6, y + 7, x - 6, y + 7);
+  sh.bezierCurveTo(x - 6, y + 11, x - 3, y + 15.4, x + 5, y + 19);
+  sh.bezierCurveTo(x + 12, y + 15.4, x + 16, y + 11, x + 16, y + 7);
+  sh.bezierCurveTo(x + 16, y + 7, x + 16, y, x + 10, y);
+  sh.bezierCurveTo(x + 7, y, x + 5, y + 5, x + 5, y + 5);
+  const pts = sh.getPoints(160), cx = 5, cy = 8.4, N = 720, R = new Float32Array(N);
+  for (let i = 0; i < N; i++) { // радиус контура по направлению: луч из центра, берём дальнее пересечение
+    const phi = i / N * Math.PI * 2, dx = Math.cos(phi), dy = Math.sin(phi); let best = 0;
+    for (let j = 0; j < pts.length - 1; j++) {
+      const a = pts[j], b = pts[j + 1], ex = b.x - a.x, ey = b.y - a.y, den = dx * ey - dy * ex;
+      if (Math.abs(den) < 1e-9) continue;
+      const fx = a.x - cx, fy = a.y - cy, t = (fx * ey - fy * ex) / den, u = (fx * dy - fy * dx) / den;
+      if (t > 0 && u >= 0 && u <= 1 && t > best) best = t;
+    }
+    R[i] = best;
+  }
+  const Rs = new Float32Array(N); // лёгкое сглаживание контура
+  for (let i = 0; i < N; i++) { let acc = 0; for (let k = -3; k <= 3; k++) acc += R[(i + k + N) % N]; Rs[i] = acc / 7; }
+  const g = new THREE.SphereGeometry(1, 96, 64), pos = g.attributes.position;
+  for (let i = 0; i < pos.count; i++) {
+    const px = pos.getX(i), py = pos.getY(i), pz = pos.getZ(i);
+    let phi = Math.atan2(py, px); if (phi < 0) phi += Math.PI * 2;
+    const f = phi / (Math.PI * 2) * N, i0 = Math.floor(f) % N, i1 = (i0 + 1) % N, w = f - Math.floor(f);
+    const r = Rs[i0] * (1 - w) + Rs[i1] * w;
+    pos.setXYZ(i, px * r, -py * r, pz * 4.6);
+  }
+  g.computeVertexNormals(); g.center();
+  g.computeBoundingBox(); const bb = g.boundingBox, k = 1.36 / (bb.max.x - bb.min.x); g.scale(k, k, k);
+  return g;
 })();
-scene.add(heart);
 
-const torus = new THREE.Mesh(new THREE.TorusGeometry(0.62, 0.22, 48, 96), glass); scene.add(torus);
-const s1 = new THREE.Mesh(new THREE.SphereGeometry(0.46, 64, 48), glass); scene.add(s1);
-const s2 = new THREE.Mesh(new THREE.SphereGeometry(0.3, 48, 32), glass); scene.add(s2);
-const objs = { blob, heart, torus, s1, s2 };
+const sphereGeo = new THREE.SphereGeometry(1, 48, 32);
+const blob  = new THREE.Mesh(new THREE.SphereGeometry(1, isMobile ? 64 : 80, isMobile ? 44 : 56), bubbleMat(0.34, 0.15, 0.95, 3.1, 2.2));
+const heart = new THREE.Mesh(heartGeo, bubbleMat(0.6, 0, 1, 0, 2.0));
+const b1 = new THREE.Mesh(sphereGeo, bubbleMat(0.22, 0, 1, 0, 2.8)); b1.scale.setScalar(0.46);
+const b2 = new THREE.Mesh(sphereGeo, bubbleMat(0.2, 0, 1, 0, 3.0));  b2.scale.setScalar(0.3);
+const b3 = new THREE.Mesh(sphereGeo, bubbleMat(0.24, 0, 1, 0, 2.6)); b3.scale.setScalar(0.62);
+const b4 = new THREE.Mesh(sphereGeo, bubbleMat(0.2, 0, 1, 0, 3.0));  b4.scale.setScalar(0.18);
+const objs = { blob, heart, b1, b2, b3, b4 };
+for (const k in objs) scene.add(objs[k]);
+// какой цвет палитры берёт каждый объект: [ключ1, ключ2, доля], кромка
+const TINT = {
+  blob:  { mix: ["a", "b", 0.55], rim: ["b", "#ffffff", 0.55] },
+  heart: { mix: ["#ff4d8d", "b", 0.35], rim: ["#ffd3e4", "#ffffff", 0.4] },
+  b1:    { mix: ["c", "d", 0.5],  rim: ["c", "#ffffff", 0.6] },
+  b2:    { mix: ["b", "d", 0.5],  rim: ["#ffffff", "b", 0.3] },
+  b3:    { mix: ["a", "c", 0.5],  rim: ["c", "#ffffff", 0.55] },
+  b4:    { mix: ["d", "b", 0.5],  rim: ["#ffffff", "b", 0.2] },
+};
 
 /* расположение по сценам: [x, y, z, scale] */
 const LAYOUT = {
-  intro:  { blob: [2.8, 0.5, -2.5, 1.3],  heart: [-2.6, -0.9, -0.4, 1.0], torus: [-2.4, 2.1, -3, 1],   s1: [2.5, -2.3, -1.2, 1], s2: [-0.4, 2.8, -4, 1] },
-  quiz:   { blob: [-3.0, 1.3, -3, 1.15],  heart: [2.8, -1.8, -1, 0.85],   torus: [2.6, 2.4, -4, 0.9], s1: [-2.4, -2.4, -1.5, 1], s2: [0.6, 3.0, -4.5, 1] },
-  result: { blob: [3.0, -1.6, -3, 1.15],  heart: [-2.7, 1.7, -1, 0.95],   torus: [-2.5, -2.5, -4, 0.9], s1: [2.4, 2.4, -1.5, 1], s2: [-0.5, 3.0, -4.5, 1] },
-  letter: { blob: [-3.2, -1.4, -3.5, 1.05], heart: [2.9, 2.0, -1.5, 0.9], torus: [-2.7, 2.5, -4, 0.8], s1: [2.7, -2.5, -2, 1], s2: [0.2, 3.1, -5, 1] },
-  finale: { blob: [-3.1, -1.9, -4, 1.0],  heart: [0, 1.1, 1.6, 1.75],     torus: [3.1, 2.1, -4, 0.9],  s1: [2.9, -2.3, -2, 1], s2: [-2.7, 2.7, -4, 1] },
+  intro:  { blob: [2.8, 0.5, -2.5, 1.3],    heart: [-2.6, -0.9, -0.4, 1.0], b3: [-2.4, 2.1, -3, 1],    b1: [2.5, -2.3, -1.2, 1],  b2: [-0.4, 2.8, -4, 1],   b4: [1.2, 2.4, -1, 1] },
+  quiz:   { blob: [-3.0, 1.3, -3, 1.15],    heart: [2.8, -1.8, -1, 0.85],   b3: [2.6, 2.4, -4, 0.9],   b1: [-2.4, -2.4, -1.5, 1], b2: [0.6, 3.0, -4.5, 1],  b4: [-1.6, -0.2, -0.5, 1] },
+  result: { blob: [3.0, -1.6, -3, 1.15],    heart: [-2.7, 1.7, -1, 0.95],   b3: [-2.5, -2.5, -4, 0.9], b1: [2.4, 2.4, -1.5, 1],   b2: [-0.5, 3.0, -4.5, 1], b4: [1.8, 0.4, -0.5, 1] },
+  letter: { blob: [-3.2, -1.4, -3.5, 1.05], heart: [2.9, 2.0, -1.5, 0.9],   b3: [-2.7, 2.5, -4, 0.8],  b1: [2.7, -2.5, -2, 1],    b2: [0.2, 3.1, -5, 1],    b4: [-2.0, 0.6, -1, 1] },
+  finale: { blob: [-3.8, -3.4, -5, 1.0],    heart: [0, 1.1, 1.6, 1.75],     b3: [3.6, 3.0, -5, 0.9],   b1: [3.4, -4.0, -3, 1],    b2: [-2.9, 3.0, -4, 1],   b4: [-2.2, -0.6, -1, 1] },
 };
 let mode = "intro";
-const target = {}; // name -> {pos:Vector3, scale:number}
+const target = {};
 for (const k in objs) target[k] = { pos: new THREE.Vector3(), scale: 1 };
+const baseScale = {}; for (const k in objs) baseScale[k] = objs[k].scale.x;
 function applyLayout(immediate) {
   const L = LAYOUT[mode] || LAYOUT.intro;
   const spread = THREE.MathUtils.clamp(camera.aspect / 1.6, 0.52, 1.15);
@@ -915,16 +975,23 @@ function applyLayout(immediate) {
   for (const k in objs) {
     let [x, y, z, s] = L[k];
     if (k === "heart" && mode === "finale" && camera.aspect < 0.8) { s *= 0.66; z -= 0.6; y *= 0.95; }
-    target[k].pos.set(x * spread, y * lift, z); target[k].scale = s;
-    if (immediate) { objs[k].position.copy(target[k].pos); objs[k].scale.setScalar(s); }
+    target[k].pos.set(x * spread, y * lift, z); target[k].scale = s * baseScale[k];
+    if (immediate) { objs[k].position.copy(target[k].pos); objs[k].scale.setScalar(target[k].scale); }
   }
 }
 const colTarget = { base: new THREE.Color(), a: new THREE.Color(), b: new THREE.Color(), c: new THREE.Color(), d: new THREE.Color() };
+const col = { base: new THREE.Color(), a: new THREE.Color(), b: new THREE.Color(), c: new THREE.Color(), d: new THREE.Color() };
 function setMode(m) {
   if (!LAYOUT[m]) return;
   mode = m; applyLayout(false);
   const P = PALETTES[m];
-  colTarget.base.set(P.base); colTarget.a.set(P.a); colTarget.b.set(P.b); colTarget.c.set(P.c); colTarget.d.set(P.d);
+  for (const k in colTarget) colTarget[k].set(P[k]);
+}
+const _c1 = new THREE.Color(), _c2 = new THREE.Color();
+function pick(spec) { // ["a"|"#hex", "b"|"#hex", t] -> цвет
+  _c1.set(spec[0].startsWith("#") ? spec[0] : col[spec[0]]);
+  _c2.set(spec[1].startsWith("#") ? spec[1] : col[spec[1]]);
+  return _c1.lerp(_c2, spec[2]);
 }
 
 /* ---------- частицы: поднимающиеся искры + взрыв ---------- */
@@ -936,15 +1003,15 @@ function softTexture() {
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
 }
 const sprite = softTexture();
-const RISE_N = isMobile ? 110 : 180;
+const RISE_N = isMobile ? 90 : 160;
 const riseGeo = new THREE.BufferGeometry();
 const risePos = new Float32Array(RISE_N * 3), riseSpd = new Float32Array(RISE_N);
 for (let i = 0; i < RISE_N; i++) { risePos[i*3] = (Math.random()-.5)*14; risePos[i*3+1] = (Math.random()-.5)*10; risePos[i*3+2] = (Math.random()-.5)*6 - 1; riseSpd[i] = .15 + Math.random()*.45; }
 riseGeo.setAttribute("position", new THREE.BufferAttribute(risePos, 3));
 const riseMat = new THREE.PointsMaterial({ size: 0.13, map: sprite, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, color: 0xffd0e4, opacity: 0 });
-scene.add(new THREE.Points(riseGeo, riseMat));
+const risePts = new THREE.Points(riseGeo, riseMat); risePts.visible = false; scene.add(risePts);
 
-const BURST_N = 420;
+const BURST_N = isMobile ? 300 : 420;
 const burstGeo = new THREE.BufferGeometry();
 const burstPos = new Float32Array(BURST_N * 3), burstVel = new Float32Array(BURST_N * 3);
 burstGeo.setAttribute("position", new THREE.BufferAttribute(burstPos, 3));
@@ -973,30 +1040,32 @@ function tick() {
   const t = clock.getElapsedTime(), dt = Math.min(0.05, t - last); last = t;
   const speed = reduced ? 0.35 : 1;
   bgUniforms.uTime.value = t * speed;
-  for (const k in colTarget) bgUniforms["u" + (k === "base" ? "Base" : k.toUpperCase())].value.lerp(colTarget[k], 0.025);
+  for (const k in col) { col[k].lerp(colTarget[k], 0.025); }
+  bgUniforms.uBase.value.copy(col.base); bgUniforms.uA.value.copy(col.a); bgUniforms.uB.value.copy(col.b); bgUniforms.uC.value.copy(col.c); bgUniforms.uD.value.copy(col.d);
 
-  updateBlob(t * 0.9 * speed);
-  blob.rotation.y = t * 0.12; blob.rotation.x = Math.sin(t * 0.2) * 0.25;
+  blob.material.uniforms.uTime.value = t * 0.9 * speed;
+  blob.rotation.y = t * 0.1; blob.rotation.x = Math.sin(t * 0.2) * 0.25;
   heart.rotation.y = Math.sin(t * 0.55) * 0.55; heart.rotation.x = Math.sin(t * 0.4) * 0.12; heart.rotation.z = Math.sin(t * 0.3) * 0.08;
-  torus.rotation.x = t * 0.35; torus.rotation.y = t * 0.22;
-  s1.rotation.y = t * 0.3; s2.rotation.x = t * 0.4;
 
-  const k = 1 - Math.pow(0.02, dt); // плавное стремление к целям (~2 с)
+  const k = 1 - Math.pow(0.02, dt);
   for (const n in objs) {
-    const o = objs[n], tg = target[n];
-    const bob = Math.sin(t * 0.7 + n.length * 1.7) * 0.12;
+    const o = objs[n], tg = target[n], u = o.material.uniforms;
+    const bob = Math.sin(t * 0.7 + n.length * 1.7 + n.charCodeAt(0)) * 0.12;
     o.position.x += (tg.pos.x - o.position.x) * k;
     o.position.y += (tg.pos.y + bob - o.position.y) * k;
     o.position.z += (tg.pos.z - o.position.z) * k;
     let s = tg.scale;
     if (n === "heart" && mode === "finale") { const ph = (t % 1.5) / 1.5; s *= 1 + 0.07 * Math.max(0, Math.sin(ph * Math.PI * 2)) + 0.04 * Math.max(0, Math.sin(ph * Math.PI * 4 - 1)); }
     o.scale.x += (s - o.scale.x) * k; o.scale.y = o.scale.z = o.scale.x;
+    // цвет из палитры сцены, дальние объекты бледнее
+    u.uTint.value.copy(pick(TINT[n].mix)); u.uRim.value.copy(pick(TINT[n].rim));
   }
 
   // искры
   const wantRise = (mode === "letter" || mode === "finale") ? 0.9 : 0;
   riseMat.opacity += (wantRise - riseMat.opacity) * 0.02;
-  if (riseMat.opacity > 0.01) {
+  risePts.visible = riseMat.opacity > 0.01;
+  if (risePts.visible) {
     for (let i = 0; i < RISE_N; i++) {
       risePos[i*3+1] += riseSpd[i] * dt; risePos[i*3] += Math.sin(t * 0.8 + i) * 0.002;
       if (risePos[i*3+1] > 5.5) { risePos[i*3+1] = -5.5; risePos[i*3] = (Math.random()-.5)*14; }
@@ -1034,7 +1103,7 @@ document.addEventListener("visibilitychange", () => renderer.setAnimationLoop(do
 resize();
 mode = window.__bgMode || "intro";
 setMode(mode); applyLayout(true);
-for (const k in colTarget) bgUniforms["u" + (k === "base" ? "Base" : k.toUpperCase())].value.copy(colTarget[k]);
+for (const k in col) col[k].copy(colTarget[k]);
 renderer.setAnimationLoop(tick);
 window.__bg = { setMode, burst };
 </script>
