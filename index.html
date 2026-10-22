@@ -130,7 +130,7 @@ main{position:fixed;inset:0;z-index:3}
   background:radial-gradient(circle at 36% 30%,#fff 0%,#ffc2dc 38%,rgba(255,111,169,.9) 60%,rgba(255,111,169,0) 72%);
   box-shadow:0 0 28px 6px rgba(255,150,200,.75);will-change:transform,opacity}
 #dbg{position:fixed;top:8px;left:8px;z-index:9;font:600 11px/1.4 ui-monospace,Menlo,monospace;color:#fff;background:rgba(0,0,0,.55);padding:6px 9px;border-radius:9px;pointer-events:none;white-space:pre}
-/* лёгкий режим: включается сам, если телефон не тянет, или через ?lite */
+/* лёгкий режим: только вручную, через ?lite в адресе (на лету не переключается — иначе вид карточки скачет) */
 html.lite .glass{-webkit-backdrop-filter:none;backdrop-filter:none;
   background:linear-gradient(135deg,rgba(255,255,255,.14),rgba(255,255,255,.04) 40%,rgba(255,255,255,.02) 60%,rgba(255,255,255,.09)),linear-gradient(180deg,rgba(26,16,56,.84),rgba(26,16,56,.9))}
 html.lite .float{animation:none}
@@ -891,7 +891,6 @@ let lite = params.has("lite");
 const baseDPR = Math.min(devicePixelRatio || 1, isMobile ? 1 : 1.5);
 renderer.setPixelRatio(lite ? Math.min(baseDPR, 0.75) : baseDPR);
 if (lite) document.documentElement.classList.add("lite");
-function setLite(on) { lite = on; document.documentElement.classList.toggle("lite", on); renderer.setPixelRatio(on ? Math.min(baseDPR, 0.75) : baseDPR); resize(); }
 let dbgEl = null; if (DEBUG) { dbgEl = document.createElement("div"); dbgEl.id = "dbg"; document.body.appendChild(dbgEl); }
 renderer.setSize(innerWidth, innerHeight, false);
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -1186,11 +1185,9 @@ window.addEventListener("pointermove", e => { ptx = (e.clientX / innerWidth) * 2
 /* ---------- цикл ---------- */
 const clock = new THREE.Clock();
 let last = 0;
-let probeN = 0, probeSum = 0, dbgAcc = 0, dbgN = 0, dbgT = 0;
+let dbgAcc = 0, dbgN = 0, dbgT = 0;
 function tick() {
   const t = clock.getElapsedTime(), raw = t - last, dt = Math.min(0.05, raw); last = t;
-  // замер первых секунд: если кадр в среднем дольше 24 мс (≈40 fps), включаем лёгкий режим
-  if (!lite && probeN < 160) { probeN++; if (probeN > 40) probeSum += raw; if (probeN === 160 && probeSum / 120 > 0.024) setLite(true); }
   if (dbgEl) { dbgAcc += raw; dbgN++; if (t - dbgT > 0.5) { const ms = dbgAcc / dbgN * 1000; dbgEl.textContent = `${(1000 / ms).toFixed(0)} fps · ${ms.toFixed(1)} ms\ndpr ${renderer.getPixelRatio().toFixed(2)} · ${lite ? "lite" : "full"} · ${innerWidth}×${innerHeight}`; dbgAcc = 0; dbgN = 0; dbgT = t; } }
   const speed = reduced ? 0.35 : 1;
   bgUniforms.uTime.value = t * speed;
