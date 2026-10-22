@@ -82,7 +82,7 @@ main{position:fixed;inset:0;z-index:3}
 }
 .scene.is-active{visibility:visible;pointer-events:auto}
 .float{animation:float 8s ease-in-out infinite}
-.tilt{perspective:1500px;will-change:transform}
+.tilt{perspective:1500px;will-change:transform;position:relative}
 @keyframes float{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(0,-9px,0)}}
 
 /* ============================================================
@@ -123,6 +123,17 @@ main{position:fixed;inset:0;z-index:3}
 }
 .card.enter{animation:cardIn 1.05s var(--ease-out) both}
 .card.leave{animation:cardOut .75s var(--ease-io) both}
+.card.enter.bloom{animation:cardBloom 1.05s var(--ease-spring) both}
+@keyframes cardBloom{from{opacity:.9;transform:scale(.05);border-radius:50%}to{opacity:1;transform:none;border-radius:34px}}
+/* «призрак» — снимок старой карточки для переходов между вопросами (без размытия фона: дёшево) */
+.card.ghost{position:absolute;top:0;left:0;margin:0;pointer-events:none;z-index:2;-webkit-backdrop-filter:none;backdrop-filter:none;
+  background:linear-gradient(135deg,rgba(255,255,255,.16),rgba(255,255,255,.05) 38%,rgba(255,255,255,.02) 62%,rgba(255,255,255,.10)),linear-gradient(180deg,rgba(24,14,52,.8),rgba(24,14,52,.86))}
+.card.ghost .w,.card.ghost .opt{animation:none!important;opacity:1;transform:none;filter:none}
+.card.ghost .opt.is-dim{opacity:.26}
+.card.ghost .ripple{display:none}
+#flash{position:fixed;inset:0;z-index:4;pointer-events:none;opacity:0;background:radial-gradient(circle at var(--fx,50%) var(--fy,50%),rgba(255,236,244,.95),rgba(255,111,169,.45) 26%,rgba(255,111,169,0) 66%)}
+#flash.on{animation:flash .85s var(--ease-out)}
+@keyframes flash{0%{opacity:0}16%{opacity:.9}100%{opacity:0}}
 @keyframes cardIn{
   from{opacity:0;transform:translate3d(90px,48px,-280px) rotateX(10deg) rotateY(18deg)}
   to{opacity:1;transform:translate3d(0,0,0) rotateX(0) rotateY(0)}
@@ -194,7 +205,7 @@ h1 em .w,.display em .w,h1 em:not(:has(.w)),.display em:not(:has(.w)){background
   transition:transform .55s var(--ease-out),opacity .55s var(--ease-out),background .55s,border-color .55s,box-shadow .55s;
   opacity:0;transform:translate3d(0,18px,-40px) rotateX(-12deg);
 }
-.opt.in{animation:optIn .85s var(--ease-out) forwards;animation-delay:calc(var(--k) * 80ms + 280ms)}
+.opt.in{animation:optIn .85s var(--ease-out) forwards;animation-delay:calc(var(--k) * 80ms + 280ms + var(--in-delay,0ms))}
 @keyframes optIn{to{opacity:1;transform:translate3d(0,0,0) rotateX(0)}}
 .opt .idx{
   flex:none;width:34px;height:34px;display:grid;place-items:center;border-radius:12px;
@@ -292,6 +303,7 @@ noscript div{position:fixed;inset:0;display:grid;place-items:center;padding:24px
 <canvas id="bg" aria-hidden="true"></canvas>
 <div class="fallback" aria-hidden="true"><i></i><i></i><i></i></div>
 <div class="grain" aria-hidden="true"></div>
+<div id="flash" aria-hidden="true"></div>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <defs>
@@ -391,6 +403,10 @@ window.CONFIG = {
 
   quiz: {
     eyebrow: "вопрос {n}",
+    // Переходы между вопросами идут по кругу в этом порядке:
+    // flip (переворот), cube (куб), circle (капля-волна), blinds (жалюзи), zoom (пролёт сквозь),
+    // orbit (карусель по орбите), drop (падает и прилетает сверху), pearl (сжимается в жемчужину), hinge (качели на петле)
+    transitions: ["flip", "cube", "circle", "blinds", "zoom", "orbit", "drop", "pearl", "hinge"],
     // Черновик: 10 вопросов. Лишние можно просто удалить, порядок — как в списке.
     questions: [
       {
@@ -525,24 +541,24 @@ window.CONFIG = {
   function setRich(el, html) { el.innerHTML = tpl(html); delete el.dataset.split; }
 
   /* ---------- переключение сцен (3D-вылет / влёт карточки) ---------- */
-  function animateCard(scene, cls) {
-    const card = $(".card", scene);
+  function animateCard(scene, cls, extra) {
+    const card = $(".card:not(.ghost)", scene);
     if (!card) return Promise.resolve();
     return new Promise(res => {
-      const done = e => { if (e.target !== card) return; card.removeEventListener("animationend", done); card.classList.remove(cls); res(); };
+      const done = e => { if (e.target !== card) return; card.removeEventListener("animationend", done); card.classList.remove(cls); if (extra) card.classList.remove(extra); res(); };
       card.addEventListener("animationend", done);
-      card.classList.add(cls);
+      card.classList.add(cls); if (extra) card.classList.add(extra);
     });
   }
-  async function go(name) {
+  async function go(name, opts = {}) {
     const cur = $(".scene.is-active");
     const next = $(`.scene[data-scene="${name}"]`);
     if (!next || next === cur) return;
     setBg(name);
-    if (cur) { await animateCard(cur, "leave"); cur.classList.remove("is-active"); }
+    if (cur) { await (opts.leave ? opts.leave(cur) : animateCard(cur, "leave")); cur.classList.remove("is-active"); }
     state.scene = name;
     next.classList.add("is-active");
-    const p = animateCard(next, "enter");
+    const p = animateCard(next, "enter", opts.enterClass);
     onEnter[name] && onEnter[name](next);
     await p;
   }
@@ -589,9 +605,11 @@ window.CONFIG = {
 
   /* ---------- ВОПРОСЫ ---------- */
   const Q = C.quiz.questions;
-  function renderQuestion(i) {
+  function renderQuestion(i, inDelay = 0) {
     const q = Q[i];
     state.q = i;
+    const card = $("#quizCard");
+    card.style.setProperty("--in-delay", inDelay + "ms");
     $("#qCount").textContent = `${i + 1} / ${Q.length}`;
     $("#qEyebrow").textContent = C.quiz.eyebrow.replace("{n}", i + 1); delete $("#qEyebrow").dataset.split;
     setRich($("#qTitle"), q.title);
@@ -604,9 +622,8 @@ window.CONFIG = {
       b.addEventListener("click", e => pick(e, b, k));
       list.appendChild(b);
     });
-    reveal($("#quizCard"), 120);
+    reveal(card, 120 + inDelay);
     requestAnimationFrame(() => $$(".opt", list).forEach(b => b.classList.add("in")));
-    state.locked = false;
   }
   async function pick(e, btn, k) {
     if (state.locked) return;
@@ -617,21 +634,86 @@ window.CONFIG = {
     state.answers[state.q] = k;
     $("#barFill").style.width = ((state.q + 1) / Q.length * 100) + "%";
     await wait(720);
-    if (state.q + 1 < Q.length) await flipTo(state.q + 1);
-    else go("result");
+    if (state.q + 1 < Q.length) { await transitionTo(state.q + 1); state.locked = false; }
+    else go("result", { leave: implodeQuiz, enterClass: "bloom" });
   }
-  async function flipTo(i) {
+
+  /* ---------- переходы между вопросами: каждый раз другой ---------- */
+  const EI = "cubic-bezier(.55,0,.8,.2)", EO = "cubic-bezier(.2,.8,.2,1)", EIO = "cubic-bezier(.65,0,.35,1)", SPRING = "cubic-bezier(.34,1.45,.64,1)";
+  const play = async (el, kf, opt) => { const a = el.animate(kf, Object.assign({ fill: "both" }, opt)); await a.finished; a.cancel(); };
+  function makeGhost(card) {
+    const r = card.getBoundingClientRect(), g = card.cloneNode(true);
+    g.classList.add("ghost"); g.classList.remove("enter", "leave"); g.removeAttribute("id"); g.removeAttribute("aria-live");
+    g.style.width = r.width + "px"; g.style.height = r.height + "px";
+    card.parentNode.appendChild(g);
+    return g;
+  }
+  // [ключевые кадры призрака, его параметры], [кадры новой карточки, параметры], точки вращения
+  const FX = {
+    flip:   { out: [[{ transform: "rotateY(0) translateZ(0)", opacity: 1 }, { transform: "rotateY(88deg) translateZ(-140px)", opacity: .15 }], { duration: 430, easing: EI }],
+              in:  [[{ transform: "rotateY(-88deg) translateZ(-140px)", opacity: 0 }, { transform: "rotateY(0) translateZ(0)", opacity: 1 }], { duration: 760, easing: EO, delay: 390 }] },
+    cube:   { origin: ["50% 100%", "50% 0%"],
+              out: [[{ transform: "rotateX(0)", opacity: 1 }, { transform: "rotateX(-96deg)", opacity: .1 }], { duration: 760, easing: EIO }],
+              in:  [[{ transform: "rotateX(96deg)", opacity: 0 }, { transform: "rotateX(0)", opacity: 1 }], { duration: 860, easing: EO, delay: 170 }] },
+    circle: { out: [[{ transform: "scale(1)", opacity: 1 }, { transform: "scale(.94)", opacity: 0 }], { duration: 900, easing: EO, delay: 200 }],
+              in:  [[{ clipPath: "circle(0% at 50% 42%)" }, { clipPath: "circle(145% at 50% 42%)" }], { duration: 1000, easing: EO }] },
+    zoom:   { out: [[{ transform: "scale(1) translateZ(0)", opacity: 1, filter: "blur(0)" }, { transform: "scale(1.9) translateZ(320px)", opacity: 0, filter: "blur(12px)" }], { duration: 680, easing: EI }],
+              in:  [[{ transform: "scale(.55) translateZ(-700px)", opacity: 0 }, { transform: "scale(1) translateZ(0)", opacity: 1 }], { duration: 1000, easing: EO, delay: 240 }] },
+    orbit:  { out: [[{ transform: "translateX(0) rotateY(0) translateZ(0)", opacity: 1 }, { transform: "translateX(-80%) rotateY(-80deg) translateZ(-460px)", opacity: 0 }], { duration: 820, easing: EIO }],
+              in:  [[{ transform: "translateX(80%) rotateY(80deg) translateZ(-460px)", opacity: 0 }, { transform: "translateX(0) rotateY(0) translateZ(0)", opacity: 1 }], { duration: 940, easing: EO, delay: 150 }] },
+    drop:   { out: [[{ transform: "translate(0,0) rotateZ(0)", opacity: 1 }, { transform: "translate(-14%,150%) rotateZ(-16deg)", opacity: .4 }], { duration: 760, easing: "cubic-bezier(.5,0,1,.55)" }],
+              in:  [[{ transform: "translate(6%,-140%) rotateZ(9deg) scale(.96)", opacity: 0 }, { transform: "translate(0,0) rotateZ(0) scale(1)", opacity: 1 }], { duration: 1000, easing: SPRING, delay: 200 }] },
+    hinge:  { origin: [null, "50% 0%"],
+              out: [[{ transform: "translateY(0) scale(1)", opacity: 1 }, { transform: "translateY(80px) scale(.94)", opacity: 0 }], { duration: 460, easing: EI }],
+              in:  [[{ transform: "rotateX(-100deg)", opacity: 0 }, { transform: "rotateX(0)", opacity: 1 }], { duration: 1100, easing: SPRING, delay: 140 }] },
+  };
+  async function runFx(name, card, swap) {
+    const fx = FX[name], ghost = makeGhost(card);
+    if (fx.origin) { if (fx.origin[0]) ghost.style.transformOrigin = fx.origin[0]; if (fx.origin[1]) card.style.transformOrigin = fx.origin[1]; }
+    swap(fx.in[1].delay || 0);
+    const a1 = ghost.animate(fx.out[0], Object.assign({ fill: "both" }, fx.out[1]));
+    const a2 = card.animate(fx.in[0], Object.assign({ fill: "both" }, fx.in[1]));
+    await Promise.all([a1.finished, a2.finished]);
+    ghost.remove(); a2.cancel(); card.style.transformOrigin = "";
+  }
+  async function fxBlinds(card, swap) { // карточка режется на полоски, они разъезжаются в стороны
+    const N = 6, slices = [];
+    for (let i = 0; i < N; i++) { const g = makeGhost(card); g.style.clipPath = `inset(${i / N * 100}% 0 ${100 - (i + 1) / N * 100}% 0)`; slices.push(g); }
+    swap(340);
+    const outs = slices.map((g, i) => g.animate([{ transform: "translateX(0)", opacity: 1 }, { transform: `translateX(${i % 2 ? 115 : -115}%)`, opacity: 0 }], { duration: 580, easing: EI, delay: i * 55, fill: "both" }).finished);
+    const a = card.animate([{ transform: "scale(.94) translateZ(-140px)", opacity: 0 }, { transform: "scale(1) translateZ(0)", opacity: 1 }], { duration: 820, easing: EO, delay: 340, fill: "both" });
+    await Promise.all([...outs, a.finished]);
+    slices.forEach(g => g.remove()); a.cancel();
+  }
+  async function fxPearl(card, swap) { // сжимается в жемчужину и раскрывается новой
+    const ghost = makeGhost(card);
+    swap(560); card.style.opacity = "0";
+    await play(ghost, [{ transform: "scale(1)", borderRadius: "34px", opacity: 1 }, { transform: "scale(.06)", borderRadius: "50%", opacity: .95 }], { duration: 560, easing: EI });
+    ghost.remove(); card.style.opacity = "";
+    await play(card, [{ transform: "scale(.06)", borderRadius: "50%", opacity: .95 }, { transform: "scale(1)", borderRadius: "34px", opacity: 1 }], { duration: 950, easing: SPRING });
+  }
+  async function transitionTo(i) {
     const card = $("#quizCard");
-    const out = card.animate(
-      [{ transform: "rotateY(0deg) translateZ(0)", opacity: 1 }, { transform: "rotateY(84deg) translateZ(-120px)", opacity: .35 }],
-      { duration: 460, easing: "cubic-bezier(.55,0,.8,.2)", fill: "forwards" });
-    await out.finished;
-    renderQuestion(i);
-    out.cancel();
-    const back = card.animate(
-      [{ transform: "rotateY(-84deg) translateZ(-120px)", opacity: .35 }, { transform: "rotateY(0deg) translateZ(0)", opacity: 1 }],
-      { duration: 720, easing: "cubic-bezier(.2,.8,.2,1)" });
-    await back.finished;
+    const order = C.quiz.transitions || Object.keys(FX);
+    const name = order[(i - 1) % order.length];
+    const h = card.getBoundingClientRect().height; card.style.minHeight = h + "px";
+    const swap = d => renderQuestion(i, d);
+    if (name === "blinds") await fxBlinds(card, swap);
+    else if (name === "pearl") await fxPearl(card, swap);
+    else await runFx(FX[name] ? name : "flip", card, swap);
+    card.style.minHeight = "";
+  }
+  function flash(x, y) {
+    const f = $("#flash"); f.style.setProperty("--fx", x + "px"); f.style.setProperty("--fy", y + "px");
+    f.classList.remove("on"); void f.offsetWidth; f.classList.add("on");
+  }
+  async function implodeQuiz() { // после последнего ответа: карточка схлопывается в точку и взрывается искрами
+    const card = $("#quizCard"), r = card.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    await play(card, [{ transform: "scale(1)", borderRadius: "34px", opacity: 1 }, { transform: "scale(.05)", borderRadius: "50%", opacity: .95 }], { duration: 640, easing: EI });
+    card.style.opacity = "0";
+    flash(cx, cy);
+    if (window.__bg) window.__bg.burstAt(cx / innerWidth * 2 - 1, -(cy / innerHeight * 2 - 1), 1.3);
+    await wait(420);
   }
 
   /* ---------- РЕЗУЛЬТАТ ---------- */
@@ -696,7 +778,7 @@ window.CONFIG = {
       reveal(s, 250);
       const b = $("#startBtn"); b.classList.remove("on"); void b.offsetWidth; b.style.animationDelay = "1150ms"; b.classList.add("on");
     },
-    quiz() { renderQuestion(0); },
+    quiz() { const c = $("#quizCard"); c.style.opacity = ""; renderQuestion(0); state.locked = false; },
     async result(s) {
       reveal(s, 200);
       sendAnswers();
@@ -1018,10 +1100,9 @@ burstGeo.setAttribute("position", new THREE.BufferAttribute(burstPos, 3));
 const burstMat = new THREE.PointsMaterial({ size: 0.16, map: sprite, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, color: 0xffb3d1, opacity: 0 });
 const burstPts = new THREE.Points(burstGeo, burstMat); burstPts.visible = false; scene.add(burstPts);
 let burstT = -1;
-function burst() {
-  const o = heart.position;
+function burst(o = heart.position, power = 1) {
   for (let i = 0; i < BURST_N; i++) {
-    const th = Math.random()*Math.PI*2, ph = Math.acos(2*Math.random()-1), v = 1.5 + Math.random()*4;
+    const th = Math.random()*Math.PI*2, ph = Math.acos(2*Math.random()-1), v = (1.5 + Math.random()*4) * power;
     burstPos[i*3] = o.x; burstPos[i*3+1] = o.y; burstPos[i*3+2] = o.z;
     burstVel[i*3] = Math.sin(ph)*Math.cos(th)*v; burstVel[i*3+1] = Math.sin(ph)*Math.sin(th)*v + 1; burstVel[i*3+2] = Math.cos(ph)*v;
   }
@@ -1105,7 +1186,11 @@ mode = window.__bgMode || "intro";
 setMode(mode); applyLayout(true);
 for (const k in col) col[k].copy(colTarget[k]);
 renderer.setAnimationLoop(tick);
-window.__bg = { setMode, burst };
+function burstAt(nx, ny, power = 1) { // точка экрана (NDC) -> точка в сцене на глубине z=0.8
+  const v = new THREE.Vector3(nx, ny, 0.5).unproject(camera), d = v.sub(camera.position).normalize();
+  burst(camera.position.clone().addScaledVector(d, (0.8 - camera.position.z) / d.z), power);
+}
+window.__bg = { setMode, burst: () => burst(), burstAt };
 </script>
 </body>
 </html>
