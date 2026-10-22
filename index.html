@@ -126,11 +126,12 @@ main{position:fixed;inset:0;z-index:3}
 .card.enter.bloom{animation:cardBloom 1.05s var(--ease-spring) both}
 @keyframes cardBloom{from{opacity:.9;transform:scale(.05);border-radius:50%}to{opacity:1;transform:none;border-radius:34px}}
 /* «призрак» — снимок старой карточки для переходов между вопросами (без размытия фона: дёшево) */
-.card.ghost{position:absolute;top:0;left:0;margin:0;pointer-events:none;z-index:2;-webkit-backdrop-filter:none;backdrop-filter:none;
+.card.ghost{position:absolute;top:50%;left:0;margin:0;pointer-events:none;z-index:2;-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 24px 50px -30px rgba(0,0,0,.7);
   background:linear-gradient(135deg,rgba(255,255,255,.16),rgba(255,255,255,.05) 38%,rgba(255,255,255,.02) 62%,rgba(255,255,255,.10)),linear-gradient(180deg,rgba(24,14,52,.8),rgba(24,14,52,.86))}
 .card.ghost .w,.card.ghost .opt{animation:none!important;opacity:1;transform:none;filter:none}
 .card.ghost .opt.is-dim{opacity:.26}
 .card.ghost .ripple{display:none}
+.card.above{position:relative;z-index:3}
 #flash{position:fixed;inset:0;z-index:4;pointer-events:none;opacity:0;background:radial-gradient(circle at var(--fx,50%) var(--fy,50%),rgba(255,236,244,.95),rgba(255,111,169,.45) 26%,rgba(255,111,169,0) 66%)}
 #flash.on{animation:flash .85s var(--ease-out)}
 @keyframes flash{0%{opacity:0}16%{opacity:.9}100%{opacity:0}}
@@ -284,7 +285,9 @@ h1 em .w,.display em .w,h1 em:not(:has(.w)),.display em:not(:has(.w)){background
    ============================================================ */
 @media (pointer:coarse){
   .grain{display:none}
-  .glass{-webkit-backdrop-filter:blur(14px) saturate(150%);backdrop-filter:blur(14px) saturate(150%)}
+  .glass{-webkit-backdrop-filter:blur(12px) saturate(150%);backdrop-filter:blur(12px) saturate(150%)}
+  .w{filter:none}
+  .num{animation:none;background-position:30% 0}
 }
 @media (max-width:480px){
   .card{padding:30px 22px 28px}
@@ -629,6 +632,9 @@ window.CONFIG = {
     if (state.locked) return;
     state.locked = true;
     ripple(e, btn);
+    { const r = $("#quizCard").getBoundingClientRect(), b = btn.getBoundingClientRect();
+      const x = (e.clientX || b.left + b.width / 2) - r.left, y = (e.clientY || b.top + b.height / 2) - r.top;
+      $("#quizCard").style.setProperty("--tx", (x / r.width * 100).toFixed(1) + "%"); $("#quizCard").style.setProperty("--ty", (y / r.height * 100).toFixed(1) + "%"); }
     btn.classList.add("is-picked");
     $$(".opt").forEach(b => { if (b !== btn) b.classList.add("is-dim"); });
     state.answers[state.q] = k;
@@ -638,70 +644,86 @@ window.CONFIG = {
     else go("result", { leave: implodeQuiz, enterClass: "bloom" });
   }
 
-  /* ---------- переходы между вопросами: каждый раз другой ---------- */
-  const EI = "cubic-bezier(.55,0,.8,.2)", EO = "cubic-bezier(.2,.8,.2,1)", EIO = "cubic-bezier(.65,0,.35,1)", SPRING = "cubic-bezier(.34,1.45,.64,1)";
+  /* ---------- переходы между вопросами: каждый раз другой, с характером ---------- */
+  const EI = "cubic-bezier(.55,0,.8,.2)", EO = "cubic-bezier(.2,.8,.2,1)", EIO = "cubic-bezier(.65,0,.35,1)", SPRING = "cubic-bezier(.34,1.56,.64,1)";
   const play = async (el, kf, opt) => { const a = el.animate(kf, Object.assign({ fill: "both" }, opt)); await a.finished; a.cancel(); };
   function makeGhost(card) {
     const r = card.getBoundingClientRect(), g = card.cloneNode(true);
-    g.classList.add("ghost"); g.classList.remove("enter", "leave"); g.removeAttribute("id"); g.removeAttribute("aria-live");
-    g.style.width = r.width + "px"; g.style.height = r.height + "px";
+    g.classList.add("ghost"); g.classList.remove("enter", "leave", "above"); g.removeAttribute("id"); g.removeAttribute("aria-live");
+    g.style.width = r.width + "px"; g.style.height = r.height + "px"; g.style.marginTop = (-r.height / 2) + "px";
     card.parentNode.appendChild(g);
     return g;
   }
-  // [ключевые кадры призрака, его параметры], [кадры новой карточки, параметры], точки вращения
+  function animateHeight(card, oldH, delay = 0) { // плавная смена высоты, чтобы сцена не дёргалась
+    const newH = card.offsetHeight;
+    if (Math.abs(newH - oldH) < 2) return;
+    card.style.overflow = "hidden";
+    const a = card.animate([{ height: oldH + "px" }, { height: newH + "px" }], { duration: 700, delay, easing: EO, fill: "both" });
+    a.finished.then(() => { a.cancel(); card.style.overflow = ""; });
+  }
+  // out: кадры «призрака» старой карточки, in: кадры новой. ghostBelow — призрак под новой карточкой
   const FX = {
-    flip:   { out: [[{ transform: "rotateY(0) translateZ(0)", opacity: 1 }, { transform: "rotateY(88deg) translateZ(-140px)", opacity: .15 }], { duration: 430, easing: EI }],
-              in:  [[{ transform: "rotateY(-88deg) translateZ(-140px)", opacity: 0 }, { transform: "rotateY(0) translateZ(0)", opacity: 1 }], { duration: 760, easing: EO, delay: 390 }] },
+    flip:   { out: [[{ transform: "rotateY(0) scale(1)", opacity: 1 }, { transform: "rotateY(-92deg) scale(.86)", opacity: .1 }], { duration: 420, easing: EI }],
+              in:  [[{ transform: "rotateY(92deg) scale(.86)", opacity: 0, offset: 0 }, { transform: "rotateY(-14deg) scale(1.04)", opacity: 1, offset: .62, easing: EO }, { transform: "rotateY(6deg) scale(.99)", offset: .84, easing: "ease-in-out" }, { transform: "rotateY(0) scale(1)" }], { duration: 1000, easing: EO, delay: 380 }] },
     cube:   { origin: ["50% 100%", "50% 0%"],
-              out: [[{ transform: "rotateX(0)", opacity: 1 }, { transform: "rotateX(-96deg)", opacity: .1 }], { duration: 760, easing: EIO }],
-              in:  [[{ transform: "rotateX(96deg)", opacity: 0 }, { transform: "rotateX(0)", opacity: 1 }], { duration: 860, easing: EO, delay: 170 }] },
-    circle: { out: [[{ transform: "scale(1)", opacity: 1 }, { transform: "scale(.94)", opacity: 0 }], { duration: 900, easing: EO, delay: 200 }],
-              in:  [[{ clipPath: "circle(0% at 50% 42%)" }, { clipPath: "circle(145% at 50% 42%)" }], { duration: 1000, easing: EO }] },
-    zoom:   { out: [[{ transform: "scale(1) translateZ(0)", opacity: 1, filter: "blur(0)" }, { transform: "scale(1.9) translateZ(320px)", opacity: 0, filter: "blur(12px)" }], { duration: 680, easing: EI }],
-              in:  [[{ transform: "scale(.55) translateZ(-700px)", opacity: 0 }, { transform: "scale(1) translateZ(0)", opacity: 1 }], { duration: 1000, easing: EO, delay: 240 }] },
-    orbit:  { out: [[{ transform: "translateX(0) rotateY(0) translateZ(0)", opacity: 1 }, { transform: "translateX(-80%) rotateY(-80deg) translateZ(-460px)", opacity: 0 }], { duration: 820, easing: EIO }],
-              in:  [[{ transform: "translateX(80%) rotateY(80deg) translateZ(-460px)", opacity: 0 }, { transform: "translateX(0) rotateY(0) translateZ(0)", opacity: 1 }], { duration: 940, easing: EO, delay: 150 }] },
-    drop:   { out: [[{ transform: "translate(0,0) rotateZ(0)", opacity: 1 }, { transform: "translate(-14%,150%) rotateZ(-16deg)", opacity: .4 }], { duration: 760, easing: "cubic-bezier(.5,0,1,.55)" }],
-              in:  [[{ transform: "translate(6%,-140%) rotateZ(9deg) scale(.96)", opacity: 0 }, { transform: "translate(0,0) rotateZ(0) scale(1)", opacity: 1 }], { duration: 1000, easing: SPRING, delay: 200 }] },
+              out: [[{ transform: "rotateX(0)", opacity: 1 }, { transform: "rotateX(-100deg)", opacity: .1 }], { duration: 720, easing: EIO }],
+              in:  [[{ transform: "rotateX(100deg)", opacity: 0, offset: 0 }, { transform: "rotateX(-10deg)", opacity: 1, offset: .66, easing: EO }, { transform: "rotateX(4deg)", offset: .86, easing: "ease-in-out" }, { transform: "rotateX(0)" }], { duration: 1100, easing: EO, delay: 160 }] },
+    circle: { ghostBelow: true,
+              out: [[{ transform: "scale(1)", opacity: 1 }, { transform: "scale(1.08)", opacity: 0 }], { duration: 800, easing: EO, delay: 250 }],
+              in:  [[{ clipPath: "circle(0% at var(--tx,50%) var(--ty,45%))" }, { clipPath: "circle(150% at var(--tx,50%) var(--ty,45%))" }], { duration: 950, easing: EO }] },
+    zoom:   { out: [[{ transform: "scale(1) translateZ(0) rotateZ(0)", opacity: 1, filter: "blur(0)" }, { transform: "scale(2.2) translateZ(340px) rotateZ(4deg)", opacity: 0, filter: "blur(14px)" }], { duration: 680, easing: EI }],
+              in:  [[{ transform: "scale(.4) translateZ(-800px) rotateZ(-8deg)", opacity: 0, offset: 0 }, { transform: "scale(1.06) translateZ(0) rotateZ(1.5deg)", opacity: 1, offset: .72, easing: EO }, { transform: "scale(1) translateZ(0) rotateZ(0)" }], { duration: 1050, easing: EO, delay: 220 }] },
+    orbit:  { out: [[{ transform: "translateX(0) rotateY(0) rotateZ(0) translateZ(0)", opacity: 1 }, { transform: "translateX(-85%) rotateY(-85deg) rotateZ(-12deg) translateZ(-500px)", opacity: 0 }], { duration: 820, easing: EIO }],
+              in:  [[{ transform: "translateX(85%) rotateY(85deg) rotateZ(12deg) translateZ(-500px)", opacity: 0 }, { transform: "translateX(0) rotateY(0) rotateZ(0) translateZ(0)", opacity: 1 }], { duration: 1000, easing: SPRING, delay: 150 }] },
+    drop:   { out: [[{ transform: "translate(0,0) rotateZ(0)", opacity: 1 }, { transform: "translate(-18%,160%) rotateZ(-24deg)", opacity: .4 }], { duration: 780, easing: "cubic-bezier(.5,0,1,.55)" }],
+              in:  [[{ transform: "translate(8%,-150%) rotateZ(12deg)", opacity: 0, offset: 0 }, { transform: "translate(0,0) rotateZ(-5deg)", opacity: 1, offset: .6, easing: "cubic-bezier(.3,0,.7,.4)" }, { transform: "translate(0,-22px) rotateZ(2.5deg)", offset: .78, easing: "ease-out" }, { transform: "translate(0,0) rotateZ(-1deg)", offset: .9, easing: "ease-in" }, { transform: "translate(0,0) rotateZ(0)" }], { duration: 1200, easing: "ease-out", delay: 200 }] },
     hinge:  { origin: [null, "50% 0%"],
-              out: [[{ transform: "translateY(0) scale(1)", opacity: 1 }, { transform: "translateY(80px) scale(.94)", opacity: 0 }], { duration: 460, easing: EI }],
-              in:  [[{ transform: "rotateX(-100deg)", opacity: 0 }, { transform: "rotateX(0)", opacity: 1 }], { duration: 1100, easing: SPRING, delay: 140 }] },
+              out: [[{ transform: "translateY(0) scale(1)", opacity: 1 }, { transform: "translateY(90px) scale(.92)", opacity: 0 }], { duration: 460, easing: EI }],
+              in:  [[{ transform: "rotateX(-110deg)", opacity: 0, offset: 0 }, { transform: "rotateX(16deg)", opacity: 1, offset: .5, easing: "cubic-bezier(.4,0,.8,.6)" }, { transform: "rotateX(-8deg)", offset: .72, easing: "ease-in-out" }, { transform: "rotateX(3deg)", offset: .88, easing: "ease-in-out" }, { transform: "rotateX(0)" }], { duration: 1400, easing: "ease-out", delay: 140 }] },
   };
-  async function runFx(name, card, swap) {
+  async function runFx(name, card, swap, oldH) {
     const fx = FX[name], ghost = makeGhost(card);
+    if (fx.ghostBelow) { ghost.style.zIndex = "1"; card.classList.add("above"); }
     if (fx.origin) { if (fx.origin[0]) ghost.style.transformOrigin = fx.origin[0]; if (fx.origin[1]) card.style.transformOrigin = fx.origin[1]; }
-    swap(fx.in[1].delay || 0);
+    const delay = fx.in[1].delay || 0;
+    swap(delay); animateHeight(card, oldH, Math.max(0, delay - 150));
     const a1 = ghost.animate(fx.out[0], Object.assign({ fill: "both" }, fx.out[1]));
     const a2 = card.animate(fx.in[0], Object.assign({ fill: "both" }, fx.in[1]));
     await Promise.all([a1.finished, a2.finished]);
-    ghost.remove(); a2.cancel(); card.style.transformOrigin = "";
+    ghost.remove(); a2.cancel(); card.style.transformOrigin = ""; card.classList.remove("above");
   }
-  async function fxBlinds(card, swap) { // карточка режется на полоски, они разъезжаются в стороны
+  async function fxBlinds(card, swap, oldH) { // карточка режется на полоски, они разлетаются в стороны
     const N = 6, slices = [];
     for (let i = 0; i < N; i++) { const g = makeGhost(card); g.style.clipPath = `inset(${i / N * 100}% 0 ${100 - (i + 1) / N * 100}% 0)`; slices.push(g); }
-    swap(340);
-    const outs = slices.map((g, i) => g.animate([{ transform: "translateX(0)", opacity: 1 }, { transform: `translateX(${i % 2 ? 115 : -115}%)`, opacity: 0 }], { duration: 580, easing: EI, delay: i * 55, fill: "both" }).finished);
-    const a = card.animate([{ transform: "scale(.94) translateZ(-140px)", opacity: 0 }, { transform: "scale(1) translateZ(0)", opacity: 1 }], { duration: 820, easing: EO, delay: 340, fill: "both" });
+    swap(360); animateHeight(card, oldH, 200);
+    const outs = slices.map((g, i) => g.animate(
+      [{ transform: "translate(0,0) rotateZ(0)", opacity: 1 }, { transform: `translate(${i % 2 ? 130 : -130}%, ${(i - N / 2) * 14}px) rotateZ(${i % 2 ? 14 : -14}deg)`, opacity: 0 }],
+      { duration: 620, easing: EI, delay: i * 60, fill: "both" }).finished);
+    const a = card.animate([{ transform: "scale(.88) translateZ(-160px)", opacity: 0, offset: 0 }, { transform: "scale(1.05) translateZ(0)", opacity: 1, offset: .7, easing: EO }, { transform: "scale(1) translateZ(0)" }], { duration: 900, easing: EO, delay: 360, fill: "both" });
     await Promise.all([...outs, a.finished]);
     slices.forEach(g => g.remove()); a.cancel();
   }
-  async function fxPearl(card, swap) { // сжимается в жемчужину и раскрывается новой
+  async function fxPearl(card, swap, oldH) { // сжимается в жемчужину, подпрыгивает и раскрывается новой
     const ghost = makeGhost(card);
-    swap(560); card.style.opacity = "0";
-    await play(ghost, [{ transform: "scale(1)", borderRadius: "34px", opacity: 1 }, { transform: "scale(.06)", borderRadius: "50%", opacity: .95 }], { duration: 560, easing: EI });
-    ghost.remove(); card.style.opacity = "";
-    await play(card, [{ transform: "scale(.06)", borderRadius: "50%", opacity: .95 }, { transform: "scale(1)", borderRadius: "34px", opacity: 1 }], { duration: 950, easing: SPRING });
+    swap(1000); card.style.opacity = "0";
+    await play(ghost, [
+      { transform: "scale(1) translateY(0)", borderRadius: "34px", opacity: 1, offset: 0 },
+      { transform: "scale(.07) translateY(0)", borderRadius: "50%", opacity: 1, offset: .5, easing: EI },
+      { transform: "scale(.07) translateY(-90px)", borderRadius: "50%", opacity: 1, offset: .76, easing: "ease-out" },
+      { transform: "scale(.07) translateY(0)", borderRadius: "50%", opacity: 1, easing: "ease-in" },
+    ], { duration: 1000 });
+    ghost.remove(); card.style.opacity = ""; animateHeight(card, oldH, 0);
+    await play(card, [{ transform: "scale(.07)", borderRadius: "50%", opacity: 1, offset: 0 }, { transform: "scale(1.07)", borderRadius: "34px", opacity: 1, offset: .7, easing: EO }, { transform: "scale(1)", borderRadius: "34px" }], { duration: 950, easing: EO });
   }
   async function transitionTo(i) {
     const card = $("#quizCard");
     const order = C.quiz.transitions || Object.keys(FX);
     const name = order[(i - 1) % order.length];
-    const h = card.getBoundingClientRect().height; card.style.minHeight = h + "px";
+    const oldH = card.offsetHeight;
     const swap = d => renderQuestion(i, d);
-    if (name === "blinds") await fxBlinds(card, swap);
-    else if (name === "pearl") await fxPearl(card, swap);
-    else await runFx(FX[name] ? name : "flip", card, swap);
-    card.style.minHeight = "";
+    if (name === "blinds") await fxBlinds(card, swap, oldH);
+    else if (name === "pearl") await fxPearl(card, swap, oldH);
+    else await runFx(FX[name] ? name : "flip", card, swap, oldH);
   }
   function flash(x, y) {
     const f = $("#flash"); f.style.setProperty("--fx", x + "px"); f.style.setProperty("--fy", y + "px");
@@ -709,7 +731,7 @@ window.CONFIG = {
   }
   async function implodeQuiz() { // после последнего ответа: карточка схлопывается в точку и взрывается искрами
     const card = $("#quizCard"), r = card.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
-    await play(card, [{ transform: "scale(1)", borderRadius: "34px", opacity: 1 }, { transform: "scale(.05)", borderRadius: "50%", opacity: .95 }], { duration: 640, easing: EI });
+    await play(card, [{ transform: "scale(1)", borderRadius: "34px", opacity: 1, offset: 0 }, { transform: "scale(1.06)", borderRadius: "40px", opacity: 1, offset: .25, easing: EI }, { transform: "scale(.05)", borderRadius: "50%", opacity: .95 }], { duration: 760, easing: EI });
     card.style.opacity = "0";
     flash(cx, cy);
     if (window.__bg) window.__bg.burstAt(cx / innerWidth * 2 - 1, -(cy / innerHeight * 2 - 1), 1.3);
@@ -842,7 +864,7 @@ try {
   document.documentElement.classList.add("no-webgl");
   throw e;
 }
-renderer.setPixelRatio(Math.min(devicePixelRatio || 1, isMobile ? 1.25 : 1.5));
+renderer.setPixelRatio(Math.min(devicePixelRatio || 1, isMobile ? 1 : 1.5));
 renderer.setSize(innerWidth, innerHeight, false);
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.05;
@@ -860,7 +882,7 @@ const PALETTES = {
   finale: { base: "#230d26", a: "#c13a78", b: "#ff6fa9", c: "#ffd27a", d: "#ff9a7a" },
 };
 const bgUniforms = {
-  uTime: { value: 0 }, uAspect: { value: innerWidth / innerHeight },
+  uTime: { value: 0 }, uAspect: { value: innerWidth / innerHeight }, uExposure: { value: 1.05 },
   uBase: { value: new THREE.Color(PALETTES.intro.base) }, uA: { value: new THREE.Color(PALETTES.intro.a) },
   uB: { value: new THREE.Color(PALETTES.intro.b) }, uC: { value: new THREE.Color(PALETTES.intro.c) },
   uD: { value: new THREE.Color(PALETTES.intro.d) },
@@ -869,7 +891,15 @@ const bgMat = new THREE.ShaderMaterial({
   uniforms: bgUniforms, depthWrite: false, depthTest: false,
   vertexShader: `varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
   fragmentShader: `
-    uniform float uTime; uniform float uAspect; uniform vec3 uBase,uA,uB,uC,uD; varying vec2 vUv;
+    uniform float uTime; uniform float uAspect; uniform float uExposure; uniform vec3 uBase,uA,uB,uC,uD; varying vec2 vUv;
+    // тональная компрессия ACES и sRGB — вручную, потому что при рендере в буфер three.js их не применяет
+    vec3 RRTAndODTFit(vec3 v){ vec3 a=v*(v+0.0245786)-0.000090537; vec3 b=v*(0.983729*v+0.4329510)+0.238081; return a/b; }
+    vec3 aces(vec3 c){
+      const mat3 inM=mat3(vec3(0.59719,0.07600,0.02840),vec3(0.35458,0.90834,0.13383),vec3(0.04823,0.01566,0.83777));
+      const mat3 outM=mat3(vec3(1.60475,-0.10208,-0.00327),vec3(-0.53108,1.10813,-0.07276),vec3(-0.07367,-0.00605,1.07602));
+      c*=uExposure/0.6; c=inM*c; c=RRTAndODTFit(c); c=outM*c; return clamp(c,0.0,1.0);
+    }
+    vec3 toSRGB(vec3 c){ return mix(pow(c,vec3(0.41666))*1.055-vec3(0.055), c*12.92, vec3(lessThanEqual(c,vec3(0.0031308)))); }
     vec3 mod289(vec3 x){return x-floor(x*(1.0/289.0))*289.0;}
     vec2 mod289(vec2 x){return x-floor(x*(1.0/289.0))*289.0;}
     vec3 permute(vec3 x){return mod289(((x*34.0)+1.0)*x);}
@@ -897,18 +927,29 @@ const bgMat = new THREE.ShaderMaterial({
       col=mix(col,uD,smoothstep(0.1,1.0,n4)*0.45);
       float v=smoothstep(2.1,0.1,length(p)); col*=mix(0.55,1.0,v);
       col+=(fract(sin(dot(gl_FragCoord.xy,vec2(12.9898,78.233)))*43758.5453)-0.5)/200.0;
-      gl_FragColor=vec4(col,1.0);
-      #include <tonemapping_fragment>
-      #include <colorspace_fragment>
+      gl_FragColor=vec4(toSRGB(aces(col)),1.0);
     }`,
 });
-const bgPlane = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), bgMat);
+// фон считается в маленьком буфере (на телефоне ~1/3 экрана) и растягивается: градиент от этого не страдает, а пикселей в разы меньше
+const bgScene = new THREE.Scene(), bgCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+bgScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), bgMat));
+let bgRT = null;
+const bgShow = new THREE.ShaderMaterial({
+  uniforms: { map: { value: null } }, depthWrite: false, depthTest: false, toneMapped: false,
+  vertexShader: `varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
+  fragmentShader: `uniform sampler2D map; varying vec2 vUv; void main(){ gl_FragColor=texture2D(map,vUv); }`,
+});
+const bgPlane = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), bgShow);
 bgPlane.position.z = -22; bgPlane.renderOrder = -1; scene.add(bgPlane);
 function fitBg() {
   const d = camera.position.z - bgPlane.position.z;
   const h = 2 * d * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * 1.25;
   bgPlane.scale.set(h * camera.aspect, h, 1);
   bgUniforms.uAspect.value = camera.aspect;
+  const k = isMobile ? 0.34 : 0.45, w = Math.max(96, Math.round(innerWidth * k)), hh = Math.max(96, Math.round(innerHeight * k));
+  if (bgRT) bgRT.dispose();
+  bgRT = new THREE.WebGLRenderTarget(w, hh, { depthBuffer: false, stencilBuffer: false, minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter });
+  bgShow.uniforms.map.value = bgRT.texture;
 }
 
 /* ---------- «пузыри»: мягкое полупрозрачное стекло, окрашенное фоном ----------
@@ -1170,7 +1211,8 @@ function tick() {
   camera.position.x = cpx * 0.75; camera.position.y = -cpy * 0.5;
   camera.lookAt(0, 0.15, 0);
 
-  renderer.render(scene, camera);
+  renderer.setRenderTarget(bgRT); renderer.render(bgScene, bgCam);
+  renderer.setRenderTarget(null); renderer.render(scene, camera);
 }
 
 function resize() {
