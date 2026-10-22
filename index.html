@@ -124,9 +124,19 @@ main{position:fixed;inset:0;z-index:3}
 .card.enter{animation:cardIn 1.05s var(--ease-out) both}
 .card.leave{animation:cardOut .75s var(--ease-io) both}
 .card.enter.bloom{animation:cardBloom 1.05s var(--ease-spring) both}
-@keyframes cardBloom{from{opacity:.9;transform:scale(.05);border-radius:50%}to{opacity:1;transform:none;border-radius:34px}}
+@keyframes cardBloom{from{opacity:0;transform:scale(.05)}to{opacity:1;transform:none}}
+/* жемчужина: светящаяся точка, в которую сжимается карточка (отдельный лёгкий слой) */
+.pearl{position:absolute;left:50%;top:50%;width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:50%;pointer-events:none;z-index:3;opacity:0;
+  background:radial-gradient(circle at 36% 30%,#fff 0%,#ffc2dc 38%,rgba(255,111,169,.9) 60%,rgba(255,111,169,0) 72%);
+  box-shadow:0 0 28px 6px rgba(255,150,200,.75);will-change:transform,opacity}
+#dbg{position:fixed;top:8px;left:8px;z-index:9;font:600 11px/1.4 ui-monospace,Menlo,monospace;color:#fff;background:rgba(0,0,0,.55);padding:6px 9px;border-radius:9px;pointer-events:none;white-space:pre}
+/* лёгкий режим: включается сам, если телефон не тянет, или через ?lite */
+html.lite .glass{-webkit-backdrop-filter:none;backdrop-filter:none;
+  background:linear-gradient(135deg,rgba(255,255,255,.14),rgba(255,255,255,.04) 40%,rgba(255,255,255,.02) 60%,rgba(255,255,255,.09)),linear-gradient(180deg,rgba(26,16,56,.84),rgba(26,16,56,.9))}
+html.lite .float{animation:none}
+html.lite .w{filter:none}
 /* «призрак» — снимок старой карточки для переходов между вопросами (без размытия фона: дёшево) */
-.card.ghost{position:absolute;top:50%;left:0;margin:0;pointer-events:none;z-index:2;-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 24px 50px -30px rgba(0,0,0,.7);
+.card.ghost{position:absolute;top:50%;left:0;margin:0;pointer-events:none;z-index:2;-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:inset 0 1px 0 rgba(255,255,255,.5);will-change:transform,opacity;
   background:linear-gradient(135deg,rgba(255,255,255,.16),rgba(255,255,255,.05) 38%,rgba(255,255,255,.02) 62%,rgba(255,255,255,.10)),linear-gradient(180deg,rgba(24,14,52,.8),rgba(24,14,52,.86))}
 .card.ghost .w,.card.ghost .opt{animation:none!important;opacity:1;transform:none;filter:none}
 .card.ghost .opt.is-dim{opacity:.26}
@@ -235,7 +245,7 @@ h1 em .w,.display em .w,h1 em:not(:has(.w)),.display em:not(:has(.w)){background
 /* прогресс */
 .progress{display:flex;align-items:center;gap:14px;margin:0 0 20px;font-family:var(--font-num);font-weight:500;font-size:.66rem;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
 .bar{flex:1;height:6px;border-radius:99px;background:rgba(255,255,255,.1);box-shadow:inset 0 1px 2px rgba(0,0,0,.4),inset 0 -1px 0 rgba(255,255,255,.08);overflow:hidden}
-.bar i{display:block;height:100%;width:0;border-radius:inherit;background:linear-gradient(90deg,var(--violet),var(--rose),var(--peach));box-shadow:0 0 16px rgba(255,111,169,.7);transition:width .95s var(--ease-out)}
+.bar i{display:block;height:100%;width:100%;transform:scaleX(0);transform-origin:0 50%;border-radius:inherit;background:linear-gradient(90deg,var(--violet),var(--rose),var(--peach));box-shadow:0 0 16px rgba(255,111,169,.7);transition:transform .95s var(--ease-out);will-change:transform}
 
 /* результат */
 .num{
@@ -285,7 +295,7 @@ h1 em .w,.display em .w,h1 em:not(:has(.w)),.display em:not(:has(.w)){background
    ============================================================ */
 @media (pointer:coarse){
   .grain{display:none}
-  .glass{-webkit-backdrop-filter:blur(12px) saturate(150%);backdrop-filter:blur(12px) saturate(150%)}
+  .glass{-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
   .w{filter:none}
   .num{animation:none;background-position:30% 0}
 }
@@ -572,6 +582,7 @@ window.CONFIG = {
   window.addEventListener("pointermove", e => {
     tx = (e.clientX / innerWidth) * 2 - 1;
     ty = (e.clientY / innerHeight) * 2 - 1;
+    if (!fine) return;
     const card = $(".scene.is-active .glass");
     if (card) {
       const r = card.getBoundingClientRect();
@@ -608,14 +619,12 @@ window.CONFIG = {
 
   /* ---------- ВОПРОСЫ ---------- */
   const Q = C.quiz.questions;
-  function renderQuestion(i, inDelay = 0) {
-    const q = Q[i];
-    state.q = i;
-    const card = $("#quizCard");
-    card.style.setProperty("--in-delay", inDelay + "ms");
+  function buildQuestion(i) { // только DOM, без анимаций
+    const q = Q[i], card = $("#quizCard");
     $("#qCount").textContent = `${i + 1} / ${Q.length}`;
     $("#qEyebrow").textContent = C.quiz.eyebrow.replace("{n}", i + 1); delete $("#qEyebrow").dataset.split;
     setRich($("#qTitle"), q.title);
+    $$("[data-reveal]", card).forEach(el => { if (!el.dataset.split) { splitWords(el); el.dataset.split = "1"; } });
     const list = $("#options"); list.innerHTML = "";
     q.options.forEach((text, k) => {
       const b = document.createElement("button");
@@ -625,9 +634,27 @@ window.CONFIG = {
       b.addEventListener("click", e => pick(e, b, k));
       list.appendChild(b);
     });
-    reveal(card, 120 + inDelay);
-    requestAnimationFrame(() => $$(".opt", list).forEach(b => b.classList.add("in")));
   }
+  function renderQuestion(i, inDelay = 0) {
+    state.q = i;
+    const card = $("#quizCard");
+    card.style.setProperty("--in-delay", inDelay + "ms");
+    buildQuestion(i);
+    reveal(card, 120 + inDelay);
+    requestAnimationFrame(() => $$(".opt", card).forEach(b => b.classList.add("in")));
+  }
+  // карточка одной высоты для всех вопросов: высота не меняется, сцена не дёргается
+  function measureQuiz() {
+    const card = $("#quizCard"), keepQ = state.q;
+    card.style.minHeight = "";
+    let max = 0;
+    for (let i = 0; i < Q.length; i++) { buildQuestion(i); max = Math.max(max, card.offsetHeight); }
+    card.style.minHeight = Math.min(max, innerHeight - 32) + "px";
+    if (state.scene === "quiz") buildQuestion(keepQ);
+  }
+  let measureT = 0;
+  window.addEventListener("resize", () => { clearTimeout(measureT); measureT = setTimeout(() => { if (state.scene === "quiz") { measureQuiz(); renderQuestion(state.q, 0); } }, 250); });
+
   async function pick(e, btn, k) {
     if (state.locked) return;
     state.locked = true;
@@ -638,40 +665,35 @@ window.CONFIG = {
     btn.classList.add("is-picked");
     $$(".opt").forEach(b => { if (b !== btn) b.classList.add("is-dim"); });
     state.answers[state.q] = k;
-    $("#barFill").style.width = ((state.q + 1) / Q.length * 100) + "%";
+    $("#barFill").style.transform = `scaleX(${(state.q + 1) / Q.length})`;
     await wait(720);
     if (state.q + 1 < Q.length) { await transitionTo(state.q + 1); state.locked = false; }
     else go("result", { leave: implodeQuiz, enterClass: "bloom" });
   }
 
-  /* ---------- переходы между вопросами: каждый раз другой, с характером ---------- */
+  /* ---------- переходы между вопросами: каждый раз другой ----------
+     Только transform/opacity (и clip-path на копии без размытия): всё идёт через композитор, без перерисовок. */
   const EI = "cubic-bezier(.55,0,.8,.2)", EO = "cubic-bezier(.2,.8,.2,1)", EIO = "cubic-bezier(.65,0,.35,1)", SPRING = "cubic-bezier(.34,1.56,.64,1)";
   const play = async (el, kf, opt) => { const a = el.animate(kf, Object.assign({ fill: "both" }, opt)); await a.finished; a.cancel(); };
+  const nextFrame = () => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))); // тяжёлая вставка DOM — в одном кадре, движение — со следующего
   function makeGhost(card) {
     const r = card.getBoundingClientRect(), g = card.cloneNode(true);
     g.classList.add("ghost"); g.classList.remove("enter", "leave", "above"); g.removeAttribute("id"); g.removeAttribute("aria-live");
-    g.style.width = r.width + "px"; g.style.height = r.height + "px"; g.style.marginTop = (-r.height / 2) + "px";
+    g.style.width = r.width + "px"; g.style.height = r.height + "px"; g.style.marginTop = (-r.height / 2) + "px"; g.style.minHeight = "0";
     card.parentNode.appendChild(g);
     return g;
   }
-  function animateHeight(card, oldH, delay = 0) { // плавная смена высоты, чтобы сцена не дёргалась
-    const newH = card.offsetHeight;
-    if (Math.abs(newH - oldH) < 2) return;
-    card.style.overflow = "hidden";
-    const a = card.animate([{ height: oldH + "px" }, { height: newH + "px" }], { duration: 700, delay, easing: EO, fill: "both" });
-    a.finished.then(() => { a.cancel(); card.style.overflow = ""; });
-  }
-  // out: кадры «призрака» старой карточки, in: кадры новой. ghostBelow — призрак под новой карточкой
+  function makePearl(card) { const p = document.createElement("i"); p.className = "pearl"; card.parentNode.appendChild(p); return p; }
   const FX = {
     flip:   { out: [[{ transform: "rotateY(0) scale(1)", opacity: 1 }, { transform: "rotateY(-92deg) scale(.86)", opacity: .1 }], { duration: 420, easing: EI }],
               in:  [[{ transform: "rotateY(92deg) scale(.86)", opacity: 0, offset: 0 }, { transform: "rotateY(-14deg) scale(1.04)", opacity: 1, offset: .62, easing: EO }, { transform: "rotateY(6deg) scale(.99)", offset: .84, easing: "ease-in-out" }, { transform: "rotateY(0) scale(1)" }], { duration: 1000, easing: EO, delay: 380 }] },
     cube:   { origin: ["50% 100%", "50% 0%"],
               out: [[{ transform: "rotateX(0)", opacity: 1 }, { transform: "rotateX(-100deg)", opacity: .1 }], { duration: 720, easing: EIO }],
               in:  [[{ transform: "rotateX(100deg)", opacity: 0, offset: 0 }, { transform: "rotateX(-10deg)", opacity: 1, offset: .66, easing: EO }, { transform: "rotateX(4deg)", offset: .86, easing: "ease-in-out" }, { transform: "rotateX(0)" }], { duration: 1100, easing: EO, delay: 160 }] },
-    circle: { ghostBelow: true,
-              out: [[{ transform: "scale(1)", opacity: 1 }, { transform: "scale(1.08)", opacity: 0 }], { duration: 800, easing: EO, delay: 250 }],
-              in:  [[{ clipPath: "circle(0% at var(--tx,50%) var(--ty,45%))" }, { clipPath: "circle(150% at var(--tx,50%) var(--ty,45%))" }], { duration: 950, easing: EO }] },
-    zoom:   { out: [[{ transform: "scale(1) translateZ(0) rotateZ(0)", opacity: 1, filter: "blur(0)" }, { transform: "scale(2.2) translateZ(340px) rotateZ(4deg)", opacity: 0, filter: "blur(14px)" }], { duration: 680, easing: EI }],
+    circle: { // старая карточка схлопывается кругом в точку нажатия, под ней уже новая
+              out: [[{ clipPath: "circle(150% at var(--tx,50%) var(--ty,45%))" }, { clipPath: "circle(0% at var(--tx,50%) var(--ty,45%))" }], { duration: 900, easing: EIO }],
+              in:  [[{ transform: "scale(.97)", opacity: 0 }, { transform: "scale(1)", opacity: 1 }], { duration: 500, easing: EO, delay: 150 }] },
+    zoom:   { out: [[{ transform: "scale(1) translateZ(0) rotateZ(0)", opacity: 1 }, { transform: "scale(2.3) translateZ(340px) rotateZ(4deg)", opacity: 0 }], { duration: 680, easing: EI }],
               in:  [[{ transform: "scale(.4) translateZ(-800px) rotateZ(-8deg)", opacity: 0, offset: 0 }, { transform: "scale(1.06) translateZ(0) rotateZ(1.5deg)", opacity: 1, offset: .72, easing: EO }, { transform: "scale(1) translateZ(0) rotateZ(0)" }], { duration: 1050, easing: EO, delay: 220 }] },
     orbit:  { out: [[{ transform: "translateX(0) rotateY(0) rotateZ(0) translateZ(0)", opacity: 1 }, { transform: "translateX(-85%) rotateY(-85deg) rotateZ(-12deg) translateZ(-500px)", opacity: 0 }], { duration: 820, easing: EIO }],
               in:  [[{ transform: "translateX(85%) rotateY(85deg) rotateZ(12deg) translateZ(-500px)", opacity: 0 }, { transform: "translateX(0) rotateY(0) rotateZ(0) translateZ(0)", opacity: 1 }], { duration: 1000, easing: SPRING, delay: 150 }] },
@@ -681,61 +703,66 @@ window.CONFIG = {
               out: [[{ transform: "translateY(0) scale(1)", opacity: 1 }, { transform: "translateY(90px) scale(.92)", opacity: 0 }], { duration: 460, easing: EI }],
               in:  [[{ transform: "rotateX(-110deg)", opacity: 0, offset: 0 }, { transform: "rotateX(16deg)", opacity: 1, offset: .5, easing: "cubic-bezier(.4,0,.8,.6)" }, { transform: "rotateX(-8deg)", offset: .72, easing: "ease-in-out" }, { transform: "rotateX(3deg)", offset: .88, easing: "ease-in-out" }, { transform: "rotateX(0)" }], { duration: 1400, easing: "ease-out", delay: 140 }] },
   };
-  async function runFx(name, card, swap, oldH) {
+  async function runFx(name, card, swap) {
     const fx = FX[name], ghost = makeGhost(card);
-    if (fx.ghostBelow) { ghost.style.zIndex = "1"; card.classList.add("above"); }
     if (fx.origin) { if (fx.origin[0]) ghost.style.transformOrigin = fx.origin[0]; if (fx.origin[1]) card.style.transformOrigin = fx.origin[1]; }
-    const delay = fx.in[1].delay || 0;
-    swap(delay); animateHeight(card, oldH, Math.max(0, delay - 150));
+    swap(fx.in[1].delay || 0);
+    card.style.opacity = "0"; await nextFrame(); card.style.opacity = "";
     const a1 = ghost.animate(fx.out[0], Object.assign({ fill: "both" }, fx.out[1]));
     const a2 = card.animate(fx.in[0], Object.assign({ fill: "both" }, fx.in[1]));
     await Promise.all([a1.finished, a2.finished]);
-    ghost.remove(); a2.cancel(); card.style.transformOrigin = ""; card.classList.remove("above");
+    ghost.remove(); a2.cancel(); card.style.transformOrigin = "";
   }
-  async function fxBlinds(card, swap, oldH) { // карточка режется на полоски, они разлетаются в стороны
-    const N = 6, slices = [];
+  async function fxBlinds(card, swap) { // карточка режется на полоски, они разлетаются в стороны
+    const N = 4, slices = [];
     for (let i = 0; i < N; i++) { const g = makeGhost(card); g.style.clipPath = `inset(${i / N * 100}% 0 ${100 - (i + 1) / N * 100}% 0)`; slices.push(g); }
-    swap(360); animateHeight(card, oldH, 200);
+    swap(360);
+    card.style.opacity = "0"; await nextFrame(); card.style.opacity = "";
     const outs = slices.map((g, i) => g.animate(
-      [{ transform: "translate(0,0) rotateZ(0)", opacity: 1 }, { transform: `translate(${i % 2 ? 130 : -130}%, ${(i - N / 2) * 14}px) rotateZ(${i % 2 ? 14 : -14}deg)`, opacity: 0 }],
-      { duration: 620, easing: EI, delay: i * 60, fill: "both" }).finished);
+      [{ transform: "translate(0,0) rotateZ(0)", opacity: 1 }, { transform: `translate(${i % 2 ? 130 : -130}%, ${(i - N / 2) * 18}px) rotateZ(${i % 2 ? 14 : -14}deg)`, opacity: 0 }],
+      { duration: 620, easing: EI, delay: i * 70, fill: "both" }).finished);
     const a = card.animate([{ transform: "scale(.88) translateZ(-160px)", opacity: 0, offset: 0 }, { transform: "scale(1.05) translateZ(0)", opacity: 1, offset: .7, easing: EO }, { transform: "scale(1) translateZ(0)" }], { duration: 900, easing: EO, delay: 360, fill: "both" });
     await Promise.all([...outs, a.finished]);
     slices.forEach(g => g.remove()); a.cancel();
   }
-  async function fxPearl(card, swap, oldH) { // сжимается в жемчужину, подпрыгивает и раскрывается новой
-    const ghost = makeGhost(card);
-    swap(1000); card.style.opacity = "0";
-    await play(ghost, [
-      { transform: "scale(1) translateY(0)", borderRadius: "34px", opacity: 1, offset: 0 },
-      { transform: "scale(.07) translateY(0)", borderRadius: "50%", opacity: 1, offset: .5, easing: EI },
-      { transform: "scale(.07) translateY(-90px)", borderRadius: "50%", opacity: 1, offset: .76, easing: "ease-out" },
-      { transform: "scale(.07) translateY(0)", borderRadius: "50%", opacity: 1, easing: "ease-in" },
-    ], { duration: 1000 });
-    ghost.remove(); card.style.opacity = ""; animateHeight(card, oldH, 0);
-    await play(card, [{ transform: "scale(.07)", borderRadius: "50%", opacity: 1, offset: 0 }, { transform: "scale(1.07)", borderRadius: "34px", opacity: 1, offset: .7, easing: EO }, { transform: "scale(1)", borderRadius: "34px" }], { duration: 950, easing: EO });
+  async function fxPearl(card, swap) { // сжимается в жемчужину, та подпрыгивает и раскрывается новой карточкой
+    const ghost = makeGhost(card), pearl = makePearl(card);
+    swap(1050); card.style.opacity = "0"; await nextFrame();
+    const shrink = ghost.animate([{ transform: "scale(1)", opacity: 1 }, { transform: "scale(.04)", opacity: .6 }], { duration: 520, easing: EI, fill: "both" });
+    const glow = pearl.animate([
+      { transform: "scale(0) translateY(0)", opacity: 0, offset: 0 },
+      { transform: "scale(1) translateY(0)", opacity: 1, offset: .5, easing: EI },
+      { transform: "scale(1.1) translateY(-90px)", opacity: 1, offset: .76, easing: "ease-out" },
+      { transform: "scale(1) translateY(0)", opacity: 1, offset: .96, easing: "ease-in" },
+      { transform: "scale(2.2) translateY(0)", opacity: 0 },
+    ], { duration: 1150, fill: "both" });
+    await shrink.finished; ghost.remove();
+    await glow.finished; pearl.remove();
+    card.style.opacity = "";
+    await play(card, [{ transform: "scale(.06)", opacity: 1, offset: 0 }, { transform: "scale(1.07)", opacity: 1, offset: .7, easing: EO }, { transform: "scale(1)" }], { duration: 950, easing: EO });
   }
   async function transitionTo(i) {
     const card = $("#quizCard");
     const order = C.quiz.transitions || Object.keys(FX);
     const name = order[(i - 1) % order.length];
-    const oldH = card.offsetHeight;
     const swap = d => renderQuestion(i, d);
-    if (name === "blinds") await fxBlinds(card, swap, oldH);
-    else if (name === "pearl") await fxPearl(card, swap, oldH);
-    else await runFx(FX[name] ? name : "flip", card, swap, oldH);
+    if (name === "blinds") await fxBlinds(card, swap);
+    else if (name === "pearl") await fxPearl(card, swap);
+    else await runFx(FX[name] ? name : "flip", card, swap);
   }
   function flash(x, y) {
     const f = $("#flash"); f.style.setProperty("--fx", x + "px"); f.style.setProperty("--fy", y + "px");
     f.classList.remove("on"); void f.offsetWidth; f.classList.add("on");
   }
-  async function implodeQuiz() { // после последнего ответа: карточка схлопывается в точку и взрывается искрами
+  async function implodeQuiz() { // после последнего ответа: карточка сжимается в жемчужину, та взрывается искрами
     const card = $("#quizCard"), r = card.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
-    await play(card, [{ transform: "scale(1)", borderRadius: "34px", opacity: 1, offset: 0 }, { transform: "scale(1.06)", borderRadius: "40px", opacity: 1, offset: .25, easing: EI }, { transform: "scale(.05)", borderRadius: "50%", opacity: .95 }], { duration: 760, easing: EI });
-    card.style.opacity = "0";
+    const pearl = makePearl(card);
+    const shrink = card.animate([{ transform: "scale(1)", opacity: 1, offset: 0 }, { transform: "scale(1.06)", opacity: 1, offset: .25, easing: EI }, { transform: "scale(.04)", opacity: .5 }], { duration: 760, easing: EI, fill: "both" });
+    const glow = pearl.animate([{ transform: "scale(0)", opacity: 0, offset: 0 }, { transform: "scale(0)", opacity: 0, offset: .35 }, { transform: "scale(1.2)", opacity: 1, offset: .85, easing: EI }, { transform: "scale(3)", opacity: 0 }], { duration: 1150, fill: "both" });
+    await shrink.finished; card.style.opacity = "0"; shrink.cancel();
     flash(cx, cy);
     if (window.__bg) window.__bg.burstAt(cx / innerWidth * 2 - 1, -(cy / innerHeight * 2 - 1), 1.3);
-    await wait(420);
+    await glow.finished; pearl.remove();
   }
 
   /* ---------- РЕЗУЛЬТАТ ---------- */
@@ -778,7 +805,7 @@ window.CONFIG = {
     finBtn.addEventListener("click", e => { e.preventDefault(); restart(); });
   }
   function restart() {
-    state.answers = []; $("#barFill").style.width = "0";
+    state.answers = []; $("#barFill").style.transform = "scaleX(0)";
     $("#finBtn").classList.remove("on");
     go("intro");
   }
@@ -800,7 +827,7 @@ window.CONFIG = {
       reveal(s, 250);
       const b = $("#startBtn"); b.classList.remove("on"); void b.offsetWidth; b.style.animationDelay = "1150ms"; b.classList.add("on");
     },
-    quiz() { const c = $("#quizCard"); c.style.opacity = ""; renderQuestion(0); state.locked = false; },
+    quiz() { const c = $("#quizCard"); c.style.opacity = ""; measureQuiz(); renderQuestion(0); state.locked = false; },
     async result(s) {
       reveal(s, 200);
       sendAnswers();
@@ -864,7 +891,14 @@ try {
   document.documentElement.classList.add("no-webgl");
   throw e;
 }
-renderer.setPixelRatio(Math.min(devicePixelRatio || 1, isMobile ? 1 : 1.5));
+const params = new URLSearchParams(location.search);
+const DEBUG = params.has("debug");
+let lite = params.has("lite");
+const baseDPR = Math.min(devicePixelRatio || 1, isMobile ? 1 : 1.5);
+renderer.setPixelRatio(lite ? Math.min(baseDPR, 0.75) : baseDPR);
+if (lite) document.documentElement.classList.add("lite");
+function setLite(on) { lite = on; document.documentElement.classList.toggle("lite", on); renderer.setPixelRatio(on ? Math.min(baseDPR, 0.75) : baseDPR); resize(); }
+let dbgEl = null; if (DEBUG) { dbgEl = document.createElement("div"); dbgEl.id = "dbg"; document.body.appendChild(dbgEl); }
 renderer.setSize(innerWidth, innerHeight, false);
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.05;
@@ -1158,8 +1192,12 @@ window.addEventListener("pointermove", e => { ptx = (e.clientX / innerWidth) * 2
 /* ---------- цикл ---------- */
 const clock = new THREE.Clock();
 let last = 0;
+let probeN = 0, probeSum = 0, dbgAcc = 0, dbgN = 0, dbgT = 0;
 function tick() {
-  const t = clock.getElapsedTime(), dt = Math.min(0.05, t - last); last = t;
+  const t = clock.getElapsedTime(), raw = t - last, dt = Math.min(0.05, raw); last = t;
+  // замер первых секунд: если кадр в среднем дольше 24 мс (≈40 fps), включаем лёгкий режим
+  if (!lite && probeN < 160) { probeN++; if (probeN > 40) probeSum += raw; if (probeN === 160 && probeSum / 120 > 0.024) setLite(true); }
+  if (dbgEl) { dbgAcc += raw; dbgN++; if (t - dbgT > 0.5) { const ms = dbgAcc / dbgN * 1000; dbgEl.textContent = `${(1000 / ms).toFixed(0)} fps · ${ms.toFixed(1)} ms\ndpr ${renderer.getPixelRatio().toFixed(2)} · ${lite ? "lite" : "full"} · ${innerWidth}×${innerHeight}`; dbgAcc = 0; dbgN = 0; dbgT = t; } }
   const speed = reduced ? 0.35 : 1;
   bgUniforms.uTime.value = t * speed;
   for (const k in col) { col[k].lerp(colTarget[k], 0.025); }
@@ -1224,6 +1262,7 @@ window.addEventListener("resize", resize);
 document.addEventListener("visibilitychange", () => renderer.setAnimationLoop(document.hidden ? null : tick));
 
 resize();
+risePts.visible = burstPts.visible = true; renderer.compile(scene, camera); risePts.visible = burstPts.visible = false;
 mode = window.__bgMode || "intro";
 setMode(mode); applyLayout(true);
 for (const k in col) col[k].copy(colTarget[k]);
