@@ -13,6 +13,7 @@
 <meta property="og:description" content="Три вопроса и один ответ. Займёт минуту.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23ff6fa9'/%3E%3Cstop offset='1' stop-color='%23ffb088'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M32 56s-22-13-22-29a12 12 0 0 1 22-7 12 12 0 0 1 22 7c0 16-22 29-22 29z' fill='url(%23g)'/%3E%3C/svg%3E">
 
+<link rel="modulepreload" href="vendor/three.module.min.js">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500;1,600&family=Manrope:wght@300;400;500;600&family=Marck+Script&family=Unbounded:wght@500;700&display=swap" rel="stylesheet">
@@ -52,18 +53,17 @@ a.btn{color:var(--ink);text-decoration:none}
 /* ============================================================
    ФОН: WebGL-холст + CSS-запасной вариант + зерно
    ============================================================ */
-#bg{position:fixed;inset:0;width:100%;height:100%;display:block;z-index:0}
-.fallback{position:fixed;inset:0;z-index:0;display:none;overflow:hidden;background:
-  radial-gradient(60% 50% at 20% 20%,rgba(139,108,255,.55),transparent 70%),
-  radial-gradient(50% 50% at 80% 30%,rgba(255,111,169,.5),transparent 70%),
-  radial-gradient(50% 60% at 50% 90%,rgba(93,224,255,.35),transparent 70%),var(--bg)}
-.fallback i{position:absolute;border-radius:50%;filter:blur(60px);opacity:.75;animation:drift 18s ease-in-out infinite alternate}
-.fallback i:nth-child(1){width:52vmax;height:52vmax;left:-10vmax;top:-10vmax;background:#7a5cff}
-.fallback i:nth-child(2){width:46vmax;height:46vmax;right:-8vmax;top:10vmax;background:#ff6fa9;animation-delay:-6s}
-.fallback i:nth-child(3){width:40vmax;height:40vmax;left:20vmax;bottom:-14vmax;background:#ffb088;animation-delay:-12s}
+#bg{position:fixed;inset:0;width:100%;height:100%;display:block;z-index:0;opacity:0;transition:opacity 1.2s ease}
+html.has-3d #bg{opacity:1}
+/* запасной фон: показывается, пока грузится 3D, и остаётся, если WebGL недоступен. Без filter — дёшево */
+.fallback{position:fixed;inset:0;z-index:0;background:
+  radial-gradient(70% 60% at 18% 22%,rgba(120,90,255,.75),rgba(120,90,255,0) 70%),
+  radial-gradient(60% 55% at 82% 30%,rgba(255,111,169,.7),rgba(255,111,169,0) 70%),
+  radial-gradient(55% 60% at 50% 92%,rgba(93,224,255,.45),rgba(93,224,255,0) 70%),
+  radial-gradient(50% 45% at 70% 75%,rgba(255,176,136,.35),rgba(255,176,136,0) 70%),var(--bg);
+  transition:opacity 1.2s ease}
+html.has-3d .fallback{opacity:0;pointer-events:none}
 html.no-webgl #bg{display:none}
-html.no-webgl .fallback{display:block}
-@keyframes drift{from{transform:translate3d(0,0,0) scale(1)}to{transform:translate3d(10vmax,6vmax,0) scale(1.15)}}
 
 .grain{position:fixed;inset:-50%;width:200%;height:200%;z-index:2;pointer-events:none;opacity:.045;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
@@ -314,7 +314,7 @@ noscript div{position:fixed;inset:0;display:grid;place-items:center;padding:24px
 <body>
 
 <canvas id="bg" aria-hidden="true"></canvas>
-<div class="fallback" aria-hidden="true"><i></i><i></i><i></i></div>
+<div class="fallback" aria-hidden="true"></div>
 <div class="grain" aria-hidden="true"></div>
 <div id="flash" aria-hidden="true"></div>
 
@@ -861,8 +861,7 @@ window.CONFIG = {
   };
 
   /* ---------- старт ---------- */
-  // если модуль с 3D не отозвался за 5 с (нет сети/WebGL) — включаем CSS-фон
-  setTimeout(() => { if (!window.__bg) document.documentElement.classList.add("no-webgl"); }, 5000);
+  // пока 3D грузится, виден лёгкий CSS-фон; как только модуль готов, он сам включит холст (класс has-3d)
   go("intro");
 })();
 </script>
@@ -870,15 +869,10 @@ window.CONFIG = {
 <!-- ============================================================
      3D-ФОН: жидкое стекло на Three.js
      ============================================================ -->
-<script type="importmap">
-{ "imports": {
-  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
-} }
-</script>
 <script type="module">
-import * as THREE from "three";
-import { mergeVertices } from "three/addons/utils/BufferGeometryUtils.js";
+// three.js лежит рядом с сайтом (vendor/), чтобы не зависеть от CDN; CDN — только запасной вариант
+const THREE = await import("./vendor/three.module.min.js")
+  .catch(() => import("https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.min.js"));
 
 const canvas = document.getElementById("bg");
 const isMobile = matchMedia("(pointer:coarse)").matches || innerWidth < 720;
@@ -1272,6 +1266,7 @@ function burstAt(nx, ny, power = 1) { // точка экрана (NDC) -> точ
   burst(camera.position.clone().addScaledVector(d, (0.8 - camera.position.z) / d.z), power);
 }
 window.__bg = { setMode, burst: () => burst(), burstAt };
+document.documentElement.classList.add("has-3d");
 </script>
 </body>
 </html>
