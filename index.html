@@ -182,49 +182,37 @@ h1 em .w,.display em .w,h1 em:not(:has(.w)),.display em:not(:has(.w)){background
 .btn.appear.on{animation:btnIn .9s var(--ease-out) forwards}
 @keyframes btnIn{to{opacity:1;transform:translateY(0)}}
 
-/* ============================================================
-   ВОПРОСЫ: вопрос прямо на фоне + «подиумы» с 3D-фигурками
-   ============================================================ */
-.scene[data-scene="quiz"]{display:block}
-.quiz{position:relative;width:min(100%,620px);height:100%;margin:0 auto;display:flex;flex-direction:column;justify-content:center;gap:clamp(18px,3.4dvh,36px);text-align:center}
-.quiz-top{transition:opacity .45s var(--ease-io),transform .45s var(--ease-io)}
-.quiz-top.out{opacity:0;transform:translateY(-10px)}
-.quiz .progress{justify-content:center;margin:0 0 16px}
-.quiz .bar{flex:0 1 150px}
-.quiz .eyebrow{margin-bottom:.3em}
-.quiz .q{margin:0 auto;max-width:18ch;text-shadow:0 2px 14px rgba(20,10,40,.45),0 10px 40px rgba(20,10,40,.35);text-wrap:balance}
-.quiz .eyebrow,.quiz .progress{text-shadow:0 2px 12px rgba(20,10,40,.45)}
-.pods{display:grid;grid-template-columns:1fr 1fr;gap:8px 14px}
-.pod{appearance:none;background:none;border:0;padding:0;margin:0;cursor:pointer;display:flex;flex-direction:column;gap:6px;text-align:left;color:inherit;-webkit-user-select:none;user-select:none;height:100%}
-.pod-stage{position:relative;display:block;height:clamp(88px,13.5dvh,144px)}
-html:not(.has-3d) .pod-stage::before{content:"";position:absolute;left:50%;top:50%;width:56%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;
-  background:radial-gradient(circle at 32% 28%,rgba(255,255,255,.85),rgba(255,255,255,.25) 22%,rgba(255,255,255,.06) 50%,rgba(255,255,255,.18) 100%);
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.35),inset -8px -10px 24px rgba(255,255,255,.12),0 20px 40px -18px rgba(0,0,0,.6)}
-.pod-label{position:relative;overflow:hidden;display:flex;flex:1;flex-direction:column;gap:7px;min-height:88px;padding:13px 14px 14px;border-radius:22px;
-  border:1px solid rgba(255,255,255,.24);
-  background:linear-gradient(135deg,rgba(255,255,255,.17),rgba(255,255,255,.05));
-  -webkit-backdrop-filter:blur(18px) saturate(170%);backdrop-filter:blur(18px) saturate(170%);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.5),inset 0 -1px 0 rgba(255,255,255,.06),0 18px 40px -22px rgba(0,0,0,.8);
-  transition:transform .5s var(--ease-out),opacity .5s var(--ease-out),background .5s,border-color .5s,box-shadow .5s}
-.pod-label .idx{font-family:var(--font-num);font-weight:500;font-size:.58rem;letter-spacing:.2em;color:rgba(255,255,255,.62)}
-.pod-label .txt{font-family:var(--font-ui);font-weight:500;font-size:clamp(.9rem,2.4vw,1rem);line-height:1.32}
-.pod.in .pod-label{animation:podIn .8s var(--ease-out) backwards;animation-delay:calc(var(--k) * 80ms + 220ms)}
-.pod.out .pod-label{animation:podOut .42s var(--ease-io) forwards;animation-delay:calc(var(--k) * 40ms)}
-@keyframes podIn{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
-@keyframes podOut{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(18px)}}
-@media (hover:hover){.pod:hover .pod-label{transform:translateY(-3px);background:linear-gradient(135deg,rgba(255,255,255,.25),rgba(255,255,255,.08));border-color:rgba(255,255,255,.44)}}
-.pod:active .pod-label{transform:scale(.985)}
-.pod.is-picked .pod-label{background:linear-gradient(135deg,rgba(255,111,169,.64),rgba(255,176,136,.54));border-color:rgba(255,255,255,.74);box-shadow:inset 0 1px 0 rgba(255,255,255,.85),0 18px 44px -14px rgba(255,111,169,.85);transform:translateY(-2px)}
-.pod.is-picked .pod-label .idx{color:#fff}
-.pod.is-dim .pod-label{opacity:.26}
-.pod.is-picked,.pod.is-dim{pointer-events:none}
-@media (min-width:900px){
-  .quiz{width:min(100%,1080px);gap:44px}
-  .quiz .q{max-width:24ch}
-  .pods{grid-template-columns:repeat(4,1fr);gap:22px}
-  .pod-stage{height:156px}
-  .pod-label{min-height:100px;padding:15px 18px 16px;border-radius:24px}
+/* варианты ответов */
+.options{display:grid;gap:12px;perspective:900px}
+.opt{
+  position:relative;overflow:hidden;cursor:pointer;text-align:left;width:100%;
+  display:flex;align-items:center;gap:14px;
+  padding:15px 18px 15px 16px;border-radius:20px;border:1px solid rgba(255,255,255,.22);
+  font-family:var(--font-ui);font-weight:500;font-size:clamp(.96rem,2.2vw,1.04rem);line-height:1.35;color:var(--ink);
+  background:linear-gradient(135deg,rgba(255,255,255,.14),rgba(255,255,255,.04));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 10px 26px -18px rgba(0,0,0,.8);
+  transition:transform .55s var(--ease-out),opacity .55s var(--ease-out),background .55s,border-color .55s,box-shadow .55s;
+  opacity:0;transform:translate3d(0,18px,-40px) rotateX(-12deg);
 }
+.opt.in{animation:optIn .85s var(--ease-out) forwards;animation-delay:calc(var(--k) * 80ms + 280ms)}
+@keyframes optIn{to{opacity:1;transform:translate3d(0,0,0) rotateX(0)}}
+.opt .idx{
+  flex:none;width:34px;height:34px;display:grid;place-items:center;border-radius:12px;
+  font-family:var(--font-num);font-weight:500;font-size:.62rem;letter-spacing:.08em;color:rgba(255,255,255,.85);
+  background:rgba(255,255,255,.1);box-shadow:inset 0 1px 0 rgba(255,255,255,.35);transition:background .5s,color .5s,transform .5s var(--ease-spring);
+}
+@media (hover:hover){
+  .opt:hover{transform:translate3d(0,-2px,10px) scale(1.012);background:linear-gradient(135deg,rgba(255,255,255,.22),rgba(255,255,255,.08));border-color:rgba(255,255,255,.4)}
+  .opt:hover .idx{transform:rotate(-8deg) scale(1.08);background:rgba(255,255,255,.18)}
+}
+.opt:active{transform:scale(.985)}
+.opt.is-picked{
+  background:linear-gradient(135deg,rgba(255,111,169,.6),rgba(255,176,136,.5));border-color:rgba(255,255,255,.7);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.8),0 18px 40px -14px rgba(255,111,169,.8);transform:translate3d(0,0,16px) scale(1.02);
+}
+.opt.is-picked .idx{background:#fff;color:#c2286c}
+.opt.is-dim{opacity:.3;transform:scale(.975)}
+.opt.is-picked,.opt.is-dim{pointer-events:none}
 .ripple{
   position:absolute;width:30px;height:30px;border-radius:50%;pointer-events:none;
   background:radial-gradient(circle,rgba(255,255,255,.75),rgba(255,255,255,0) 62%);
@@ -326,14 +314,14 @@ noscript div{position:fixed;inset:0;display:grid;place-items:center;padding:24px
 
   <!-- ВОПРОСЫ -->
   <section class="scene" data-scene="quiz">
-    <div class="quiz" aria-live="polite">
-      <header class="quiz-top" id="quizTop">
+    <div class="float"><div class="tilt">
+      <article class="card glass" id="quizCard" aria-live="polite">
         <div class="progress"><span id="qCount">1 / 3</span><div class="bar"><i id="barFill"></i></div></div>
         <p class="eyebrow" data-reveal data-stagger="60" id="qEyebrow"></p>
         <h2 class="q" data-reveal data-delay="120" data-stagger="38" id="qTitle"></h2>
-      </header>
-      <div class="pods" id="pods"></div>
-    </div>
+        <div class="options" id="options"></div>
+      </article>
+    </div></div>
   </section>
 
   <!-- РЕЗУЛЬТАТ -->
@@ -398,35 +386,32 @@ window.CONFIG = {
 
   quiz: {
     eyebrow: "вопрос {n}",
-    // У каждого ответа своя стеклянная фигурка (shape) и оттенок (tint).
-    // shape: sphere, cube, torus, heart, gem, octa, capsule, knot, star, egg
-    // tint:  rose, violet, mint, peach, sky, gold
     questions: [
       {
         title: "Какое утро тебе нравится больше всего?",
         options: [
-          { text: "Долго валяться под одеялом",        shape: "capsule", tint: "violet" },
-          { text: "Кофе и музыка на весь дом",         shape: "torus",   tint: "peach"  },
-          { text: "Выйти на улицу, пока город спит",   shape: "sphere",  tint: "sky"    },
-          { text: "Утро? Я проснулась в двенадцать",   shape: "cube",    tint: "rose"   },
+          "Долго валяться под одеялом",
+          "Кофе и музыка на весь дом",
+          "Выйти на улицу, пока город спит",
+          "Утро? Я проснулась в двенадцать",
         ],
       },
       {
         title: "Свободный вечер и телепорт в руках. Куда?",
         options: [
-          { text: "На крышу — смотреть на город",          shape: "star",  tint: "gold"   },
-          { text: "В маленькое кафе, где нас никто не знает", shape: "gem", tint: "mint"   },
-          { text: "К морю, даже если холодно",             shape: "egg",   tint: "sky"    },
-          { text: "Домой. Но чтобы кто-то был рядом",       shape: "heart", tint: "rose"   },
+          "На крышу — смотреть на город",
+          "В маленькое кафе, где нас никто не знает",
+          "К морю, даже если холодно",
+          "Домой. Но чтобы кто-то был рядом",
         ],
       },
       {
         title: "Как думаешь, зачем я всё это сделал?",
         options: [
-          { text: "Тебе было скучно",             shape: "cube",  tint: "violet" },
-          { text: "Ты что-то задумал",            shape: "knot",  tint: "mint"   },
-          { text: "Хочешь мне что-то сказать",    shape: "heart", tint: "rose"   },
-          { text: "Не знаю, но мне уже нравится", shape: "octa",  tint: "gold"   },
+          "Тебе было скучно",
+          "Ты что-то задумал",
+          "Хочешь мне что-то сказать",
+          "Не знаю, но мне уже нравится",
         ],
       },
     ],
@@ -535,10 +520,7 @@ window.CONFIG = {
     const next = $(`.scene[data-scene="${name}"]`);
     if (!next || next === cur) return;
     setBg(name);
-    if (cur) {
-      await (cur.dataset.scene === "quiz" ? outQuestion() : animateCard(cur, "leave"));
-      cur.classList.remove("is-active");
-    }
+    if (cur) { await animateCard(cur, "leave"); cur.classList.remove("is-active"); }
     state.scene = name;
     next.classList.add("is-active");
     const p = animateCard(next, "enter");
@@ -588,50 +570,49 @@ window.CONFIG = {
 
   /* ---------- ВОПРОСЫ ---------- */
   const Q = C.quiz.questions;
-  const DEF_SHAPES = ["sphere", "cube", "torus", "gem"], DEF_TINTS = ["rose", "violet", "mint", "peach"];
-  const optOf = (q, k) => { const o = q.options[k]; return typeof o === "string" ? { text: o, shape: DEF_SHAPES[k % 4], tint: DEF_TINTS[k % 4] } : o; };
   function renderQuestion(i) {
     const q = Q[i];
     state.q = i;
     $("#qCount").textContent = `${i + 1} / ${Q.length}`;
     $("#qEyebrow").textContent = C.quiz.eyebrow.replace("{n}", i + 1); delete $("#qEyebrow").dataset.split;
     setRich($("#qTitle"), q.title);
-    $("#quizTop").classList.remove("out");
-    const pods = $("#pods"); pods.innerHTML = "";
-    const spec = [];
-    q.options.forEach((_, k) => {
-      const o = optOf(q, k); spec.push({ shape: o.shape, tint: o.tint });
+    const list = $("#options"); list.innerHTML = "";
+    q.options.forEach((text, k) => {
       const b = document.createElement("button");
-      b.type = "button"; b.className = "pod in"; b.style.setProperty("--k", k);
-      b.innerHTML = `<span class="pod-stage" aria-hidden="true"></span><span class="pod-label"><span class="idx">0${k + 1}</span><span class="txt"></span></span>`;
-      $(".txt", b).textContent = tpl(o.text);
+      b.type = "button"; b.className = "opt"; b.style.setProperty("--k", k);
+      b.innerHTML = `<span class="idx">0${k + 1}</span><span class="txt"></span>`;
+      $(".txt", b).textContent = tpl(text);
       b.addEventListener("click", e => pick(e, b, k));
-      b.addEventListener("pointerenter", () => window.__bg && window.__bg.hoverPod(k));
-      b.addEventListener("pointerleave", () => window.__bg && window.__bg.hoverPod(-1));
-      pods.appendChild(b);
+      list.appendChild(b);
     });
-    reveal($("#quizTop"), 100);
-    if (window.__bg) window.__bg.setPods(spec);
+    reveal($("#quizCard"), 120);
+    requestAnimationFrame(() => $$(".opt", list).forEach(b => b.classList.add("in")));
     state.locked = false;
   }
   async function pick(e, btn, k) {
     if (state.locked) return;
     state.locked = true;
-    ripple(e, $(".pod-label", btn));
+    ripple(e, btn);
     btn.classList.add("is-picked");
-    $$(".pod").forEach(b => { if (b !== btn) b.classList.add("is-dim"); });
-    if (window.__bg) window.__bg.pickPod(k);
+    $$(".opt").forEach(b => { if (b !== btn) b.classList.add("is-dim"); });
     state.answers[state.q] = k;
     $("#barFill").style.width = ((state.q + 1) / Q.length * 100) + "%";
-    await wait(950);
-    if (state.q + 1 < Q.length) { await outQuestion(); renderQuestion(state.q + 1); }
+    await wait(720);
+    if (state.q + 1 < Q.length) await flipTo(state.q + 1);
     else go("result");
   }
-  function outQuestion() {
-    $$(".pod").forEach(b => { b.classList.remove("in"); b.classList.add("out"); });
-    $("#quizTop").classList.add("out");
-    if (window.__bg) window.__bg.clearPods();
-    return wait(520);
+  async function flipTo(i) {
+    const card = $("#quizCard");
+    const out = card.animate(
+      [{ transform: "rotateY(0deg) translateZ(0)", opacity: 1 }, { transform: "rotateY(84deg) translateZ(-120px)", opacity: .35 }],
+      { duration: 460, easing: "cubic-bezier(.55,0,.8,.2)", fill: "forwards" });
+    await out.finished;
+    renderQuestion(i);
+    out.cancel();
+    const back = card.animate(
+      [{ transform: "rotateY(-84deg) translateZ(-120px)", opacity: .35 }, { transform: "rotateY(0deg) translateZ(0)", opacity: 1 }],
+      { duration: 720, easing: "cubic-bezier(.2,.8,.2,1)" });
+    await back.finished;
   }
 
   /* ---------- РЕЗУЛЬТАТ ---------- */
@@ -749,7 +730,6 @@ window.CONFIG = {
 import * as THREE from "three";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import { mergeVertices } from "three/addons/utils/BufferGeometryUtils.js";
-import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 
 const canvas = document.getElementById("bg");
 const isMobile = matchMedia("(pointer:coarse)").matches || innerWidth < 720;
@@ -895,9 +875,8 @@ function updateBlob(t) {
   pos.needsUpdate = true; blobGeo.computeVertexNormals();
 }
 
-/* ---------- библиотека фигур ---------- */
-function smooth(g) { g.deleteAttribute("normal"); g.deleteAttribute("uv"); g = mergeVertices(g); g.computeVertexNormals(); return g; }
-function makeHeart(size) {
+/* сердце */
+const heart = (() => {
   const s = new THREE.Shape(), x = 0, y = 0;
   s.moveTo(x + 5, y + 5);
   s.bezierCurveTo(x + 5, y + 5, x + 4, y, x, y);
@@ -907,57 +886,24 @@ function makeHeart(size) {
   s.bezierCurveTo(x + 16, y + 7, x + 16, y, x + 10, y);
   s.bezierCurveTo(x + 7, y, x + 5, y + 5, x + 5, y + 5);
   let g = new THREE.ExtrudeGeometry(s, { depth: 5, bevelEnabled: true, bevelThickness: 2.6, bevelSize: 2.4, bevelSegments: 14, curveSegments: 40 });
-  g = smooth(g); g.center(); g.rotateZ(Math.PI); g.scale(size, size, size); return g;
-}
-function makeStar(size) {
-  const s = new THREE.Shape();
-  for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, r = i % 2 ? 4.8 : 10; const x = Math.cos(a) * r, y = Math.sin(a) * r; i ? s.lineTo(x, y) : s.moveTo(x, y); }
-  s.closePath();
-  let g = new THREE.ExtrudeGeometry(s, { depth: 3.4, bevelEnabled: true, bevelThickness: 1.8, bevelSize: 1.7, bevelSegments: 10, curveSegments: 6 });
-  g = smooth(g); g.center(); g.scale(size, size, size); return g;
-}
-function norm(g, k = 1) { g.computeBoundingSphere(); const f = k / g.boundingSphere.radius; g.scale(f, f, f); return g; }
-const POOL = {
-  sphere:  new THREE.SphereGeometry(1, 64, 48),
-  cube:    new RoundedBoxGeometry(1.7, 1.7, 1.7, 7, 0.42),
-  torus:   new THREE.TorusGeometry(0.78, 0.34, 48, 96),
-  heart:   makeHeart(0.052),
-  gem:     new THREE.IcosahedronGeometry(1.1, 0),
-  octa:    new THREE.OctahedronGeometry(1.18, 0),
-  capsule: new THREE.CapsuleGeometry(0.6, 1.05, 12, 32).rotateZ(Math.PI / 2),
-  knot:    new THREE.TorusKnotGeometry(0.66, 0.24, 180, 24),
-  star:    makeStar(0.058),
-  egg:     new THREE.SphereGeometry(0.95, 64, 48).scale(0.86, 1.14, 0.86),
-};
-const SIZE = { sphere: 0.92, cube: 0.9, torus: 0.98, heart: 1.04, gem: 0.98, octa: 0.95, capsule: 1.0, knot: 1.0, star: 1.04, egg: 0.95 };
-for (const k in POOL) if (k !== "cube") norm(POOL[k], SIZE[k]);
-const TINTS = { rose: 0xffa3cf, violet: 0xc9b2ff, mint: 0xa8f0e6, peach: 0xffd2b0, sky: 0xa9dcff, gold: 0xffe3a1 };
-const tintMat = {};
-for (const [k, c] of Object.entries(TINTS)) tintMat[k] = new THREE.MeshPhysicalMaterial({
-  color: c, metalness: 0, roughness: 0.1, transmission: 0.9, thickness: 1.0, ior: 1.42,
-  clearcoat: 1, clearcoatRoughness: 0.08, iridescence: 0.4, iridescenceIOR: 1.3,
-  attenuationColor: new THREE.Color(c), attenuationDistance: 1.6, envMapIntensity: 1.3,
-});
-
-/* сердце */
-const heart = new THREE.Mesh(makeHeart(0.062), pinkGlass);
+  g.deleteAttribute("normal"); g.deleteAttribute("uv"); g = mergeVertices(g); g.computeVertexNormals();
+  g.center(); g.rotateZ(Math.PI); g.scale(0.062, 0.062, 0.062);
+  return new THREE.Mesh(g, pinkGlass);
+})();
 scene.add(heart);
 
 const torus = new THREE.Mesh(new THREE.TorusGeometry(0.62, 0.22, 48, 96), glass); scene.add(torus);
 const s1 = new THREE.Mesh(new THREE.SphereGeometry(0.46, 64, 48), glass); scene.add(s1);
 const s2 = new THREE.Mesh(new THREE.SphereGeometry(0.3, 48, 32), glass); scene.add(s2);
-norm(POOL.cube, SIZE.cube);
-const cube = new THREE.Mesh(POOL.cube, glass); scene.add(cube);
-const gem = new THREE.Mesh(POOL.gem, glass); scene.add(gem);
-const objs = { blob, heart, torus, s1, s2, cube, gem };
+const objs = { blob, heart, torus, s1, s2 };
 
 /* расположение по сценам: [x, y, z, scale] */
 const LAYOUT = {
-  intro:  { blob: [2.8, 0.5, -2.5, 1.3],   heart: [-2.6, -0.9, -0.4, 1.0], torus: [-2.4, 2.1, -3, 1],    s1: [2.5, -2.3, -1.2, 1],  s2: [-0.4, 2.8, -4, 1],  cube: [-1.3, 3.0, -5.5, 0.55], gem: [3.4, 2.5, -4.5, 0.6] },
-  quiz:   { blob: [-8.5, 4.6, -7, 1.1],    heart: [8.2, -4.8, -6, 1.0],    torus: [8.6, 4.4, -8, 1],     s1: [-8.0, -4.6, -7, 1],   s2: [0.3, 6.4, -9, 1],   cube: [-8.6, -0.3, -8, 0.55],  gem: [8.8, 0.2, -7.5, 0.6] },
-  result: { blob: [3.0, -1.6, -3, 1.15],   heart: [-2.7, 1.7, -1, 0.95],   torus: [-2.5, -2.5, -4, 0.9], s1: [2.4, 2.4, -1.5, 1],   s2: [-0.5, 3.0, -4.5, 1], cube: [1.0, 3.2, -5.5, 0.55],  gem: [-3.3, -0.2, -4.5, 0.6] },
-  letter: { blob: [-3.2, -1.4, -3.5, 1.05], heart: [2.9, 2.0, -1.5, 0.9],  torus: [-2.7, 2.5, -4, 0.8],  s1: [2.7, -2.5, -2, 1],    s2: [0.2, 3.1, -5, 1],   cube: [-1.0, 3.4, -6, 0.55],   gem: [3.3, -0.5, -4.5, 0.6] },
-  finale: { blob: [-4.6, -4.4, -5, 1.0],   heart: [0, 1.1, 1.6, 1.75],     torus: [4.4, 3.8, -5, 0.9],   s1: [3.8, -4.6, -3, 1],    s2: [-3.4, 3.4, -4, 1],  cube: [-3.8, 0.6, -5.5, 0.55], gem: [3.8, -1.4, -5.5, 0.6] },
+  intro:  { blob: [2.8, 0.5, -2.5, 1.3],  heart: [-2.6, -0.9, -0.4, 1.0], torus: [-2.4, 2.1, -3, 1],   s1: [2.5, -2.3, -1.2, 1], s2: [-0.4, 2.8, -4, 1] },
+  quiz:   { blob: [-3.0, 1.3, -3, 1.15],  heart: [2.8, -1.8, -1, 0.85],   torus: [2.6, 2.4, -4, 0.9], s1: [-2.4, -2.4, -1.5, 1], s2: [0.6, 3.0, -4.5, 1] },
+  result: { blob: [3.0, -1.6, -3, 1.15],  heart: [-2.7, 1.7, -1, 0.95],   torus: [-2.5, -2.5, -4, 0.9], s1: [2.4, 2.4, -1.5, 1], s2: [-0.5, 3.0, -4.5, 1] },
+  letter: { blob: [-3.2, -1.4, -3.5, 1.05], heart: [2.9, 2.0, -1.5, 0.9], torus: [-2.7, 2.5, -4, 0.8], s1: [2.7, -2.5, -2, 1], s2: [0.2, 3.1, -5, 1] },
+  finale: { blob: [-3.1, -1.9, -4, 1.0],  heart: [0, 1.1, 1.6, 1.75],     torus: [3.1, 2.1, -4, 0.9],  s1: [2.9, -2.3, -2, 1], s2: [-2.7, 2.7, -4, 1] },
 };
 let mode = "intro";
 const target = {}; // name -> {pos:Vector3, scale:number}
@@ -980,74 +926,6 @@ function setMode(m) {
   const P = PALETTES[m];
   colTarget.base.set(P.base); colTarget.a.set(P.a); colTarget.b.set(P.b); colTarget.c.set(P.c); colTarget.d.set(P.d);
 }
-
-/* ---------- подиумы: 3D-фигурки над вариантами ответа ---------- */
-const POD_Z = 1.4, POD_N = 4;
-const pods = [];
-for (let i = 0; i < POD_N; i++) {
-  const m = new THREE.Mesh(POOL.sphere, tintMat.rose);
-  m.visible = false;
-  m.userData = { s: 0, v: 0, target: 0, spin: 0, hover: false, delay: 0, placed: false, base: 0.3, seed: i * 1.7 + 0.4, pos: new THREE.Vector3() };
-  scene.add(m); pods.push(m);
-}
-const _v = new THREE.Vector3();
-function domToWorld(px, py, z) {
-  _v.set((px / innerWidth) * 2 - 1, -(py / innerHeight) * 2 + 1, 0.5).unproject(camera);
-  const dir = _v.sub(camera.position).normalize();
-  return camera.position.clone().addScaledVector(dir, (z - camera.position.z) / dir.z);
-}
-function worldPerPx(z) { return 2 * (camera.position.z - z) * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) / innerHeight; }
-function setPods(spec) {
-  const now = clock.getElapsedTime();
-  pods.forEach((m, i) => {
-    const u = m.userData, o = spec[i];
-    if (!o) { u.target = 0; return; }
-    m.geometry = POOL[o.shape] || POOL.sphere; m.material = tintMat[o.tint] || tintMat.rose;
-    u.s = 0; u.v = 0; u.target = 1; u.spin = 0; u.placed = false; u.delay = now + 0.3 + i * 0.1;
-    m.rotation.set(0.18, u.seed, 0);
-  });
-}
-function pickPod(k) {
-  const now = clock.getElapsedTime();
-  pods.forEach((m, i) => { const u = m.userData; if (i === k) { u.target = 1.3; u.spin = 10; u.delay = 0; } else { u.target = 0; u.delay = now + (i < k ? i : i - 1) * 0.05; } });
-}
-function clearPods() { const now = clock.getElapsedTime(); pods.forEach((m, i) => { m.userData.target = 0; m.userData.delay = now + i * 0.04; }); }
-function hoverPod(k) { pods.forEach((m, i) => { m.userData.hover = i === k; }); }
-function updatePods(t, dt) {
-  const stages = document.querySelectorAll(".pod-stage");
-  pods.forEach((m, i) => {
-    const u = m.userData, st = stages[i];
-    if (st) {
-      const r = st.getBoundingClientRect();
-      if (r.width > 0) {
-        const p = domToWorld(r.left + r.width / 2, r.top + r.height / 2, POD_Z);
-        u.base = r.height * worldPerPx(POD_Z) * 0.43;
-        if (!u.placed) { u.pos.copy(p); u.placed = true; } else u.pos.lerp(p, 0.4);
-      }
-    }
-    if (t >= u.delay) { // пружина с лёгким перелётом
-      const tgt = u.target * (u.hover ? 1.12 : 1);
-      u.v += (150 * (tgt - u.s) - 13 * u.v) * dt; u.s += u.v * dt;
-    }
-    const sc = Math.max(0, u.s) * u.base;
-    m.scale.setScalar(sc); m.visible = sc > 0.003;
-    if (!m.visible) return;
-    u.spin *= Math.pow(0.1, dt);
-    m.rotation.y += dt * (0.5 + u.spin + (u.hover ? 1.4 : 0));
-    m.rotation.x = 0.18 + Math.sin(t * 0.9 + u.seed) * 0.14;
-    m.position.set(u.pos.x, u.pos.y + Math.sin(t * 1.3 + u.seed) * 0.035, u.pos.z);
-  });
-}
-
-/* ---------- пузырьки вокруг сердца в финале ---------- */
-const orbit = new THREE.Group(); scene.add(orbit);
-const orbs = [];
-for (let i = 0; i < 8; i++) {
-  const m = new THREE.Mesh(POOL.sphere, glass);
-  m.userData = { a: i / 8 * Math.PI * 2, R: 1.55 + (i % 3) * 0.22, h: ((i * 7) % 5 - 2) * 0.18, sp: 0.3 + (i % 4) * 0.07, r: 0.09 + (i % 3) * 0.04 };
-  m.scale.setScalar(m.userData.r); orbit.add(m); orbs.push(m);
-}
-let orbitScale = 0;
 
 /* ---------- частицы: поднимающиеся искры + взрыв ---------- */
 function softTexture() {
@@ -1141,17 +1019,6 @@ function tick() {
   cpx += (ax - cpx) * 0.04; cpy += (ay - cpy) * 0.04;
   camera.position.x = cpx * 0.75; camera.position.y = -cpy * 0.5;
   camera.lookAt(0, 0.15, 0);
-  camera.updateMatrixWorld();
-
-  updatePods(t, dt);
-
-  // пузырьки вокруг сердца
-  orbitScale += ((mode === "finale" ? heart.scale.x / 1.6 : 0) - orbitScale) * 0.04;
-  orbit.visible = orbitScale > 0.01;
-  if (orbit.visible) {
-    orbit.position.copy(heart.position); orbit.scale.setScalar(orbitScale);
-    for (const m of orbs) { const u = m.userData; u.a += u.sp * dt; m.position.set(Math.cos(u.a) * u.R, u.h + Math.sin(u.a * 1.7) * 0.18, Math.sin(u.a) * u.R * 0.55); }
-  }
 
   renderer.render(scene, camera);
 }
@@ -1169,8 +1036,7 @@ mode = window.__bgMode || "intro";
 setMode(mode); applyLayout(true);
 for (const k in colTarget) bgUniforms["u" + (k === "base" ? "Base" : k.toUpperCase())].value.copy(colTarget[k]);
 renderer.setAnimationLoop(tick);
-document.documentElement.classList.add("has-3d");
-window.__bg = { setMode, burst, setPods, pickPod, clearPods, hoverPod };
+window.__bg = { setMode, burst };
 </script>
 </body>
 </html>
