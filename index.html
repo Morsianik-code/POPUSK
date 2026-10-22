@@ -1,0 +1,1042 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0a20">
+<meta name="robots" content="noindex, nofollow">
+<title>Маленький тест</title>
+<meta name="description" content="Три вопроса и один ответ.">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="ru_RU">
+<meta property="og:title" content="Маленький тест">
+<meta property="og:description" content="Три вопроса и один ответ. Займёт минуту.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23ff6fa9'/%3E%3Cstop offset='1' stop-color='%23ffb088'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M32 56s-22-13-22-29a12 12 0 0 1 22-7 12 12 0 0 1 22 7c0 16-22 29-22 29z' fill='url(%23g)'/%3E%3C/svg%3E">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500;1,600&family=Manrope:wght@300;400;500;600&family=Marck+Script&family=Unbounded:wght@500;700&display=swap" rel="stylesheet">
+
+<style>
+/* ============================================================
+   БАЗА
+   ============================================================ */
+:root{
+  --bg:#0b0a20;
+  --ink:#f8f4ff;
+  --muted:rgba(248,244,255,.68);
+  --rose:#ff6fa9;
+  --peach:#ffb088;
+  --violet:#8b6cff;
+  --cyan:#5de0ff;
+  --gold:#ffd27a;
+  --font-display:"Cormorant Garamond","Playfair Display",Georgia,"Times New Roman",serif;
+  --font-script:"Marck Script","Caveat","Segoe Script",cursive;
+  --font-ui:"Manrope",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --font-num:"Unbounded",var(--font-ui);
+  --ease-out:cubic-bezier(.22,1,.36,1);
+  --ease-io:cubic-bezier(.65,0,.35,1);
+  --ease-spring:cubic-bezier(.34,1.56,.64,1);
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;background:var(--bg);color:var(--ink);
+  font-family:var(--font-ui);font-weight:400;
+  overflow:hidden;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
+  -webkit-tap-highlight-color:transparent;
+}
+button{font:inherit;color:inherit}
+a.btn{color:var(--ink);text-decoration:none}
+
+/* ============================================================
+   ФОН: WebGL-холст + CSS-запасной вариант + зерно
+   ============================================================ */
+#bg{position:fixed;inset:0;width:100%;height:100%;display:block;z-index:0}
+.fallback{position:fixed;inset:0;z-index:0;display:none;overflow:hidden;background:
+  radial-gradient(60% 50% at 20% 20%,rgba(139,108,255,.55),transparent 70%),
+  radial-gradient(50% 50% at 80% 30%,rgba(255,111,169,.5),transparent 70%),
+  radial-gradient(50% 60% at 50% 90%,rgba(93,224,255,.35),transparent 70%),var(--bg)}
+.fallback i{position:absolute;border-radius:50%;filter:blur(60px);opacity:.75;animation:drift 18s ease-in-out infinite alternate}
+.fallback i:nth-child(1){width:52vmax;height:52vmax;left:-10vmax;top:-10vmax;background:#7a5cff}
+.fallback i:nth-child(2){width:46vmax;height:46vmax;right:-8vmax;top:10vmax;background:#ff6fa9;animation-delay:-6s}
+.fallback i:nth-child(3){width:40vmax;height:40vmax;left:20vmax;bottom:-14vmax;background:#ffb088;animation-delay:-12s}
+html.no-webgl #bg{display:none}
+html.no-webgl .fallback{display:block}
+@keyframes drift{from{transform:translate3d(0,0,0) scale(1)}to{transform:translate3d(10vmax,6vmax,0) scale(1.15)}}
+
+.grain{position:fixed;inset:-50%;width:200%;height:200%;z-index:2;pointer-events:none;opacity:.06;mix-blend-mode:soft-light;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation:grain 1.4s steps(5) infinite}
+@keyframes grain{0%{transform:translate(0,0)}20%{transform:translate(-3%,2%)}40%{transform:translate(2%,-4%)}60%{transform:translate(-4%,-1%)}80%{transform:translate(3%,3%)}100%{transform:translate(0,0)}}
+
+/* ============================================================
+   СЦЕНЫ
+   ============================================================ */
+main{position:fixed;inset:0;z-index:3}
+.scene{
+  position:absolute;inset:0;display:grid;place-items:center;
+  padding:max(16px,env(safe-area-inset-top)) 16px max(16px,env(safe-area-inset-bottom));
+  perspective:1500px;perspective-origin:50% 42%;
+  visibility:hidden;pointer-events:none;
+}
+.scene.is-active{visibility:visible;pointer-events:auto}
+.float{animation:float 8s ease-in-out infinite}
+.tilt{perspective:1500px;will-change:transform}
+@keyframes float{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(0,-9px,0)}}
+
+/* ============================================================
+   LIQUID GLASS
+   ============================================================ */
+.glass{
+  position:relative;isolation:isolate;
+  border-radius:var(--r,34px);
+  background:
+    linear-gradient(135deg,rgba(255,255,255,.17) 0%,rgba(255,255,255,.06) 38%,rgba(255,255,255,.025) 62%,rgba(255,255,255,.11) 100%);
+  -webkit-backdrop-filter:blur(22px) saturate(180%) brightness(1.05);
+  backdrop-filter:blur(22px) saturate(180%) brightness(1.05);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.55),
+    inset 0 -1px 0 rgba(255,255,255,.09),
+    inset 1px 0 0 rgba(255,255,255,.14),
+    inset -1px 0 0 rgba(255,255,255,.14),
+    0 40px 90px -30px rgba(0,0,0,.65),
+    0 0 0 1px rgba(255,255,255,.10);
+}
+.glass::before{ /* блик, который следует за курсором */
+  content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:-1;
+  background:radial-gradient(460px circle at var(--mx,50%) var(--my,-10%),rgba(255,255,255,.22),rgba(255,255,255,0) 62%);
+  mix-blend-mode:screen;
+}
+.glass::after{ /* светящаяся кромка */
+  content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;padding:1.2px;
+  background:linear-gradient(var(--rim,135deg),rgba(255,255,255,.85),rgba(255,255,255,.12) 28%,rgba(255,255,255,.04) 55%,rgba(255,255,255,.6));
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor;mask-composite:exclude;
+}
+
+.card{
+  width:min(92vw,580px);
+  padding:clamp(28px,5.2vw,50px) clamp(24px,5vw,48px);
+  transform-origin:50% 50%;
+}
+.card.enter{animation:cardIn 1.05s var(--ease-out) both}
+.card.leave{animation:cardOut .75s var(--ease-io) both}
+@keyframes cardIn{
+  from{opacity:0;transform:translate3d(90px,48px,-280px) rotateX(10deg) rotateY(18deg)}
+  to{opacity:1;transform:translate3d(0,0,0) rotateX(0) rotateY(0)}
+}
+@keyframes cardOut{
+  to{opacity:0;transform:translate3d(-110px,-26px,-300px) rotateY(-26deg) rotateX(-7deg)}
+}
+
+/* ============================================================
+   ТИПОГРАФИКА
+   ============================================================ */
+.eyebrow{font-family:var(--font-script);font-size:clamp(1.35rem,2.8vw,1.8rem);line-height:1;color:var(--peach);margin:0 0 .55em;text-shadow:0 0 24px rgba(255,176,136,.35)}
+h1,.display{font-family:var(--font-display);font-weight:500;font-size:clamp(2.7rem,7.5vw,4.6rem);line-height:1;letter-spacing:-.012em;margin:0 0 .4em}
+h1 em,.display em{font-style:italic;font-weight:600}
+h1 em .w,.display em .w,h1 em:not(:has(.w)),.display em:not(:has(.w)){background:linear-gradient(92deg,#fff 0%,var(--rose) 45%,var(--peach) 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.lead{font-size:clamp(1rem,2.2vw,1.12rem);line-height:1.62;color:var(--muted);margin:0 0 1.7em}
+.lead strong{color:var(--ink);font-weight:500}
+.q{font-family:var(--font-display);font-weight:500;font-size:clamp(1.85rem,5.2vw,2.7rem);line-height:1.08;margin:.15em 0 .75em;letter-spacing:-.01em}
+.note{font-size:.82rem;color:var(--muted);margin:1.6em 0 0;letter-spacing:.02em}
+.row{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+
+/* пословное появление */
+.w{display:inline-block;opacity:0;filter:blur(9px);transform:translateY(.32em)}
+.w.on{animation:wIn .85s var(--ease-out) forwards;animation-delay:calc(var(--i) * var(--stagger,42ms) + var(--d,0ms))}
+@keyframes wIn{to{opacity:1;filter:blur(0);transform:translateY(0)}}
+
+/* ============================================================
+   КНОПКИ
+   ============================================================ */
+.btn{
+  position:relative;overflow:hidden;cursor:pointer;
+  display:inline-flex;align-items:center;gap:.6em;
+  padding:1rem 1.75rem;border-radius:999px;border:1px solid rgba(255,255,255,.36);
+  font-family:var(--font-ui);font-weight:600;font-size:1rem;letter-spacing:.01em;line-height:1;
+  background:linear-gradient(135deg,rgba(255,255,255,.26),rgba(255,255,255,.08));
+  -webkit-backdrop-filter:blur(14px) saturate(160%);backdrop-filter:blur(14px) saturate(160%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.65),inset 0 -1px 0 rgba(255,255,255,.08),0 14px 34px -14px rgba(0,0,0,.7);
+  transition:transform .45s var(--ease-out),box-shadow .45s var(--ease-out),background .45s;
+  -webkit-user-select:none;user-select:none;
+}
+.btn::before{ /* бегущий блик */
+  content:"";position:absolute;top:-40%;bottom:-40%;left:-30%;width:40%;
+  background:linear-gradient(100deg,rgba(255,255,255,0),rgba(255,255,255,.45),rgba(255,255,255,0));
+  transform:translateX(-120%) skewX(-18deg);transition:transform .9s var(--ease-out);pointer-events:none;
+}
+.btn:hover{transform:translateY(-2px) scale(1.025);box-shadow:inset 0 1px 0 rgba(255,255,255,.75),0 22px 46px -16px rgba(255,111,169,.55),0 0 0 1px rgba(255,255,255,.22)}
+.btn:hover::before{transform:translateX(420%) skewX(-18deg)}
+.btn:active{transform:scale(.965);transition-duration:.15s}
+.btn.primary{
+  border-color:rgba(255,255,255,.5);color:#2a0b1e;
+  background:linear-gradient(135deg,#fff3f8 0%,#ffc1dc 35%,var(--rose) 100%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.9),inset 0 -2px 6px rgba(190,40,110,.25),0 18px 44px -14px rgba(255,111,169,.75);
+}
+.btn.primary:hover{box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 26px 56px -14px rgba(255,111,169,.9),0 0 0 1px rgba(255,255,255,.35)}
+.btn .arr{display:inline-block;transition:transform .45s var(--ease-out)}
+.btn:hover .arr{transform:translateX(5px)}
+.btn.appear{opacity:0;transform:translateY(12px)}
+.btn.appear.on{animation:btnIn .9s var(--ease-out) forwards}
+@keyframes btnIn{to{opacity:1;transform:translateY(0)}}
+
+/* варианты ответов */
+.options{display:grid;gap:12px;perspective:900px}
+.opt{
+  position:relative;overflow:hidden;cursor:pointer;text-align:left;width:100%;
+  display:flex;align-items:center;gap:14px;
+  padding:15px 18px 15px 16px;border-radius:20px;border:1px solid rgba(255,255,255,.22);
+  font-family:var(--font-ui);font-weight:500;font-size:clamp(.96rem,2.2vw,1.04rem);line-height:1.35;color:var(--ink);
+  background:linear-gradient(135deg,rgba(255,255,255,.14),rgba(255,255,255,.04));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 10px 26px -18px rgba(0,0,0,.8);
+  transition:transform .55s var(--ease-out),opacity .55s var(--ease-out),background .55s,border-color .55s,box-shadow .55s;
+  opacity:0;transform:translate3d(0,18px,-40px) rotateX(-12deg);
+}
+.opt.in{animation:optIn .85s var(--ease-out) forwards;animation-delay:calc(var(--k) * 80ms + 280ms)}
+@keyframes optIn{to{opacity:1;transform:translate3d(0,0,0) rotateX(0)}}
+.opt .idx{
+  flex:none;width:34px;height:34px;display:grid;place-items:center;border-radius:12px;
+  font-family:var(--font-num);font-weight:500;font-size:.62rem;letter-spacing:.08em;color:rgba(255,255,255,.85);
+  background:rgba(255,255,255,.1);box-shadow:inset 0 1px 0 rgba(255,255,255,.35);transition:background .5s,color .5s,transform .5s var(--ease-spring);
+}
+@media (hover:hover){
+  .opt:hover{transform:translate3d(0,-2px,10px) scale(1.012);background:linear-gradient(135deg,rgba(255,255,255,.22),rgba(255,255,255,.08));border-color:rgba(255,255,255,.4)}
+  .opt:hover .idx{transform:rotate(-8deg) scale(1.08);background:rgba(255,255,255,.18)}
+}
+.opt:active{transform:scale(.985)}
+.opt.is-picked{
+  background:linear-gradient(135deg,rgba(255,111,169,.6),rgba(255,176,136,.5));border-color:rgba(255,255,255,.7);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.8),0 18px 40px -14px rgba(255,111,169,.8);transform:translate3d(0,0,16px) scale(1.02);
+}
+.opt.is-picked .idx{background:#fff;color:#c2286c}
+.opt.is-dim{opacity:.3;transform:scale(.975)}
+.opt.is-picked,.opt.is-dim{pointer-events:none}
+.ripple{
+  position:absolute;width:30px;height:30px;border-radius:50%;pointer-events:none;
+  background:radial-gradient(circle,rgba(255,255,255,.75),rgba(255,255,255,0) 62%);
+  transform:translate(-50%,-50%) scale(0);animation:ripple .95s var(--ease-out) forwards;
+}
+@keyframes ripple{to{transform:translate(-50%,-50%) scale(18);opacity:0}}
+
+/* прогресс */
+.progress{display:flex;align-items:center;gap:14px;margin:0 0 20px;font-family:var(--font-num);font-weight:500;font-size:.66rem;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+.bar{flex:1;height:6px;border-radius:99px;background:rgba(255,255,255,.1);box-shadow:inset 0 1px 2px rgba(0,0,0,.4),inset 0 -1px 0 rgba(255,255,255,.08);overflow:hidden}
+.bar i{display:block;height:100%;width:0;border-radius:inherit;background:linear-gradient(90deg,var(--violet),var(--rose),var(--peach));box-shadow:0 0 16px rgba(255,111,169,.7);transition:width .95s var(--ease-out)}
+
+/* результат */
+.num{
+  font-family:var(--font-num);font-weight:700;font-size:clamp(4.6rem,17vw,8.8rem);line-height:.95;letter-spacing:-.045em;margin:.05em 0 .1em;
+  background:linear-gradient(120deg,#fff 0%,var(--rose) 35%,var(--peach) 60%,#fff 100%);background-size:220% 100%;
+  -webkit-background-clip:text;background-clip:text;color:transparent;animation:shimmer 5s linear infinite;
+  filter:drop-shadow(0 10px 30px rgba(255,111,169,.35));
+}
+.num small{font-size:.42em;letter-spacing:-.02em}
+@keyframes shimmer{to{background-position:-220% 0}}
+.label{font-family:var(--font-num);font-weight:500;font-size:.7rem;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);margin:0 0 1.6em}
+.fade{opacity:0;transform:translateY(10px);transition:opacity 1s var(--ease-out),transform 1s var(--ease-out)}
+.fade.on{opacity:1;transform:none}
+
+/* письмо */
+.card.letter{max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);overflow:auto;scrollbar-width:none}
+.card.letter::-webkit-scrollbar{display:none}
+.letter p.text{font-family:var(--font-display);font-weight:500;font-size:clamp(1.3rem,3.4vw,1.62rem);line-height:1.4;margin:0 0 1em;color:var(--ink)}
+.letter p.text em{font-style:italic;color:var(--peach)}
+.sig{font-family:var(--font-script);font-size:clamp(1.8rem,4.4vw,2.4rem);line-height:1.1;color:var(--peach);margin:1.2em 0 0;
+  clip-path:inset(0 100% 0 0);transition:clip-path 1.8s var(--ease-out)}
+.sig.on{clip-path:inset(0 0 0 0)}
+.ps{font-size:.9rem;color:var(--muted);margin:1.6em 0 0;line-height:1.55}
+.heartwrap{display:flex;flex-direction:column;align-items:center;gap:14px;margin-top:2.2em}
+.heart-btn{
+  position:relative;width:92px;height:92px;border-radius:50%;border:1px solid rgba(255,255,255,.5);cursor:pointer;display:grid;place-items:center;
+  background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.55),rgba(255,255,255,.08) 55%),linear-gradient(135deg,rgba(255,111,169,.5),rgba(255,176,136,.35));
+  -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.7),0 20px 50px -14px rgba(255,111,169,.8);
+  animation:beat 1.6s ease-in-out infinite;transition:transform .4s var(--ease-spring);
+}
+.heart-btn svg{width:42px;height:42px;fill:url(#hg);filter:drop-shadow(0 6px 14px rgba(255,80,140,.6))}
+.heart-btn:hover{animation-play-state:paused;transform:scale(1.1)}
+.heart-btn:active{transform:scale(.94)}
+@keyframes beat{0%,100%{transform:scale(1)}14%{transform:scale(1.07)}28%{transform:scale(1)}42%{transform:scale(1.05)}70%{transform:scale(1)}}
+.heartwrap span{font-family:var(--font-script);font-size:1.4rem;color:var(--muted)}
+
+/* финал */
+.finale-stage{text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:12px;height:100%;padding-bottom:clamp(24px,6vh,64px)}
+.finale-stage .display{font-size:clamp(2.6rem,8vw,5.2rem);margin:0;text-shadow:0 10px 50px rgba(0,0,0,.45)}
+.finale-stage .eyebrow{font-size:clamp(1.5rem,3.4vw,2.1rem);margin:0 0 .3em}
+.finale-stage .btn{margin-top:1.4rem}
+
+/* ============================================================
+   МОБИЛЬНОЕ / ДОСТУПНОСТЬ
+   ============================================================ */
+@media (max-width:480px){
+  .card{padding:30px 22px 28px}
+  .opt{padding:13px 14px;gap:12px}
+}
+@media (prefers-reduced-motion:reduce){
+  .float{animation:none}
+  .grain{animation:none}
+}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+noscript div{position:fixed;inset:0;display:grid;place-items:center;padding:24px;z-index:9;text-align:center;font-size:1.1rem;background:var(--bg)}
+</style>
+</head>
+<body>
+
+<canvas id="bg" aria-hidden="true"></canvas>
+<div class="fallback" aria-hidden="true"><i></i><i></i><i></i></div>
+<div class="grain" aria-hidden="true"></div>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="hg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffffff"/><stop offset=".45" stop-color="#ff6fa9"/><stop offset="1" stop-color="#ffb088"/>
+    </linearGradient>
+  </defs>
+</svg>
+
+<main>
+  <!-- ИНТРО -->
+  <section class="scene" data-scene="intro">
+    <div class="float"><div class="tilt">
+      <article class="card glass">
+        <p class="eyebrow" data-reveal data-stagger="60">маленький тест</p>
+        <h1 data-reveal data-delay="150" id="hello"></h1>
+        <p class="lead" data-reveal data-delay="450" data-stagger="22" id="introLead"></p>
+        <div class="row">
+          <button class="btn primary appear" id="startBtn" type="button"><span id="startLabel"></span><span class="arr">→</span></button>
+          <span class="note" style="margin:0" id="introNote"></span>
+        </div>
+      </article>
+    </div></div>
+  </section>
+
+  <!-- ВОПРОСЫ -->
+  <section class="scene" data-scene="quiz">
+    <div class="float"><div class="tilt">
+      <article class="card glass" id="quizCard" aria-live="polite">
+        <div class="progress"><span id="qCount">1 / 3</span><div class="bar"><i id="barFill"></i></div></div>
+        <p class="eyebrow" data-reveal data-stagger="60" id="qEyebrow"></p>
+        <h2 class="q" data-reveal data-delay="120" data-stagger="38" id="qTitle"></h2>
+        <div class="options" id="options"></div>
+      </article>
+    </div></div>
+  </section>
+
+  <!-- РЕЗУЛЬТАТ -->
+  <section class="scene" data-scene="result">
+    <div class="float"><div class="tilt">
+      <article class="card glass" style="text-align:center">
+        <p class="eyebrow" data-reveal data-stagger="60" id="resEyebrow"></p>
+        <div class="num" id="num">0<small>%</small></div>
+        <p class="label fade" id="resLabel"></p>
+        <p class="lead fade" id="resText"></p>
+        <button class="btn appear" id="resBtn" type="button"><span id="resBtnLabel"></span><span class="arr">→</span></button>
+      </article>
+    </div></div>
+  </section>
+
+  <!-- ПИСЬМО -->
+  <section class="scene" data-scene="letter">
+    <div class="float"><div class="tilt">
+      <article class="card glass letter" id="letterCard">
+        <p class="eyebrow" data-reveal data-stagger="60" id="letterEyebrow"></p>
+        <div id="letterBody"></div>
+        <p class="sig" id="sig"></p>
+        <p class="ps fade" id="ps"></p>
+        <div class="heartwrap fade" id="heartwrap">
+          <button class="heart-btn" id="heartBtn" type="button" aria-label="Нажми">
+            <svg viewBox="0 0 64 64"><path d="M32 56s-22-13-22-29a12 12 0 0 1 22-7 12 12 0 0 1 22 7c0 16-22 29-22 29z"/></svg>
+          </button>
+          <span id="heartHint"></span>
+        </div>
+      </article>
+    </div></div>
+  </section>
+
+  <!-- ФИНАЛ -->
+  <section class="scene" data-scene="finale">
+    <div class="finale-stage">
+      <p class="eyebrow" data-reveal data-stagger="70" id="finEyebrow"></p>
+      <p class="display" data-reveal data-delay="300" data-stagger="90" id="finTitle"></p>
+      <a class="btn appear" id="finBtn" href="#" target="_blank" rel="noopener"><span id="finBtnLabel"></span><span class="arr">→</span></a>
+    </div>
+  </section>
+</main>
+
+<noscript><div>Для этой страницы нужен JavaScript — включи его, пожалуйста, и обнови страницу.</div></noscript>
+
+<!-- ============================================================
+     НАСТРОЙКИ. Всё, что нужно менять под себя, — здесь.
+     {name} в текстах заменяется на имя.
+     ============================================================ -->
+<script>
+window.CONFIG = {
+  name: "Имя",            // её имя. Пустая строка — обращение без имени
+  replyUrl: "",           // ссылка «Написать мне» в финале, например "https://t.me/username". Пусто — кнопка «Ещё раз»
+
+  intro: {
+    eyebrow: "маленький тест",
+    title:   "Привет, <em>{name}</em>",
+    lead:    "У меня для тебя <strong>три вопроса</strong> и один очень важный ответ. Отвечай честно — результат обжалованию не подлежит.",
+    button:  "Начать",
+    note:    "займёт минуту ✦",
+  },
+
+  quiz: {
+    eyebrow: "вопрос {n}",
+    questions: [
+      {
+        title: "Какое утро тебе нравится больше всего?",
+        options: [
+          "Долго валяться под одеялом",
+          "Кофе и музыка на весь дом",
+          "Выйти на улицу, пока город спит",
+          "Утро? Я проснулась в двенадцать",
+        ],
+      },
+      {
+        title: "Свободный вечер и телепорт в руках. Куда?",
+        options: [
+          "На крышу — смотреть на город",
+          "В маленькое кафе, где нас никто не знает",
+          "К морю, даже если холодно",
+          "Домой. Но чтобы кто-то был рядом",
+        ],
+      },
+      {
+        title: "Как думаешь, зачем я всё это сделал?",
+        options: [
+          "Тебе было скучно",
+          "Ты что-то задумал",
+          "Хочешь мне что-то сказать",
+          "Не знаю, но мне уже нравится",
+        ],
+      },
+    ],
+  },
+
+  result: {
+    eyebrow: "результат",
+    value:   100,
+    label:   "совпадение",
+    text:    "Честно говоря, цифра была известна заранее. Тест — просто повод.",
+    button:  "И что это значит?",
+  },
+
+  letter: {
+    eyebrow: "а теперь по-настоящему",
+    paragraphs: [
+      "{name}, я долго думал, как это сказать, и в итоге собрал целый сайт. Потому что обычное сообщение — слишком просто для того, что я чувствую.",
+      "Ты — человек, рядом с которым мне одновременно <em>спокойно</em> и хочется жить громче. С тобой даже обычный вторник становится особенным.",
+      "Я не прошу ничего в ответ. Просто хочу, чтобы ты знала: ты очень мне дорога. <em>Очень.</em>",
+    ],
+    signature: "— с теплом, я",
+    ps:        "P.S. Твои ответы я, конечно, запомнил.",
+    heartHint: "нажми",
+  },
+
+  finale: {
+    eyebrow: "и это не тест",
+    title:   "Ты очень мне <em>дорога</em>",
+    buttonReply:   "Написать мне",
+    buttonRestart: "Ещё раз",
+  },
+
+  // Необязательно: ответы тихо уходят в личного Telegram-бота автора.
+  // Для неё это невидимо. enabled:false — сайт вообще не выходит в сеть.
+  tg: { enabled: false, token: "", chatId: "" },
+};
+</script>
+
+<!-- ============================================================
+     ЛОГИКА СТРАНИЦЫ (работает и без 3D, если WebGL недоступен)
+     ============================================================ -->
+<script>
+(() => {
+  const C = window.CONFIG;
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  const tpl = s => (s || "").replace(/\{name\}/g, C.name || "");
+
+  const state = { answers: [], q: 0, locked: false, scene: null };
+
+  /* ---------- 3D-фон: мост к модулю ---------- */
+  function setBg(mode) {
+    window.__bgMode = mode;
+    if (window.__bg) window.__bg.setMode(mode);
+  }
+
+  /* ---------- пословное появление ---------- */
+  function splitWords(el) {
+    const walk = node => {
+      Array.from(node.childNodes).forEach(child => {
+        if (child.nodeType === 3) {
+          const frag = document.createDocumentFragment();
+          child.textContent.split(/(\s+)/).forEach(part => {
+            if (!part) return;
+            if (/^\s+$/.test(part)) { frag.appendChild(document.createTextNode(part)); return; }
+            const s = document.createElement("span"); s.className = "w"; s.textContent = part; frag.appendChild(s);
+          });
+          node.replaceChild(frag, child);
+        } else if (child.nodeType === 1 && child.tagName !== "BR") {
+          walk(child);
+        }
+      });
+    };
+    walk(el);
+  }
+  function reveal(scope, base = 0) {
+    $$("[data-reveal]", scope).forEach(el => {
+      if (!el.dataset.split) { splitWords(el); el.dataset.split = "1"; }
+      const d = base + Number(el.dataset.delay || 0);
+      if (el.dataset.stagger) el.style.setProperty("--stagger", el.dataset.stagger + "ms");
+      $$(".w", el).forEach((w, i) => {
+        w.classList.remove("on");
+        w.style.setProperty("--i", i);
+        w.style.setProperty("--d", d + "ms");
+      });
+      // перезапуск анимации
+      void el.offsetWidth;
+      $$(".w", el).forEach(w => w.classList.add("on"));
+    });
+  }
+  function setRich(el, html) { el.innerHTML = tpl(html); delete el.dataset.split; }
+
+  /* ---------- переключение сцен (3D-вылет / влёт карточки) ---------- */
+  function animateCard(scene, cls) {
+    const card = $(".card", scene);
+    if (!card) return Promise.resolve();
+    return new Promise(res => {
+      const done = e => { if (e.target !== card) return; card.removeEventListener("animationend", done); card.classList.remove(cls); res(); };
+      card.addEventListener("animationend", done);
+      card.classList.add(cls);
+    });
+  }
+  async function go(name) {
+    const cur = $(".scene.is-active");
+    const next = $(`.scene[data-scene="${name}"]`);
+    if (!next || next === cur) return;
+    setBg(name);
+    if (cur) { await animateCard(cur, "leave"); cur.classList.remove("is-active"); }
+    state.scene = name;
+    next.classList.add("is-active");
+    const p = animateCard(next, "enter");
+    onEnter[name] && onEnter[name](next);
+    await p;
+  }
+
+  /* ---------- блики / наклон под курсором ---------- */
+  const fine = matchMedia("(hover:hover) and (pointer:fine)").matches;
+  let tx = 0, ty = 0, px = 0, py = 0;
+  window.addEventListener("pointermove", e => {
+    tx = (e.clientX / innerWidth) * 2 - 1;
+    ty = (e.clientY / innerHeight) * 2 - 1;
+    const card = $(".scene.is-active .glass");
+    if (card) {
+      const r = card.getBoundingClientRect();
+      card.style.setProperty("--mx", ((e.clientX - r.left) / r.width * 100).toFixed(1) + "%");
+      card.style.setProperty("--my", ((e.clientY - r.top) / r.height * 100).toFixed(1) + "%");
+    }
+  }, { passive: true });
+  (function tiltLoop() {
+    px += (tx - px) * 0.055; py += (ty - py) * 0.055;
+    if (fine) {
+      const el = $(".scene.is-active .tilt");
+      if (el) el.style.transform = `rotateY(${(px * 6.5).toFixed(2)}deg) rotateX(${(-py * 5.5).toFixed(2)}deg)`;
+      const card = $(".scene.is-active .glass");
+      if (card) card.style.setProperty("--rim", (135 + px * 45 - py * 25).toFixed(1) + "deg");
+    }
+    requestAnimationFrame(tiltLoop);
+  })();
+
+  /* ---------- рябь на кнопках ---------- */
+  function ripple(e, el) {
+    const r = el.getBoundingClientRect();
+    const s = document.createElement("span"); s.className = "ripple";
+    s.style.left = ((e.clientX || r.left + r.width / 2) - r.left) + "px";
+    s.style.top = ((e.clientY || r.top + r.height / 2) - r.top) + "px";
+    el.appendChild(s); s.addEventListener("animationend", () => s.remove());
+  }
+
+  /* ---------- ИНТРО ---------- */
+  setRich($("#hello"), C.name ? C.intro.title : C.intro.title.replace(/,?\s*<em>\{name\}<\/em>/, ""));
+  setRich($("#introLead"), C.intro.lead);
+  $("#startLabel").textContent = C.intro.button;
+  $("#introNote").textContent = C.intro.note;
+  $("#startBtn").addEventListener("click", e => { ripple(e, e.currentTarget); go("quiz"); });
+
+  /* ---------- ВОПРОСЫ ---------- */
+  const Q = C.quiz.questions;
+  function renderQuestion(i) {
+    const q = Q[i];
+    state.q = i;
+    $("#qCount").textContent = `${i + 1} / ${Q.length}`;
+    $("#qEyebrow").textContent = C.quiz.eyebrow.replace("{n}", i + 1); delete $("#qEyebrow").dataset.split;
+    setRich($("#qTitle"), q.title);
+    const list = $("#options"); list.innerHTML = "";
+    q.options.forEach((text, k) => {
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "opt"; b.style.setProperty("--k", k);
+      b.innerHTML = `<span class="idx">0${k + 1}</span><span class="txt"></span>`;
+      $(".txt", b).textContent = tpl(text);
+      b.addEventListener("click", e => pick(e, b, k));
+      list.appendChild(b);
+    });
+    reveal($("#quizCard"), 120);
+    requestAnimationFrame(() => $$(".opt", list).forEach(b => b.classList.add("in")));
+    state.locked = false;
+  }
+  async function pick(e, btn, k) {
+    if (state.locked) return;
+    state.locked = true;
+    ripple(e, btn);
+    btn.classList.add("is-picked");
+    $$(".opt").forEach(b => { if (b !== btn) b.classList.add("is-dim"); });
+    state.answers[state.q] = k;
+    $("#barFill").style.width = ((state.q + 1) / Q.length * 100) + "%";
+    await wait(720);
+    if (state.q + 1 < Q.length) await flipTo(state.q + 1);
+    else go("result");
+  }
+  async function flipTo(i) {
+    const card = $("#quizCard");
+    const out = card.animate(
+      [{ transform: "rotateY(0deg) translateZ(0)", opacity: 1 }, { transform: "rotateY(84deg) translateZ(-120px)", opacity: .35 }],
+      { duration: 460, easing: "cubic-bezier(.55,0,.8,.2)", fill: "forwards" });
+    await out.finished;
+    renderQuestion(i);
+    out.cancel();
+    const back = card.animate(
+      [{ transform: "rotateY(-84deg) translateZ(-120px)", opacity: .35 }, { transform: "rotateY(0deg) translateZ(0)", opacity: 1 }],
+      { duration: 720, easing: "cubic-bezier(.2,.8,.2,1)" });
+    await back.finished;
+  }
+
+  /* ---------- РЕЗУЛЬТАТ ---------- */
+  $("#resEyebrow").textContent = C.result.eyebrow;
+  $("#resLabel").textContent = C.result.label;
+  setRich($("#resText"), C.result.text);
+  $("#resBtnLabel").textContent = C.result.button;
+  $("#resBtn").addEventListener("click", e => { ripple(e, e.currentTarget); go("letter"); });
+  function countTo(el, target, ms) {
+    return new Promise(res => {
+      const t0 = performance.now();
+      const ease = t => 1 - Math.pow(1 - t, 4);
+      (function f(now) {
+        const t = Math.min(1, (now - t0) / ms);
+        el.innerHTML = Math.round(ease(t) * target) + "<small>%</small>";
+        t < 1 ? requestAnimationFrame(f) : res();
+      })(t0);
+    });
+  }
+
+  /* ---------- ПИСЬМО ---------- */
+  $("#letterEyebrow").textContent = C.letter.eyebrow;
+  const body = $("#letterBody");
+  C.letter.paragraphs.forEach((p, i) => {
+    const el = document.createElement("p"); el.className = "text"; el.dataset.reveal = ""; el.dataset.stagger = "30";
+    el.dataset.delay = String(300 + i * 1500); setRich(el, p); body.appendChild(el);
+  });
+  $("#sig").textContent = tpl(C.letter.signature);
+  $("#ps").textContent = tpl(C.letter.ps);
+  $("#heartHint").textContent = C.letter.heartHint;
+  $("#heartBtn").addEventListener("click", () => { if (window.__bg) window.__bg.burst(); go("finale"); });
+
+  /* ---------- ФИНАЛ ---------- */
+  $("#finEyebrow").textContent = C.finale.eyebrow;
+  setRich($("#finTitle"), C.finale.title);
+  const finBtn = $("#finBtn");
+  if (C.replyUrl) { finBtn.href = C.replyUrl; $("#finBtnLabel").textContent = C.finale.buttonReply; }
+  else {
+    finBtn.removeAttribute("target"); $("#finBtnLabel").textContent = C.finale.buttonRestart;
+    finBtn.addEventListener("click", e => { e.preventDefault(); restart(); });
+  }
+  function restart() {
+    state.answers = []; $("#barFill").style.width = "0";
+    $("#finBtn").classList.remove("on");
+    go("intro");
+  }
+
+  /* ---------- Telegram (необязательно) ---------- */
+  function sendAnswers() {
+    const t = C.tg; if (!t || !t.enabled || !t.token || !t.chatId || state.sent) return;
+    state.sent = true;
+    const lines = Q.map((q, i) => `${i + 1}. ${q.title}\n   → ${q.options[state.answers[i]] ?? "—"}`);
+    fetch(`https://api.telegram.org/bot${t.token}/sendMessage`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chat_id: t.chatId, text: `✦ ${C.name || "Она"} прошла тест\n\n${lines.join("\n")}` }),
+    }).catch(() => {});
+  }
+
+  /* ---------- что происходит при входе в сцену ---------- */
+  const onEnter = {
+    intro(s) {
+      reveal(s, 250);
+      const b = $("#startBtn"); b.classList.remove("on"); void b.offsetWidth; b.style.animationDelay = "1150ms"; b.classList.add("on");
+    },
+    quiz() { renderQuestion(0); },
+    async result(s) {
+      reveal(s, 200);
+      sendAnswers();
+      $("#num").innerHTML = "0<small>%</small>";
+      $$(".fade", s).forEach(el => el.classList.remove("on"));
+      $("#resBtn").classList.remove("on");
+      await wait(500);
+      await countTo($("#num"), C.result.value, 2100);
+      $("#resLabel").classList.add("on");
+      await wait(350);
+      $("#resText").classList.add("on");
+      await wait(600);
+      $("#resBtn").classList.add("on");
+    },
+    async letter(s) {
+      $("#letterCard").scrollTop = 0;
+      $("#sig").classList.remove("on"); $("#ps").classList.remove("on"); $("#heartwrap").classList.remove("on");
+      reveal(s, 200);
+      const n = C.letter.paragraphs.length;
+      await wait(500 + n * 1500);
+      $("#sig").classList.add("on");
+      await wait(1300);
+      $("#ps").classList.add("on");
+      await wait(700);
+      $("#heartwrap").classList.add("on");
+    },
+    async finale(s) {
+      reveal(s, 900);
+      const b = $("#finBtn"); b.classList.remove("on"); void b.offsetWidth; b.style.animationDelay = "2600ms"; b.classList.add("on");
+    },
+  };
+
+  /* ---------- старт ---------- */
+  // если модуль с 3D не отозвался за 5 с (нет сети/WebGL) — включаем CSS-фон
+  setTimeout(() => { if (!window.__bg) document.documentElement.classList.add("no-webgl"); }, 5000);
+  go("intro");
+})();
+</script>
+
+<!-- ============================================================
+     3D-ФОН: жидкое стекло на Three.js
+     ============================================================ -->
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+<script type="module">
+import * as THREE from "three";
+import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
+import { mergeVertices } from "three/addons/utils/BufferGeometryUtils.js";
+
+const canvas = document.getElementById("bg");
+const isMobile = matchMedia("(pointer:coarse)").matches || innerWidth < 720;
+const reduced = matchMedia("(prefers-reduced-motion:reduce)").matches;
+
+let renderer;
+try {
+  renderer = new THREE.WebGLRenderer({ canvas, antialias: !isMobile, alpha: false, powerPreference: "high-performance" });
+} catch (e) {
+  document.documentElement.classList.add("no-webgl");
+  throw e;
+}
+renderer.setPixelRatio(Math.min(devicePixelRatio || 1, isMobile ? 1.5 : 1.75));
+renderer.setSize(innerWidth, innerHeight, false);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+if ("transmissionResolutionScale" in renderer) renderer.transmissionResolutionScale = isMobile ? 0.65 : 0.85;
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(42, innerWidth / innerHeight, 0.1, 100);
+camera.position.set(0, 0, 8.5);
+
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+
+const sun = new THREE.DirectionalLight(0xffffff, 2.4); sun.position.set(3, 5, 4); scene.add(sun);
+const pink = new THREE.PointLight(0xff6fa9, 40, 25, 2); pink.position.set(-4, 2, 3); scene.add(pink);
+const blue = new THREE.PointLight(0x5de0ff, 25, 25, 2); blue.position.set(4, -3, 2); scene.add(blue);
+
+/* ---------- шум (simplex 3D) для «жидкой» капли ---------- */
+const noise3 = (() => {
+  const grad3 = [[1,1,0],[-1,1,0],[1,-1,0],[-1,-1,0],[1,0,1],[-1,0,1],[1,0,-1],[-1,0,-1],[0,1,1],[0,-1,1],[0,1,-1],[0,-1,-1]];
+  const p = new Uint8Array(256); for (let i = 0; i < 256; i++) p[i] = i;
+  let seed = 1337; for (let i = 255; i > 0; i--) { seed = (seed * 16807) % 2147483647; const j = seed % (i + 1); [p[i], p[j]] = [p[j], p[i]]; }
+  const perm = new Uint8Array(512), pm = new Uint8Array(512);
+  for (let i = 0; i < 512; i++) { perm[i] = p[i & 255]; pm[i] = perm[i] % 12; }
+  const F3 = 1 / 3, G3 = 1 / 6;
+  return (x, y, z) => {
+    const s = (x + y + z) * F3, i = Math.floor(x + s), j = Math.floor(y + s), k = Math.floor(z + s);
+    const t = (i + j + k) * G3, x0 = x - (i - t), y0 = y - (j - t), z0 = z - (k - t);
+    let i1, j1, k1, i2, j2, k2;
+    if (x0 >= y0) { if (y0 >= z0) { i1=1;j1=0;k1=0;i2=1;j2=1;k2=0; } else if (x0 >= z0) { i1=1;j1=0;k1=0;i2=1;j2=0;k2=1; } else { i1=0;j1=0;k1=1;i2=1;j2=0;k2=1; } }
+    else { if (y0 < z0) { i1=0;j1=0;k1=1;i2=0;j2=1;k2=1; } else if (x0 < z0) { i1=0;j1=1;k1=0;i2=0;j2=1;k2=1; } else { i1=0;j1=1;k1=0;i2=1;j2=1;k2=0; } }
+    const x1 = x0 - i1 + G3, y1 = y0 - j1 + G3, z1 = z0 - k1 + G3;
+    const x2 = x0 - i2 + 2*G3, y2 = y0 - j2 + 2*G3, z2 = z0 - k2 + 2*G3;
+    const x3 = x0 - 1 + 3*G3, y3 = y0 - 1 + 3*G3, z3 = z0 - 1 + 3*G3;
+    const ii = i & 255, jj = j & 255, kk = k & 255;
+    let n = 0, t0;
+    t0 = .6 - x0*x0 - y0*y0 - z0*z0; if (t0 > 0) { const g = grad3[pm[ii+perm[jj+perm[kk]]]]; t0 *= t0; n += t0*t0*(g[0]*x0+g[1]*y0+g[2]*z0); }
+    t0 = .6 - x1*x1 - y1*y1 - z1*z1; if (t0 > 0) { const g = grad3[pm[ii+i1+perm[jj+j1+perm[kk+k1]]]]; t0 *= t0; n += t0*t0*(g[0]*x1+g[1]*y1+g[2]*z1); }
+    t0 = .6 - x2*x2 - y2*y2 - z2*z2; if (t0 > 0) { const g = grad3[pm[ii+i2+perm[jj+j2+perm[kk+k2]]]]; t0 *= t0; n += t0*t0*(g[0]*x2+g[1]*y2+g[2]*z2); }
+    t0 = .6 - x3*x3 - y3*y3 - z3*z3; if (t0 > 0) { const g = grad3[pm[ii+1+perm[jj+1+perm[kk+1]]]]; t0 *= t0; n += t0*t0*(g[0]*x3+g[1]*y3+g[2]*z3); }
+    return 32 * n;
+  };
+})();
+
+/* ---------- фон: живой градиент ---------- */
+const PALETTES = {
+  intro:  { base: "#120f33", a: "#4a35b8", b: "#ff6fa9", c: "#4fc3e8", d: "#8d63ff" },
+  quiz:   { base: "#101236", a: "#3a46c2", b: "#ff7ab0", c: "#9a6cff", d: "#52d2d8" },
+  result: { base: "#1a0e30", a: "#7a3bb8", b: "#ff7f6a", c: "#ffcf7a", d: "#ff6fa9" },
+  letter: { base: "#1f0f2a", a: "#9a3a74", b: "#ff8a6a", c: "#ffc97a", d: "#c25aa8" },
+  finale: { base: "#230d26", a: "#c13a78", b: "#ff6fa9", c: "#ffd27a", d: "#ff9a7a" },
+};
+const bgUniforms = {
+  uTime: { value: 0 }, uAspect: { value: innerWidth / innerHeight },
+  uBase: { value: new THREE.Color(PALETTES.intro.base) }, uA: { value: new THREE.Color(PALETTES.intro.a) },
+  uB: { value: new THREE.Color(PALETTES.intro.b) }, uC: { value: new THREE.Color(PALETTES.intro.c) },
+  uD: { value: new THREE.Color(PALETTES.intro.d) },
+};
+const bgMat = new THREE.ShaderMaterial({
+  uniforms: bgUniforms, depthWrite: false,
+  vertexShader: `varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
+  fragmentShader: `
+    uniform float uTime; uniform float uAspect; uniform vec3 uBase,uA,uB,uC,uD; varying vec2 vUv;
+    vec3 mod289(vec3 x){return x-floor(x*(1.0/289.0))*289.0;}
+    vec2 mod289(vec2 x){return x-floor(x*(1.0/289.0))*289.0;}
+    vec3 permute(vec3 x){return mod289(((x*34.0)+1.0)*x);}
+    float snoise(vec2 v){
+      const vec4 C=vec4(0.211324865405187,0.366025403784439,-0.577350269189626,0.024390243902439);
+      vec2 i=floor(v+dot(v,C.yy)); vec2 x0=v-i+dot(i,C.xx);
+      vec2 i1=(x0.x>x0.y)?vec2(1.0,0.0):vec2(0.0,1.0);
+      vec4 x12=x0.xyxy+C.xxzz; x12.xy-=i1; i=mod289(i);
+      vec3 p=permute(permute(i.y+vec3(0.0,i1.y,1.0))+i.x+vec3(0.0,i1.x,1.0));
+      vec3 m=max(0.5-vec3(dot(x0,x0),dot(x12.xy,x12.xy),dot(x12.zw,x12.zw)),0.0); m=m*m; m=m*m;
+      vec3 x=2.0*fract(p*C.www)-1.0; vec3 h=abs(x)-0.5; vec3 ox=floor(x+0.5); vec3 a0=x-ox;
+      m*=1.79284291400159-0.85373472095314*(a0*a0+h*h);
+      vec3 g; g.x=a0.x*x0.x+h.x*x0.y; g.yz=a0.yz*x12.xz+h.yz*x12.yw; return 130.0*dot(m,g);
+    }
+    void main(){
+      vec2 p=(vUv-0.5)*vec2(uAspect,1.0)*2.0; float t=uTime*0.05;
+      float n1=snoise(p*0.42+vec2(t,-t*0.6));
+      float n2=snoise(p*0.70+vec2(-t*0.8,t*0.5)+n1*0.5);
+      float n3=snoise(p*1.05+vec2(t*0.35,t*0.9)-n2*0.4);
+      float n4=snoise(p*0.55-vec2(t*0.5,t*0.3)+n3*0.3);
+      vec3 col=uBase;
+      col=mix(col,uA,smoothstep(-0.7,0.9,n1)*0.9);
+      col=mix(col,uB,smoothstep(-0.3,1.0,n2)*0.75);
+      col=mix(col,uC,smoothstep(0.0,1.1,n3)*0.55);
+      col=mix(col,uD,smoothstep(0.1,1.0,n4)*0.45);
+      float v=smoothstep(2.1,0.1,length(p)); col*=mix(0.55,1.0,v);
+      col+=(fract(sin(dot(gl_FragCoord.xy,vec2(12.9898,78.233)))*43758.5453)-0.5)/200.0;
+      gl_FragColor=vec4(col,1.0);
+      #include <tonemapping_fragment>
+      #include <colorspace_fragment>
+    }`,
+});
+const bgPlane = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), bgMat);
+bgPlane.position.z = -22; scene.add(bgPlane);
+function fitBg() {
+  const d = camera.position.z - bgPlane.position.z;
+  const h = 2 * d * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * 1.25;
+  bgPlane.scale.set(h * camera.aspect, h, 1);
+  bgUniforms.uAspect.value = camera.aspect;
+}
+
+/* ---------- стекло ---------- */
+const glass = new THREE.MeshPhysicalMaterial({
+  color: 0xffffff, metalness: 0, roughness: 0.06, transmission: 1, thickness: 1.2, ior: 1.42,
+  clearcoat: 1, clearcoatRoughness: 0.08, iridescence: 0.6, iridescenceIOR: 1.35, iridescenceThicknessRange: [120, 520],
+  attenuationColor: new THREE.Color(0xffe1ef), attenuationDistance: 4.0, envMapIntensity: 1.2, specularIntensity: 1,
+});
+const pinkGlass = new THREE.MeshPhysicalMaterial({
+  color: 0xff9ccd, metalness: 0, roughness: 0.14, transmission: 0.92, thickness: 1.4, ior: 1.42,
+  clearcoat: 1, clearcoatRoughness: 0.1, iridescence: 0.35, iridescenceIOR: 1.3,
+  attenuationColor: new THREE.Color(0xff4f93), attenuationDistance: 1.1, envMapIntensity: 1.35, emissive: 0x2a0616,
+});
+
+/* капля — сфера с шумовым смещением вершин */
+let blobGeo = new THREE.SphereGeometry(1, isMobile ? 92 : 112, isMobile ? 62 : 76);
+blobGeo.deleteAttribute("uv"); blobGeo = mergeVertices(blobGeo);
+const blobBase = blobGeo.attributes.position.array.slice();
+const blob = new THREE.Mesh(blobGeo, glass); scene.add(blob);
+function updateBlob(t) {
+  const pos = blobGeo.attributes.position, a = pos.array;
+  for (let i = 0; i < pos.count; i++) {
+    const ix = i * 3, x = blobBase[ix], y = blobBase[ix + 1], z = blobBase[ix + 2];
+    const n = noise3(x * 0.72 + t * 0.3, y * 0.72 + t * 0.2, z * 0.72 - t * 0.26);
+    const n2 = noise3(x * 1.6 - t * 0.4, y * 1.6 + t * 0.35, z * 1.6 + t * 0.2);
+    const r = 1 + 0.17 * n + 0.022 * n2;
+    a[ix] = x * r; a[ix + 1] = y * r; a[ix + 2] = z * r;
+  }
+  pos.needsUpdate = true; blobGeo.computeVertexNormals();
+}
+
+/* сердце */
+const heart = (() => {
+  const s = new THREE.Shape(), x = 0, y = 0;
+  s.moveTo(x + 5, y + 5);
+  s.bezierCurveTo(x + 5, y + 5, x + 4, y, x, y);
+  s.bezierCurveTo(x - 6, y, x - 6, y + 7, x - 6, y + 7);
+  s.bezierCurveTo(x - 6, y + 11, x - 3, y + 15.4, x + 5, y + 19);
+  s.bezierCurveTo(x + 12, y + 15.4, x + 16, y + 11, x + 16, y + 7);
+  s.bezierCurveTo(x + 16, y + 7, x + 16, y, x + 10, y);
+  s.bezierCurveTo(x + 7, y, x + 5, y + 5, x + 5, y + 5);
+  let g = new THREE.ExtrudeGeometry(s, { depth: 5, bevelEnabled: true, bevelThickness: 2.6, bevelSize: 2.4, bevelSegments: 14, curveSegments: 40 });
+  g.deleteAttribute("normal"); g.deleteAttribute("uv"); g = mergeVertices(g); g.computeVertexNormals();
+  g.center(); g.rotateZ(Math.PI); g.scale(0.062, 0.062, 0.062);
+  return new THREE.Mesh(g, pinkGlass);
+})();
+scene.add(heart);
+
+const torus = new THREE.Mesh(new THREE.TorusGeometry(0.62, 0.22, 48, 96), glass); scene.add(torus);
+const s1 = new THREE.Mesh(new THREE.SphereGeometry(0.46, 64, 48), glass); scene.add(s1);
+const s2 = new THREE.Mesh(new THREE.SphereGeometry(0.3, 48, 32), glass); scene.add(s2);
+const objs = { blob, heart, torus, s1, s2 };
+
+/* расположение по сценам: [x, y, z, scale] */
+const LAYOUT = {
+  intro:  { blob: [2.8, 0.5, -2.5, 1.3],  heart: [-2.6, -0.9, -0.4, 1.0], torus: [-2.4, 2.1, -3, 1],   s1: [2.5, -2.3, -1.2, 1], s2: [-0.4, 2.8, -4, 1] },
+  quiz:   { blob: [-3.0, 1.3, -3, 1.15],  heart: [2.8, -1.8, -1, 0.85],   torus: [2.6, 2.4, -4, 0.9], s1: [-2.4, -2.4, -1.5, 1], s2: [0.6, 3.0, -4.5, 1] },
+  result: { blob: [3.0, -1.6, -3, 1.15],  heart: [-2.7, 1.7, -1, 0.95],   torus: [-2.5, -2.5, -4, 0.9], s1: [2.4, 2.4, -1.5, 1], s2: [-0.5, 3.0, -4.5, 1] },
+  letter: { blob: [-3.2, -1.4, -3.5, 1.05], heart: [2.9, 2.0, -1.5, 0.9], torus: [-2.7, 2.5, -4, 0.8], s1: [2.7, -2.5, -2, 1], s2: [0.2, 3.1, -5, 1] },
+  finale: { blob: [-3.1, -1.9, -4, 1.0],  heart: [0, 1.1, 1.6, 1.75],     torus: [3.1, 2.1, -4, 0.9],  s1: [2.9, -2.3, -2, 1], s2: [-2.7, 2.7, -4, 1] },
+};
+let mode = "intro";
+const target = {}; // name -> {pos:Vector3, scale:number}
+for (const k in objs) target[k] = { pos: new THREE.Vector3(), scale: 1 };
+function applyLayout(immediate) {
+  const L = LAYOUT[mode] || LAYOUT.intro;
+  const spread = THREE.MathUtils.clamp(camera.aspect / 1.6, 0.52, 1.15);
+  const lift = camera.aspect < 0.8 ? 1.12 : 1;
+  for (const k in objs) {
+    let [x, y, z, s] = L[k];
+    if (k === "heart" && mode === "finale" && camera.aspect < 0.8) { s *= 0.66; z -= 0.6; y *= 0.95; }
+    target[k].pos.set(x * spread, y * lift, z); target[k].scale = s;
+    if (immediate) { objs[k].position.copy(target[k].pos); objs[k].scale.setScalar(s); }
+  }
+}
+const colTarget = { base: new THREE.Color(), a: new THREE.Color(), b: new THREE.Color(), c: new THREE.Color(), d: new THREE.Color() };
+function setMode(m) {
+  if (!LAYOUT[m]) return;
+  mode = m; applyLayout(false);
+  const P = PALETTES[m];
+  colTarget.base.set(P.base); colTarget.a.set(P.a); colTarget.b.set(P.b); colTarget.c.set(P.c); colTarget.d.set(P.d);
+}
+
+/* ---------- частицы: поднимающиеся искры + взрыв ---------- */
+function softTexture() {
+  const c = document.createElement("canvas"); c.width = c.height = 64;
+  const g = c.getContext("2d"), grd = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+  grd.addColorStop(0, "rgba(255,255,255,1)"); grd.addColorStop(0.35, "rgba(255,255,255,.55)"); grd.addColorStop(1, "rgba(255,255,255,0)");
+  g.fillStyle = grd; g.fillRect(0, 0, 64, 64);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+const sprite = softTexture();
+const RISE_N = isMobile ? 110 : 180;
+const riseGeo = new THREE.BufferGeometry();
+const risePos = new Float32Array(RISE_N * 3), riseSpd = new Float32Array(RISE_N);
+for (let i = 0; i < RISE_N; i++) { risePos[i*3] = (Math.random()-.5)*14; risePos[i*3+1] = (Math.random()-.5)*10; risePos[i*3+2] = (Math.random()-.5)*6 - 1; riseSpd[i] = .15 + Math.random()*.45; }
+riseGeo.setAttribute("position", new THREE.BufferAttribute(risePos, 3));
+const riseMat = new THREE.PointsMaterial({ size: 0.13, map: sprite, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, color: 0xffd0e4, opacity: 0 });
+scene.add(new THREE.Points(riseGeo, riseMat));
+
+const BURST_N = 420;
+const burstGeo = new THREE.BufferGeometry();
+const burstPos = new Float32Array(BURST_N * 3), burstVel = new Float32Array(BURST_N * 3);
+burstGeo.setAttribute("position", new THREE.BufferAttribute(burstPos, 3));
+const burstMat = new THREE.PointsMaterial({ size: 0.16, map: sprite, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, color: 0xffb3d1, opacity: 0 });
+const burstPts = new THREE.Points(burstGeo, burstMat); burstPts.visible = false; scene.add(burstPts);
+let burstT = -1;
+function burst() {
+  const o = heart.position;
+  for (let i = 0; i < BURST_N; i++) {
+    const th = Math.random()*Math.PI*2, ph = Math.acos(2*Math.random()-1), v = 1.5 + Math.random()*4;
+    burstPos[i*3] = o.x; burstPos[i*3+1] = o.y; burstPos[i*3+2] = o.z;
+    burstVel[i*3] = Math.sin(ph)*Math.cos(th)*v; burstVel[i*3+1] = Math.sin(ph)*Math.sin(th)*v + 1; burstVel[i*3+2] = Math.cos(ph)*v;
+  }
+  burstGeo.attributes.position.needsUpdate = true; burstPts.visible = true; burstMat.opacity = 1; burstT = 0;
+}
+
+/* ---------- параллакс камеры ---------- */
+let ptx = 0, pty = 0, cpx = 0, cpy = 0;
+const fine = matchMedia("(hover:hover) and (pointer:fine)").matches;
+window.addEventListener("pointermove", e => { ptx = (e.clientX / innerWidth) * 2 - 1; pty = (e.clientY / innerHeight) * 2 - 1; }, { passive: true });
+
+/* ---------- цикл ---------- */
+const clock = new THREE.Clock();
+let last = 0;
+function tick() {
+  const t = clock.getElapsedTime(), dt = Math.min(0.05, t - last); last = t;
+  const speed = reduced ? 0.35 : 1;
+  bgUniforms.uTime.value = t * speed;
+  for (const k in colTarget) bgUniforms["u" + (k === "base" ? "Base" : k.toUpperCase())].value.lerp(colTarget[k], 0.025);
+
+  updateBlob(t * 0.9 * speed);
+  blob.rotation.y = t * 0.12; blob.rotation.x = Math.sin(t * 0.2) * 0.25;
+  heart.rotation.y = Math.sin(t * 0.55) * 0.55; heart.rotation.x = Math.sin(t * 0.4) * 0.12; heart.rotation.z = Math.sin(t * 0.3) * 0.08;
+  torus.rotation.x = t * 0.35; torus.rotation.y = t * 0.22;
+  s1.rotation.y = t * 0.3; s2.rotation.x = t * 0.4;
+
+  const k = 1 - Math.pow(0.02, dt); // плавное стремление к целям (~2 с)
+  for (const n in objs) {
+    const o = objs[n], tg = target[n];
+    const bob = Math.sin(t * 0.7 + n.length * 1.7) * 0.12;
+    o.position.x += (tg.pos.x - o.position.x) * k;
+    o.position.y += (tg.pos.y + bob - o.position.y) * k;
+    o.position.z += (tg.pos.z - o.position.z) * k;
+    let s = tg.scale;
+    if (n === "heart" && mode === "finale") { const ph = (t % 1.5) / 1.5; s *= 1 + 0.07 * Math.max(0, Math.sin(ph * Math.PI * 2)) + 0.04 * Math.max(0, Math.sin(ph * Math.PI * 4 - 1)); }
+    o.scale.x += (s - o.scale.x) * k; o.scale.y = o.scale.z = o.scale.x;
+  }
+
+  // искры
+  const wantRise = (mode === "letter" || mode === "finale") ? 0.9 : 0;
+  riseMat.opacity += (wantRise - riseMat.opacity) * 0.02;
+  if (riseMat.opacity > 0.01) {
+    for (let i = 0; i < RISE_N; i++) {
+      risePos[i*3+1] += riseSpd[i] * dt; risePos[i*3] += Math.sin(t * 0.8 + i) * 0.002;
+      if (risePos[i*3+1] > 5.5) { risePos[i*3+1] = -5.5; risePos[i*3] = (Math.random()-.5)*14; }
+    }
+    riseGeo.attributes.position.needsUpdate = true;
+  }
+  if (burstT >= 0) {
+    burstT += dt;
+    for (let i = 0; i < BURST_N; i++) {
+      burstPos[i*3] += burstVel[i*3]*dt; burstPos[i*3+1] += burstVel[i*3+1]*dt; burstPos[i*3+2] += burstVel[i*3+2]*dt;
+      burstVel[i*3] *= 0.985; burstVel[i*3+1] = burstVel[i*3+1]*0.985 - 1.6*dt; burstVel[i*3+2] *= 0.985;
+    }
+    burstGeo.attributes.position.needsUpdate = true;
+    burstMat.opacity = Math.max(0, 1 - burstT / 2.4);
+    if (burstT > 2.5) { burstT = -1; burstPts.visible = false; }
+  }
+
+  // камера
+  const ax = fine ? ptx : Math.sin(t * 0.25) * 0.35, ay = fine ? pty : Math.cos(t * 0.2) * 0.25;
+  cpx += (ax - cpx) * 0.04; cpy += (ay - cpy) * 0.04;
+  camera.position.x = cpx * 0.75; camera.position.y = -cpy * 0.5;
+  camera.lookAt(0, 0.15, 0);
+
+  renderer.render(scene, camera);
+}
+
+function resize() {
+  renderer.setSize(innerWidth, innerHeight, false);
+  camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
+  fitBg(); applyLayout(false);
+}
+window.addEventListener("resize", resize);
+document.addEventListener("visibilitychange", () => renderer.setAnimationLoop(document.hidden ? null : tick));
+
+resize();
+mode = window.__bgMode || "intro";
+setMode(mode); applyLayout(true);
+for (const k in colTarget) bgUniforms["u" + (k === "base" ? "Base" : k.toUpperCase())].value.copy(colTarget[k]);
+renderer.setAnimationLoop(tick);
+window.__bg = { setMode, burst };
+</script>
+</body>
+</html>
