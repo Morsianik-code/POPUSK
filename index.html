@@ -260,8 +260,14 @@ h1 em .w,.display em .w,h1 em:not(:has(.w)),.display em:not(:has(.w)){background
 .fade.on{opacity:1;transform:none}
 
 /* письмо */
-.card.letter{max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);overflow:auto;scrollbar-width:none}
-.card.letter::-webkit-scrollbar{display:none}
+/* письмо: карточка неподвижна, прокручивается только содержимое внутри (кромка стекла не режет текст) */
+.card.letter{max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);padding:0;overflow:hidden;display:flex;flex-direction:column}
+.letter-scroll{overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;scrollbar-width:none;
+  padding:clamp(28px,5.2vw,50px) clamp(24px,5vw,48px);
+  -webkit-mask-image:linear-gradient(180deg,transparent 0,#000 26px,#000 calc(100% - 26px),transparent 100%);
+          mask-image:linear-gradient(180deg,transparent 0,#000 26px,#000 calc(100% - 26px),transparent 100%)}
+.letter-scroll::-webkit-scrollbar{display:none}
+@media (max-width:480px){.letter-scroll{padding:30px 22px 28px}}
 .letter p.text{font-family:var(--font-ui);font-weight:700;font-size:clamp(1.1rem,3vw,1.32rem);line-height:1.5;margin:0 0 1em;color:var(--ink)}
 .letter p.text em{font-style:italic;color:var(--peach)}
 .sig{font-family:var(--font-script);font-size:clamp(1.5rem,3.8vw,2rem);line-height:1.4;color:var(--peach);margin:1.2em 0 0;
@@ -369,6 +375,7 @@ noscript div{position:fixed;inset:0;display:grid;place-items:center;padding:24px
   <section class="scene" data-scene="letter">
     <div class="float"><div class="tilt">
       <article class="card glass letter" id="letterCard">
+        <div class="letter-scroll" id="letterScroll">
         <p class="eyebrow" data-reveal data-stagger="60" id="letterEyebrow"></p>
         <div id="letterBody"></div>
         <p class="sig" id="sig"></p>
@@ -378,6 +385,7 @@ noscript div{position:fixed;inset:0;display:grid;place-items:center;padding:24px
             <svg viewBox="0 0 64 64"><path d="M32 56s-22-13-22-29a12 12 0 0 1 22-7 12 12 0 0 1 22 7c0 16-22 29-22 29z"/></svg>
           </button>
           <span id="heartHint"></span>
+        </div>
         </div>
       </article>
     </div></div>
@@ -841,7 +849,7 @@ window.CONFIG = {
       $("#resBtn").classList.add("on");
     },
     async letter(s) {
-      $("#letterCard").scrollTop = 0;
+      $("#letterScroll").scrollTop = 0;
       $("#sig").classList.remove("on"); $("#ps").classList.remove("on"); $("#heartwrap").classList.remove("on");
       reveal(s, 200);
       const n = C.letter.paragraphs.length;
