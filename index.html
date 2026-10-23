@@ -1002,7 +1002,8 @@ window.CONFIG = {
     host.textContent = ""; host.setAttribute("aria-label", value + "%");
     const ds = String(value).split("").map(Number), cols = [];
     ds.forEach((dg, ci) => {
-      const right = ds.length - 1 - ci, cycles = ds.length === 1 ? 1 : right, n = cycles * 10 + dg;
+      // правые разряды крутятся больше (как у настоящего счётчика): единицы — два оборота, десятки — один, сотни — ни одного
+      const right = ds.length - 1 - ci, cycles = ds.length === 1 ? 1 : ci, n = cycles * 10 + dg;
       const col = document.createElement("span"); col.className = "col";
       const strip = document.createElement("span"); strip.className = "strip";
       const seq = [(dg + 1) % 10]; for (let s = n; s >= 0; s--) seq.push(s % 10);
@@ -1021,7 +1022,7 @@ window.CONFIG = {
     const start = at + 250;
     let land = start;
     odo.cols.forEach(c => {
-      const d = 1700 + c.right * 260;
+      const d = 1700 + (odo.cols.length - 1 - c.right) * 260; // правые приземляются последними
       if (RM) { anim(c.strip, [{ opacity: 0 }, { opacity: 1 }], { at: start, d: 500 }); land = Math.max(land, start + 500); return; }
       anim(c.strip, [
         { transform: T2({ y: -c.n * 1.1 + "em" }), easing: "cubic-bezier(.3,.05,.15,1)" },
