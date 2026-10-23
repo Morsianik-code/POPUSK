@@ -21,6 +21,9 @@
 <style>
 /* ============================================================
    БАЗА
+   Правило анимаций: CSS описывает только состояние покоя.
+   Всё движение — Web Animations API (transform/opacity), и последний
+   кадр каждой анимации совпадает с состоянием покоя (transform:none).
    ============================================================ */
 :root{
   --bg:#0b0a20;
@@ -36,8 +39,6 @@
   --font-ui:"Manrope",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   --font-num:"Unbounded",var(--font-ui);
   --ease-out:cubic-bezier(.22,1,.36,1);
-  --ease-io:cubic-bezier(.65,0,.35,1);
-  --ease-spring:cubic-bezier(.34,1.56,.64,1);
 }
 *{box-sizing:border-box}
 html,body{height:100%}
@@ -70,20 +71,28 @@ html.no-webgl #bg{display:none}
   animation:grain 1.4s steps(5) infinite}
 @keyframes grain{0%{transform:translate(0,0)}20%{transform:translate(-3%,2%)}40%{transform:translate(2%,-4%)}60%{transform:translate(-4%,-1%)}80%{transform:translate(3%,3%)}100%{transform:translate(0,0)}}
 
+/* вспышка в момент «взрыва» жемчужины: только opacity большого слоя */
+#flash{position:fixed;inset:0;z-index:4;pointer-events:none;opacity:0;will-change:opacity;
+  background:radial-gradient(circle at var(--fx,50%) var(--fy,50%),rgba(255,236,244,.9),rgba(255,111,169,.4) 24%,rgba(255,111,169,0) 62%)}
+
 /* ============================================================
    СЦЕНЫ
+   .scene > .float (медленное покачивание) > .tilt (наклон под мышью, вписывание) > карточка
    ============================================================ */
 main{position:fixed;inset:0;z-index:3}
 .scene{
   position:absolute;inset:0;display:grid;place-items:center;
   padding:max(16px,env(safe-area-inset-top)) 16px max(16px,env(safe-area-inset-bottom));
-  perspective:1500px;perspective-origin:50% 42%;
   visibility:hidden;pointer-events:none;
 }
 .scene.is-active{visibility:visible;pointer-events:auto}
-.float{animation:float 8s ease-in-out infinite}
-.tilt{perspective:1500px;will-change:transform;position:relative}
+.float{animation:float 8s ease-in-out infinite;perspective:1500px;perspective-origin:50% 42%}
+.scene:not(.is-active) .float{animation-play-state:paused}
 @keyframes float{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(0,-9px,0)}}
+/* scale (отдельное свойство) не конфликтует с анимациями transform; --fit < 1 только на очень низких экранах */
+.tilt{position:relative;will-change:transform;scale:var(--fit,1)}
+.stack{display:grid;perspective:1100px;perspective-origin:50% 45%}
+.stack>*{grid-area:1/1}
 
 /* ============================================================
    LIQUID GLASS
@@ -116,42 +125,26 @@ main{position:fixed;inset:0;z-index:3}
   -webkit-mask-composite:xor;mask-composite:exclude;
 }
 
+/* карточка всегда на своём слое (will-change не снимается никогда):
+   в покое и в движении она рисуется одинаково, в конце анимации ничего не «перещёлкивается» */
 .card{
   width:min(92vw,580px);
   padding:clamp(28px,5.2vw,50px) clamp(24px,5vw,48px);
   transform-origin:50% 50%;
+  will-change:transform,opacity;
 }
-.card.enter{animation:cardIn 1.05s var(--ease-out) both}
-.card.leave{animation:cardOut .75s var(--ease-io) both}
-.card.enter.bloom{animation:cardBloom 1.05s var(--ease-spring) both}
-@keyframes cardBloom{from{opacity:0;transform:scale(.05)}to{opacity:1;transform:none}}
-/* жемчужина: светящаяся точка, в которую сжимается карточка (отдельный лёгкий слой) */
-.pearl{position:absolute;left:50%;top:50%;width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:50%;pointer-events:none;z-index:3;opacity:0;
-  background:radial-gradient(circle at 36% 30%,#fff 0%,#ffc2dc 38%,rgba(255,111,169,.9) 60%,rgba(255,111,169,0) 72%);
-  box-shadow:0 0 28px 6px rgba(255,150,200,.75);will-change:transform,opacity}
+.qcard.is-off{visibility:hidden}
+/* жемчужина: светящаяся точка, в которую сжимается карточка */
+.pearl{place-self:center;width:46px;height:46px;border-radius:50%;pointer-events:none;z-index:5;opacity:0;will-change:transform,opacity;
+  background:radial-gradient(circle at 36% 30%,#fff 0%,#ffd0e4 34%,rgba(255,111,169,.95) 58%,rgba(255,111,169,0) 72%);
+  box-shadow:0 0 30px 8px rgba(255,150,200,.7)}
 #dbg{position:fixed;top:8px;left:8px;z-index:9;font:600 11px/1.4 ui-monospace,Menlo,monospace;color:#fff;background:rgba(0,0,0,.55);padding:6px 9px;border-radius:9px;pointer-events:none;white-space:pre}
 /* лёгкий режим: только вручную, через ?lite в адресе (на лету не переключается — иначе вид карточки скачет) */
 html.lite .glass{-webkit-backdrop-filter:none;backdrop-filter:none;
   background:linear-gradient(135deg,rgba(255,255,255,.14),rgba(255,255,255,.04) 40%,rgba(255,255,255,.02) 60%,rgba(255,255,255,.09)),linear-gradient(180deg,rgba(26,16,56,.84),rgba(26,16,56,.9))}
 html.lite .float{animation:none}
-html.lite .w{filter:none}
-/* «призрак» — снимок старой карточки для переходов между вопросами (без размытия фона: дёшево) */
-.card.ghost{position:absolute;top:50%;left:0;margin:0;pointer-events:none;z-index:2;-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:inset 0 1px 0 rgba(255,255,255,.5);will-change:transform,opacity;
-  background:linear-gradient(135deg,rgba(255,255,255,.16),rgba(255,255,255,.05) 38%,rgba(255,255,255,.02) 62%,rgba(255,255,255,.10)),linear-gradient(180deg,rgba(24,14,52,.8),rgba(24,14,52,.86))}
-.card.ghost .w,.card.ghost .opt{animation:none!important;opacity:1;transform:none;filter:none}
-.card.ghost .opt.is-dim{opacity:.26}
-.card.ghost .ripple{display:none}
-.card.above{position:relative;z-index:3}
-#flash{position:fixed;inset:0;z-index:4;pointer-events:none;opacity:0;background:radial-gradient(circle at var(--fx,50%) var(--fy,50%),rgba(255,236,244,.95),rgba(255,111,169,.45) 26%,rgba(255,111,169,0) 66%)}
-#flash.on{animation:flash .85s var(--ease-out)}
-@keyframes flash{0%{opacity:0}16%{opacity:.9}100%{opacity:0}}
-@keyframes cardIn{
-  from{opacity:0;transform:translate3d(90px,48px,-280px) rotateX(10deg) rotateY(18deg)}
-  to{opacity:1;transform:translate3d(0,0,0) rotateX(0) rotateY(0)}
-}
-@keyframes cardOut{
-  to{opacity:0;transform:translate3d(-110px,-26px,-300px) rotateY(-26deg) rotateX(-7deg)}
-}
+/* ?still — «замороженный» фон (для проверки кадров): без покачивания и зерна */
+html.still .float,html.still .grain{animation:none}
 
 /* ============================================================
    ТИПОГРАФИКА
@@ -159,6 +152,8 @@ html.lite .w{filter:none}
 .eyebrow{font-family:var(--font-script);font-size:clamp(1.35rem,2.8vw,1.8rem);line-height:1;color:var(--peach);margin:0 0 .55em;text-shadow:0 0 24px rgba(255,176,136,.35)}
 h1,.display{font-family:var(--font-display);font-weight:500;font-size:clamp(2.7rem,7.5vw,4.6rem);line-height:1;letter-spacing:-.012em;margin:0 0 .4em}
 h1 em,.display em{font-style:italic;font-weight:600}
+/* курсивный хвост буквы выходит за рамку слова — запас справа, чтобы градиент его не обрезал */
+h1 em .w,.display em .w{padding-right:.1em;margin-right:-.1em}
 h1 em .w,.display em .w,h1 em:not(:has(.w)),.display em:not(:has(.w)){background:linear-gradient(92deg,#fff 0%,var(--rose) 45%,var(--peach) 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
 .lead{font-size:clamp(1rem,2.2vw,1.12rem);line-height:1.62;color:var(--muted);margin:0 0 1.7em}
 .lead strong{color:var(--ink);font-weight:500}
@@ -166,10 +161,17 @@ h1 em .w,.display em .w,h1 em:not(:has(.w)),.display em:not(:has(.w)){background
 .note{font-size:.82rem;color:var(--muted);margin:1.6em 0 0;letter-spacing:.02em}
 .row{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
 
-/* пословное появление */
-.w{display:inline-block;opacity:0;filter:blur(6px);transform:translateY(.32em)}
-.w.on{animation:wIn .85s var(--ease-out) forwards;animation-delay:calc(var(--i) * var(--stagger,42ms) + var(--d,0ms))}
-@keyframes wIn{to{opacity:1;filter:blur(0);transform:translateY(0)}}
+/* слово для пословного появления; в покое — обычное слово */
+.w{display:inline-block;transform-origin:50% 75%}
+/* У всех мелких элементов, которые анимируются, в покое — «нулевой» 2D-transform (тот же список функций, что и в кадрах).
+   Тогда снятие анимации не меняет стиль вовсе: ни перерасчёта раскладки, ни нового слоя, ни сдвига на пиксель. */
+.w,.opt,.btn,.note,.label,.ps,.heartwrap,.num,.num small,.num .strip,.sig-win,.sig-ink,.heart-btn{transform:translate(0px,0px) rotate(0deg)}
+/* Пока сцена (или карточка вопроса) на экране, у этих элементов постоянный слой — тот же, что и во время анимации.
+   Иначе в конце анимации слово «переезжает» со своего слоя в слой карточки и сдвигается на долю пикселя.
+   Слои появляются/исчезают только когда карточка невидима (в начале входа и в конце выхода у неё opacity:0). */
+.scene.is-active :is(.w,.opt,.btn,.note,.label,.ps,.heartwrap,.num,.num small,.num .strip,.sig-win,.sig-ink,.heart-btn){will-change:transform}
+.scene.is-active .qcard.is-off :is(.w,.opt){will-change:auto}
+html.rm .scene.is-active :is(.eyebrow,h1,.lead,.q,p.text,.display,.sig){will-change:opacity}
 
 /* ============================================================
    КНОПКИ
@@ -181,110 +183,111 @@ h1 em .w,.display em .w,h1 em:not(:has(.w)),.display em:not(:has(.w)){background
   font-family:var(--font-ui);font-weight:600;font-size:1rem;letter-spacing:.01em;line-height:1;
   background:linear-gradient(135deg,rgba(255,255,255,.3),rgba(255,255,255,.12));
   box-shadow:inset 0 1px 0 rgba(255,255,255,.65),inset 0 -1px 0 rgba(255,255,255,.08),0 14px 34px -14px rgba(0,0,0,.7);
-  transition:transform .45s var(--ease-out),box-shadow .45s var(--ease-out),background .45s;
   -webkit-user-select:none;user-select:none;
 }
 .btn::before{ /* бегущий блик */
   content:"";position:absolute;top:-40%;bottom:-40%;left:-30%;width:40%;
   background:linear-gradient(100deg,rgba(255,255,255,0),rgba(255,255,255,.45),rgba(255,255,255,0));
-  transform:translateX(-120%) skewX(-18deg);transition:transform .9s var(--ease-out);pointer-events:none;
+  transform:translateX(-120%) skewX(-18deg);pointer-events:none;
 }
-.btn:hover{transform:translateY(-2px) scale(1.025);box-shadow:inset 0 1px 0 rgba(255,255,255,.75),0 22px 46px -16px rgba(255,111,169,.55),0 0 0 1px rgba(255,255,255,.22)}
-.btn:hover::before{transform:translateX(420%) skewX(-18deg)}
-.btn:active{transform:scale(.965);transition-duration:.15s}
 .btn.primary{
   border-color:rgba(255,255,255,.5);color:#2a0b1e;
   background:linear-gradient(135deg,#fff3f8 0%,#ffc1dc 35%,var(--rose) 100%);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.9),inset 0 -2px 6px rgba(190,40,110,.25),0 18px 44px -14px rgba(255,111,169,.75);
 }
-.btn.primary:hover{box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 26px 56px -14px rgba(255,111,169,.9),0 0 0 1px rgba(255,255,255,.35)}
-.btn .arr{display:inline-block;transition:transform .45s var(--ease-out)}
-.btn:hover .arr{transform:translateX(5px)}
-.btn.appear{opacity:0;transform:translateY(12px)}
-.btn.appear.on{animation:btnIn .9s var(--ease-out) forwards}
-@keyframes btnIn{to{opacity:1;transform:translateY(0)}}
+.btn .arr{display:inline-block}
+.btn>span:not(.ripple){position:relative}
+@media (hover:hover){
+  .btn{transition:transform .45s var(--ease-out),box-shadow .45s var(--ease-out)}
+  .btn::before{transition:transform .9s var(--ease-out)}
+  .btn .arr{transition:transform .45s var(--ease-out)}
+  .btn:hover{transform:translateY(-2px) scale(1.025);box-shadow:inset 0 1px 0 rgba(255,255,255,.75),0 22px 46px -16px rgba(255,111,169,.55),0 0 0 1px rgba(255,255,255,.22)}
+  .btn.primary:hover{box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 26px 56px -14px rgba(255,111,169,.9),0 0 0 1px rgba(255,255,255,.35)}
+  .btn:hover::before{transform:translateX(420%) skewX(-18deg)}
+  .btn:hover .arr{transform:translateX(5px)}
+}
+.ripple{
+  position:absolute;width:30px;height:30px;margin:-15px 0 0 -15px;border-radius:50%;pointer-events:none;opacity:0;
+  background:radial-gradient(circle,rgba(255,255,255,.75),rgba(255,255,255,0) 62%);
+}
 
 /* варианты ответов */
-.options{display:grid;gap:12px;perspective:900px}
+.options{display:grid;gap:12px}
 .opt{
-  position:relative;overflow:hidden;cursor:pointer;text-align:left;width:100%;
+  position:relative;cursor:pointer;text-align:left;width:100%;
   display:flex;align-items:center;gap:14px;
   padding:15px 18px 15px 16px;border-radius:20px;border:1px solid rgba(255,255,255,.22);
   font-family:var(--font-ui);font-weight:500;font-size:clamp(.96rem,2.2vw,1.04rem);line-height:1.35;color:var(--ink);
   background:linear-gradient(135deg,rgba(255,255,255,.16),rgba(255,255,255,.05)),linear-gradient(180deg,rgba(24,14,52,.22),rgba(24,14,52,.3));
   box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 10px 26px -18px rgba(0,0,0,.8);
-  transition:transform .55s var(--ease-out),opacity .55s var(--ease-out),background .55s,border-color .55s,box-shadow .55s;
-  opacity:0;transform:translate3d(0,18px,-40px) rotateX(-12deg);
 }
-.opt.in{animation:optIn .85s var(--ease-out) forwards;animation-delay:calc(var(--k) * 80ms + 280ms + var(--in-delay,0ms))}
-@keyframes optIn{to{opacity:1;transform:translate3d(0,0,0) rotateX(0)}}
+/* заливка выбранного ответа — отдельный слой, меняется только его opacity */
+.opt::before{content:"";position:absolute;inset:-1px;border-radius:inherit;pointer-events:none;opacity:0;
+  background:linear-gradient(135deg,rgba(255,111,169,.66),rgba(255,176,136,.55));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.8),0 0 0 1px rgba(255,255,255,.6),0 18px 40px -14px rgba(255,111,169,.8);
+  transition:opacity .3s ease}
+.opt>span{position:relative}
+.opt .rip{position:absolute;inset:0;border-radius:inherit;overflow:hidden;pointer-events:none}
 .opt .idx{
   flex:none;width:34px;height:34px;display:grid;place-items:center;border-radius:12px;
   font-family:var(--font-num);font-weight:500;font-size:.62rem;letter-spacing:.08em;color:rgba(255,255,255,.85);
-  background:rgba(255,255,255,.1);box-shadow:inset 0 1px 0 rgba(255,255,255,.35);transition:background .5s,color .5s,transform .5s var(--ease-spring);
+  background:rgba(255,255,255,.1);box-shadow:inset 0 1px 0 rgba(255,255,255,.35);transition:background .3s,color .3s;
 }
 @media (hover:hover){
-  .opt:hover{transform:translate3d(0,-2px,10px) scale(1.012);background:linear-gradient(135deg,rgba(255,255,255,.22),rgba(255,255,255,.08));border-color:rgba(255,255,255,.4)}
-  .opt:hover .idx{transform:rotate(-8deg) scale(1.08);background:rgba(255,255,255,.18)}
+  .opt{transition:background .35s,border-color .35s}
+  .opt:not(.is-picked):not(.is-dim):hover{background:linear-gradient(135deg,rgba(255,255,255,.22),rgba(255,255,255,.08));border-color:rgba(255,255,255,.4)}
 }
-.opt:active{transform:scale(.985)}
-.opt.is-picked{
-  background:linear-gradient(135deg,rgba(255,111,169,.6),rgba(255,176,136,.5));border-color:rgba(255,255,255,.7);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.8),0 18px 40px -14px rgba(255,111,169,.8);transform:translate3d(0,0,16px) scale(1.02);
-}
+.opt.is-picked::before{opacity:1}
 .opt.is-picked .idx{background:#fff;color:#c2286c}
-.opt.is-dim{opacity:.3;transform:scale(.975)}
+.opt.is-dim{opacity:.32}
 .opt.is-picked,.opt.is-dim{pointer-events:none}
-.ripple{
-  position:absolute;width:30px;height:30px;border-radius:50%;pointer-events:none;
-  background:radial-gradient(circle,rgba(255,255,255,.75),rgba(255,255,255,0) 62%);
-  transform:translate(-50%,-50%) scale(0);animation:ripple .95s var(--ease-out) forwards;
-}
-@keyframes ripple{to{transform:translate(-50%,-50%) scale(18);opacity:0}}
 
 /* прогресс */
 .progress{display:flex;align-items:center;gap:14px;margin:0 0 20px;font-family:var(--font-num);font-weight:500;font-size:.66rem;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
 .bar{flex:1;height:6px;border-radius:99px;background:rgba(255,255,255,.1);box-shadow:inset 0 1px 2px rgba(0,0,0,.4),inset 0 -1px 0 rgba(255,255,255,.08);overflow:hidden}
-.bar i{display:block;height:100%;width:100%;transform:scaleX(0);transform-origin:0 50%;border-radius:inherit;background:linear-gradient(90deg,var(--violet),var(--rose),var(--peach));box-shadow:0 0 16px rgba(255,111,169,.7);transition:transform .95s var(--ease-out);will-change:transform}
+.bar i{display:block;height:100%;width:100%;transform:scaleX(0);transform-origin:0 50%;border-radius:inherit;background:linear-gradient(90deg,var(--violet),var(--rose),var(--peach));box-shadow:0 0 16px rgba(255,111,169,.7);will-change:transform}
 
-/* результат */
+/* результат: счётчик-«одометр» — колонки цифр едут через transform, без перерисовки текста */
 .num{
-  font-family:var(--font-num);font-weight:700;font-size:clamp(4.6rem,17vw,8.8rem);line-height:.95;letter-spacing:-.045em;margin:.05em 0 .1em;
-  background:linear-gradient(120deg,#fff 0%,var(--rose) 35%,var(--peach) 60%,#fff 100%);background-size:220% 100%;
-  -webkit-background-clip:text;background-clip:text;color:transparent;animation:shimmer 5s linear infinite;
+  font-family:var(--font-num);font-weight:700;font-size:clamp(4.6rem,17vw,8.8rem);line-height:1.1;letter-spacing:-.045em;margin:0 0 .05em;
+  display:flex;justify-content:center;align-items:flex-end;
 }
-.num small{font-size:.42em;letter-spacing:-.02em}
-@keyframes shimmer{to{background-position:-220% 0}}
+.num .col{display:block;height:1.1em;position:relative;clip-path:inset(0 -.6em)}
+.num .strip{display:block;position:relative;top:-1.1em}
+.num .strip i,.num small{font-style:normal;display:block;height:1.1em;text-align:center;
+  background:linear-gradient(120deg,#fff 0%,var(--rose) 45%,var(--peach) 85%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.num small{font-size:.42em;letter-spacing:-.02em;height:auto;line-height:1;margin:0 0 .32em .06em;transform-origin:0 100%}
 .label{font-family:var(--font-num);font-weight:500;font-size:.7rem;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);margin:0 0 1.6em}
-.fade{opacity:0;transform:translateY(10px);transition:opacity 1s var(--ease-out),transform 1s var(--ease-out)}
-.fade.on{opacity:1;transform:none}
 
 /* письмо */
-.card.letter{max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);overflow:auto;scrollbar-width:none}
+.card.letter{max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);overflow:auto;scrollbar-width:none;overscroll-behavior:contain}
 .card.letter::-webkit-scrollbar{display:none}
 .letter p.text{font-family:var(--font-display);font-weight:500;font-size:clamp(1.3rem,3.4vw,1.62rem);line-height:1.4;margin:0 0 1em;color:var(--ink)}
 .letter p.text em{font-style:italic;color:var(--peach)}
-.sig{font-family:var(--font-script);font-size:clamp(1.8rem,4.4vw,2.4rem);line-height:1.1;color:var(--peach);margin:1.2em 0 0;
-  clip-path:inset(0 100% 0 0);transition:clip-path 1.8s var(--ease-out)}
-.sig.on{clip-path:inset(0 0 0 0)}
+.sig{font-family:var(--font-script);font-size:clamp(1.8rem,4.4vw,2.4rem);line-height:1.1;color:var(--peach);margin:1.2em 0 0}
+/* подпись «пишется»: окно и текст едут навстречу друг другу (только transform) */
+.sig-win{display:inline-block;vertical-align:top;overflow:hidden;padding:.2em 1.4em .25em .25em;margin:-.2em -1.4em -.25em -.25em;
+  -webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 1.4em),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 1.4em),transparent)}
+.sig-ink{display:inline-block;white-space:nowrap}
 .ps{font-size:.9rem;color:var(--muted);margin:1.6em 0 0;line-height:1.55}
 .heartwrap{display:flex;flex-direction:column;align-items:center;gap:14px;margin-top:2.2em}
 .heart-btn{
-  position:relative;width:92px;height:92px;border-radius:50%;border:1px solid rgba(255,255,255,.5);cursor:pointer;display:grid;place-items:center;
+  position:relative;width:92px;height:92px;border-radius:50%;border:1px solid rgba(255,255,255,.5);cursor:pointer;display:grid;place-items:center;padding:0;
   background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.55),rgba(255,255,255,.08) 55%),linear-gradient(135deg,rgba(255,111,169,.5),rgba(255,176,136,.35));
   box-shadow:inset 0 2px 0 rgba(255,255,255,.7),0 20px 50px -14px rgba(255,111,169,.8);
-  animation:beat 1.6s ease-in-out infinite;transition:transform .4s var(--ease-spring);
 }
+/* пульс: бьётся только иконка, а от кнопки расходится кольцо (transform/opacity) */
+.heart-btn .core{display:grid;place-items:center;animation:beat 1.4s ease-in-out infinite}
+.heart-btn::after{content:"";position:absolute;inset:-1px;border-radius:50%;border:2px solid rgba(255,190,215,.8);pointer-events:none;opacity:0;animation:ping 1.4s cubic-bezier(.2,.7,.3,1) infinite}
 .heart-btn svg{width:42px;height:42px;fill:url(#hg)}
-.heart-btn:hover{animation-play-state:paused;transform:scale(1.1)}
-.heart-btn:active{transform:scale(.94)}
-@keyframes beat{0%,100%{transform:scale(1)}14%{transform:scale(1.07)}28%{transform:scale(1)}42%{transform:scale(1.05)}70%{transform:scale(1)}}
+@keyframes beat{0%,100%{transform:scale(1)}14%{transform:scale(1.14)}28%{transform:scale(1)}42%{transform:scale(1.09)}70%{transform:scale(1)}}
+@keyframes ping{0%{transform:scale(1);opacity:0}12%{opacity:.75}70%,100%{transform:scale(1.55);opacity:0}}
 .heartwrap span{font-family:var(--font-script);font-size:1.4rem;color:var(--muted)}
 
 /* финал */
-.finale-stage{text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:12px;height:100%;padding-bottom:clamp(24px,6vh,64px)}
-.finale-stage{position:relative}
-.finale-stage::before{content:"";position:absolute;left:-50vw;right:-50vw;bottom:-20px;height:62%;pointer-events:none;background:linear-gradient(180deg,rgba(40,8,36,0),rgba(40,8,36,.42) 55%,rgba(40,8,36,.55))}
+.finale-stage{text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:12px;height:100%;padding-bottom:clamp(24px,6vh,64px);position:relative}
+/* тёмная подложка под текстом финала — отдельный слой: проявляется своей opacity, сам текст анимируется по словам */
+.finale-shade{position:absolute;left:0;right:0;bottom:0;height:62%;pointer-events:none;will-change:opacity;background:linear-gradient(180deg,rgba(40,8,36,0),rgba(40,8,36,.42) 55%,rgba(40,8,36,.55))}
 .finale-stage>*{position:relative}
 .finale-stage .display{font-size:clamp(2.6rem,8vw,5.2rem);margin:0;text-shadow:0 2px 6px rgba(40,8,36,.55),0 12px 50px rgba(40,8,36,.6)}
 .finale-stage .eyebrow{font-size:clamp(1.5rem,3.4vw,2.1rem);margin:0 0 .3em;text-shadow:0 2px 6px rgba(40,8,36,.55),0 8px 30px rgba(40,8,36,.6)}
@@ -296,16 +299,20 @@ h1 em .w,.display em .w,h1 em:not(:has(.w)),.display em:not(:has(.w)){background
 @media (pointer:coarse){
   .grain{display:none}
   .glass{-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
-  .w{filter:none}
-  .num{animation:none;background-position:30% 0}
 }
 @media (max-width:480px){
   .card{padding:30px 22px 28px}
   .opt{padding:13px 14px;gap:12px}
 }
+@media (max-height:700px) and (max-width:480px){
+  .card{padding:24px 20px 22px}
+  .q{font-size:1.7rem;margin-bottom:.6em}
+  .options{gap:9px}
+  .opt{padding:11px 13px}
+  .progress{margin-bottom:14px}
+}
 @media (prefers-reduced-motion:reduce){
-  .float{animation:none}
-  .grain{animation:none}
+  .float,.grain,.heart-btn .core,.heart-btn::after{animation:none}
 }
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 noscript div{position:fixed;inset:0;display:grid;place-items:center;padding:24px;z-index:9;text-align:center;font-size:1.1rem;background:var(--bg)}
@@ -328,56 +335,55 @@ noscript div{position:fixed;inset:0;display:grid;place-items:center;padding:24px
 
 <main>
   <!-- ИНТРО -->
-  <section class="scene" data-scene="intro">
+  <section class="scene" data-scene="intro" inert>
     <div class="float"><div class="tilt">
-      <article class="card glass">
-        <p class="eyebrow" data-reveal data-stagger="60">маленький тест</p>
-        <h1 data-reveal data-delay="150" id="hello"></h1>
-        <p class="lead" data-reveal data-delay="450" data-stagger="22" id="introLead"></p>
+      <article class="card glass" id="introCard">
+        <p class="eyebrow" id="introEyebrow"></p>
+        <h1 id="hello"></h1>
+        <p class="lead" id="introLead"></p>
         <div class="row">
-          <button class="btn primary appear" id="startBtn" type="button"><span id="startLabel"></span><span class="arr">→</span></button>
+          <button class="btn primary" id="startBtn" type="button"><span id="startLabel"></span><span class="arr">→</span></button>
           <span class="note" style="margin:0" id="introNote"></span>
         </div>
       </article>
     </div></div>
   </section>
 
-  <!-- ВОПРОСЫ -->
-  <section class="scene" data-scene="quiz">
+  <!-- ВОПРОСЫ: две одинаковые карточки по очереди — уходящая и приходящая (без клонов) -->
+  <section class="scene" data-scene="quiz" inert>
     <div class="float"><div class="tilt">
-      <article class="card glass" id="quizCard" aria-live="polite">
-        <div class="progress"><span id="qCount">1 / 3</span><div class="bar"><i id="barFill"></i></div></div>
-        <p class="eyebrow" data-reveal data-stagger="60" id="qEyebrow"></p>
-        <h2 class="q" data-reveal data-delay="120" data-stagger="38" id="qTitle"></h2>
-        <div class="options" id="options"></div>
-      </article>
+      <div class="stack" id="quizStack" aria-live="polite">
+        <article class="card glass qcard"></article>
+        <article class="card glass qcard is-off" inert></article>
+        <i class="pearl" id="pearl" aria-hidden="true"></i>
+      </div>
     </div></div>
   </section>
 
   <!-- РЕЗУЛЬТАТ -->
-  <section class="scene" data-scene="result">
+  <section class="scene" data-scene="result" inert>
     <div class="float"><div class="tilt">
-      <article class="card glass" style="text-align:center">
-        <p class="eyebrow" data-reveal data-stagger="60" id="resEyebrow"></p>
-        <div class="num" id="num">0<small>%</small></div>
-        <p class="label fade" id="resLabel"></p>
-        <p class="lead fade" id="resText"></p>
-        <button class="btn appear" id="resBtn" type="button"><span id="resBtnLabel"></span><span class="arr">→</span></button>
+      <article class="card glass" id="resultCard" style="text-align:center">
+        <p class="eyebrow" id="resEyebrow"></p>
+        <div class="num" id="num" role="img"></div>
+        <p class="label" id="resLabel"></p>
+        <p class="lead" id="resText"></p>
+        <button class="btn" id="resBtn" type="button"><span id="resBtnLabel"></span><span class="arr">→</span></button>
       </article>
     </div></div>
   </section>
 
   <!-- ПИСЬМО -->
-  <section class="scene" data-scene="letter">
+  <section class="scene" data-scene="letter" inert>
     <div class="float"><div class="tilt">
       <article class="card glass letter" id="letterCard">
-        <p class="eyebrow" data-reveal data-stagger="60" id="letterEyebrow"></p>
+        <p class="eyebrow" id="letterEyebrow"></p>
         <div id="letterBody"></div>
-        <p class="sig" id="sig"></p>
-        <p class="ps fade" id="ps"></p>
-        <div class="heartwrap fade" id="heartwrap">
+        <p class="sig" id="sig"><span class="sig-win"><span class="sig-ink" id="sigInk"></span></span></p>
+        <p class="ps" id="ps"></p>
+        <div class="heartwrap" id="heartwrap">
           <button class="heart-btn" id="heartBtn" type="button" aria-label="Нажми">
-            <svg viewBox="0 0 64 64"><path d="M32 56s-22-13-22-29a12 12 0 0 1 22-7 12 12 0 0 1 22 7c0 16-22 29-22 29z"/></svg>
+            <span class="core"><svg viewBox="0 0 64 64"><path d="M32 56s-22-13-22-29a12 12 0 0 1 22-7 12 12 0 0 1 22 7c0 16-22 29-22 29z"/></svg></span>
           </button>
           <span id="heartHint"></span>
         </div>
@@ -386,11 +392,12 @@ noscript div{position:fixed;inset:0;display:grid;place-items:center;padding:24px
   </section>
 
   <!-- ФИНАЛ -->
-  <section class="scene" data-scene="finale">
-    <div class="finale-stage">
-      <p class="eyebrow" data-reveal data-stagger="70" id="finEyebrow"></p>
-      <p class="display" data-reveal data-delay="300" data-stagger="90" id="finTitle"></p>
-      <a class="btn appear" id="finBtn" href="#" target="_blank" rel="noopener"><span id="finBtnLabel"></span><span class="arr">→</span></a>
+  <section class="scene" data-scene="finale" inert>
+    <div class="finale-shade" id="finaleShade" aria-hidden="true"></div>
+    <div class="finale-stage" id="finaleStage">
+      <p class="eyebrow" id="finEyebrow"></p>
+      <p class="display" id="finTitle"></p>
+      <a class="btn" id="finBtn" href="#" target="_blank" rel="noopener"><span id="finBtnLabel"></span><span class="arr">→</span></a>
     </div>
   </section>
 </main>
@@ -499,23 +506,74 @@ window.CONFIG = {
 </script>
 
 <!-- ============================================================
-     ЛОГИКА СТРАНИЦЫ (работает и без 3D, если WebGL недоступен)
+     ЛОГИКА СТРАНИЦЫ И ДВИЖЕНИЕ (работает и без 3D, если WebGL недоступен)
+     Принципы:
+       • анимируются только transform и opacity, через Web Animations API;
+       • CSS задаёт состояние покоя, первый и последний кадр анимации с ним совпадают,
+         поэтому снятие анимации (cancel) ничего не меняет на экране;
+       • вся работа с DOM (сборка вопроса, замеры) — до старта движения, в отдельном кадре;
+       • высота карточки вопросов фиксирована на всю сцену.
      ============================================================ -->
 <script>
 (() => {
+  "use strict";
   const C = window.CONFIG;
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
-  const wait = ms => new Promise(r => setTimeout(r, ms));
   const tpl = s => (s || "").replace(/\{name\}/g, C.name || "");
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  const frame = () => new Promise(r => requestAnimationFrame(() => r()));
+  const frames2 = () => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(() => r())));
 
-  const state = { answers: [], q: 0, locked: false, scene: null };
+  const params = new URLSearchParams(location.search);
+  const DEBUG = params.has("debug");
+  const STILL = params.has("still");
+  if (STILL) document.documentElement.classList.add("still");
+  const RM = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (RM) document.documentElement.classList.add("rm");
 
-  /* ---------- 3D-фон: мост к модулю ---------- */
-  function setBg(mode) {
-    window.__bgMode = mode;
-    if (window.__bg) window.__bg.setMode(mode);
+  const state = { scene: null, q: 0, answers: [], busy: false, sent: false };
+  const bg = () => window.__bg || null;
+  function setBg(mode, extra) { window.__bgMode = mode; window.__bgQ = extra || 0; const b = bg(); if (b) b.setMode(mode, extra || 0); }
+  const toNDC = (x, y) => [x / innerWidth * 2 - 1, -(y / innerHeight * 2 - 1)];
+
+  /* ============================================================
+     ДВИЖОК АНИМАЦИЙ
+     ============================================================ */
+  const E = {
+    out: "cubic-bezier(.22,1,.36,1)",          // мягкое торможение
+    outBack: "cubic-bezier(.34,1.56,.64,1)",   // торможение с перелётом
+    in: "cubic-bezier(.55,0,.8,.3)",           // разгон
+    grav: "cubic-bezier(.5,0,.9,.45)",         // падение
+    io: "cubic-bezier(.65,0,.35,1)",
+    sine: "cubic-bezier(.37,0,.63,1)",
+  };
+  // transform с одинаковым списком функций во всех кадрах — интерполяция без сюрпризов
+  function T(o = {}) {
+    const u = v => typeof v === "number" ? v + "px" : (v || "0px");
+    const sx = o.sx ?? o.s ?? 1, sy = o.sy ?? o.s ?? 1;
+    return `translate3d(${u(o.x)},${u(o.y)},${o.z || 0}px) rotateX(${o.rx || 0}deg) rotateY(${o.ry || 0}deg) rotateZ(${o.rz || 0}deg) scale(${sx},${sy})`;
   }
+  // мелкие элементы (слова, кнопки, варианты): только сдвиг и поворот, без масштаба.
+  // У них постоянный слой с will-change:transform, а Chrome «замораживает» растр такого слоя в масштабе,
+  // в котором тот впервые нарисован: любое масштабирование оставило бы текст чуть мыльным. В покое — REST (см. CSS).
+  function T2(o = {}) {
+    const u = v => typeof v === "number" ? v + "px" : (v || "0px");
+    return `translate(${u(o.x)},${u(o.y)}) rotate(${o.rz || 0}deg)`;
+  }
+  const REST = T2();
+  const live = new Set();
+  // анимация с fill:both: до старта (во время delay) элемент уже в первом кадре, после конца — в последнем.
+  // keep:false (по умолчанию) — по окончании анимация снимается: последний кадр == покой, поэтому на экране ничего не меняется.
+  function anim(el, frames, o = {}) {
+    if (!el) return null;
+    const a = el.animate(frames, { duration: o.d ?? 600, delay: o.at ?? 0, easing: o.e || "linear", fill: "both" });
+    live.add(a);
+    a.finished.then(() => { live.delete(a); if (!o.keep) a.cancel(); }, () => live.delete(a));
+    return a;
+  }
+  const end = a => a ? a.finished.catch(() => {}) : Promise.resolve();
+  function stopIn(root) { for (const a of Array.from(live)) { const t = a.effect && a.effect.target; if (t && root.contains(t)) { live.delete(a); a.cancel(); } } }
 
   /* ---------- пословное появление ---------- */
   function splitWords(el) {
@@ -529,285 +587,521 @@ window.CONFIG = {
             const s = document.createElement("span"); s.className = "w"; s.textContent = part; frag.appendChild(s);
           });
           node.replaceChild(frag, child);
-        } else if (child.nodeType === 1 && child.tagName !== "BR") {
-          walk(child);
-        }
+        } else if (child.nodeType === 1 && child.tagName !== "BR") walk(child);
       });
     };
     walk(el);
   }
-  function reveal(scope, base = 0) {
-    $$("[data-reveal]", scope).forEach(el => {
-      if (!el.dataset.split) { splitWords(el); el.dataset.split = "1"; }
-      const d = base + Number(el.dataset.delay || 0);
-      if (el.dataset.stagger) el.style.setProperty("--stagger", el.dataset.stagger + "ms");
-      $$(".w", el).forEach((w, i) => {
-        w.classList.remove("on");
-        w.style.setProperty("--i", i);
-        w.style.setProperty("--d", d + "ms");
-      });
-      // перезапуск анимации
-      void el.offsetWidth;
-      $$(".w", el).forEach(w => w.classList.add("on"));
-    });
-  }
-  function setRich(el, html) { el.innerHTML = tpl(html); delete el.dataset.split; }
+  function words(el) { if (!el._w) { splitWords(el); el._w = $$(".w", el); } return el._w; }
+  // все сеттеры терпят отсутствие элемента (разметку можно упрощать, не трогая логику)
+  function setRich(el, html) { if (!el) return; el.innerHTML = tpl(html); el._w = null; }
+  function setText(el, text) { if (!el) return; el.textContent = tpl(text); el._w = null; }
 
-  /* ---------- переключение сцен (3D-вылет / влёт карточки) ---------- */
-  function animateCard(scene, cls, extra) {
-    const card = $(".card:not(.ghost)", scene);
-    if (!card) return Promise.resolve();
-    return new Promise(res => {
-      const done = e => { if (e.target !== card) return; card.removeEventListener("animationend", done); card.classList.remove(cls); if (extra) card.classList.remove(extra); res(); };
-      card.addEventListener("animationend", done);
-      card.classList.add(cls); if (extra) card.classList.add(extra);
-    });
+  // стили появления слов. Последний кадр всегда transform:none, opacity:1
+  const WORD = {
+    rise:   { d: 760, f: [{ opacity: 0, transform: T2({ y: "0.5em", rz: 2.5 }), easing: E.out }, { opacity: 1, transform: REST }] },
+    // «выпрыгивает» снизу, качнувшись на месте
+    pop:    { d: 720, f: [{ opacity: 0, transform: T2({ y: "0.5em", rz: -14 }), easing: E.out }, { opacity: 1, transform: T2({ y: "-0.14em", rz: 5 }), offset: 0.5, easing: E.sine }, { opacity: 1, transform: T2({ y: "0.03em", rz: -1.6 }), offset: 0.76, easing: E.sine }, { opacity: 1, transform: REST }] },
+    // падает сверху и пару раз подпрыгивает
+    // мягкий подъём с лёгким перелётом по высоте, без увеличения больше 1 (для финала: там слои без «замороженного» растра)
+    lift:   { d: 1100, f: [{ opacity: 0, transform: T2({ y: "0.7em", rz: -5 }), easing: "cubic-bezier(.2,.7,.3,1)" }, { opacity: 1, transform: T2({ y: "-0.1em", rz: 1 }), offset: 0.55, easing: E.sine }, { opacity: 1, transform: T2({ y: "0.02em", rz: -0.3 }), offset: 0.8, easing: E.sine }, { opacity: 1, transform: REST }] },
+    bounce: { d: 980, f: [{ opacity: 0, transform: T2({ y: "-1.1em", rz: -7 }), easing: "cubic-bezier(.5,0,.9,.5)" }, { opacity: 1, transform: T2({ y: "0.05em", rz: 2.5 }), offset: 0.4, easing: E.out }, { opacity: 1, transform: T2({ y: "-0.22em", rz: -1 }), offset: 0.6, easing: "cubic-bezier(.45,0,.85,.5)" }, { opacity: 1, transform: T2({ y: "0.01em", rz: 0.4 }), offset: 0.78, easing: E.out }, { opacity: 1, transform: T2({ y: "-0.05em" }), offset: 0.89, easing: E.sine }, { opacity: 1, transform: REST }] },
+  };
+  function reveal(el, style, at, stagger = 40) {
+    if (!el) return at;
+    if (RM) { anim(el, [{ opacity: 0 }, { opacity: 1 }], { at, d: 420 }); return at + 420; }
+    const ws = words(el), P = WORD[style];
+    ws.forEach((w, i) => anim(w, P.f, { at: at + i * stagger, d: P.d }));
+    return at + Math.max(0, ws.length - 1) * stagger + P.d;
   }
-  async function go(name, opts = {}) {
-    const cur = $(".scene.is-active");
-    const next = $(`.scene[data-scene="${name}"]`);
-    if (!next || next === cur) return;
-    setBg(name);
-    if (cur) { await (opts.leave ? opts.leave(cur) : animateCard(cur, "leave")); cur.classList.remove("is-active"); }
-    state.scene = name;
-    next.classList.add("is-active");
-    const p = animateCard(next, "enter", opts.enterClass);
-    onEnter[name] && onEnter[name](next);
-    await p;
+  // целый блок (кнопка, подпись, строка): «выпрыгивает» с перелётом
+  function popIn(el, at, d = 760) {
+    if (RM) { anim(el, [{ opacity: 0 }, { opacity: 1 }], { at, d: 420 }); return at + 420; }
+    anim(el, [{ opacity: 0, transform: T2({ y: 26, rz: -4 }), easing: E.out }, { opacity: 1, transform: T2({ y: -6, rz: 1.2 }), offset: 0.55, easing: E.sine }, { opacity: 1, transform: T2({ y: 1.5, rz: -0.3 }), offset: 0.8, easing: E.sine }, { opacity: 1, transform: REST }], { at, d });
+    return at + d;
   }
-
-  /* ---------- блики / наклон под курсором ---------- */
-  const fine = matchMedia("(hover:hover) and (pointer:fine)").matches;
-  let tx = 0, ty = 0, px = 0, py = 0;
-  window.addEventListener("pointermove", e => {
-    tx = (e.clientX / innerWidth) * 2 - 1;
-    ty = (e.clientY / innerHeight) * 2 - 1;
-    if (!fine) return;
-    const card = $(".scene.is-active .glass");
-    if (card) {
-      const r = card.getBoundingClientRect();
-      card.style.setProperty("--mx", ((e.clientX - r.left) / r.width * 100).toFixed(1) + "%");
-      card.style.setProperty("--my", ((e.clientY - r.top) / r.height * 100).toFixed(1) + "%");
-    }
-  }, { passive: true });
-  if (fine) (function tiltLoop() {
-    px += (tx - px) * 0.055; py += (ty - py) * 0.055;
-    {
-      const el = $(".scene.is-active .tilt");
-      if (el) el.style.transform = `rotateY(${(px * 6.5).toFixed(2)}deg) rotateX(${(-py * 5.5).toFixed(2)}deg)`;
-      const card = $(".scene.is-active .glass");
-      if (card) card.style.setProperty("--rim", (135 + px * 45 - py * 25).toFixed(1) + "deg");
-    }
-    requestAnimationFrame(tiltLoop);
-  })();
+  function fadeUp(el, at, d = 800) {
+    if (RM) { anim(el, [{ opacity: 0 }, { opacity: 1 }], { at, d: 420 }); return at + 420; }
+    anim(el, [{ opacity: 0, transform: T2({ y: 14 }), easing: E.out }, { opacity: 1, transform: REST }], { at, d });
+    return at + d;
+  }
 
   /* ---------- рябь на кнопках ---------- */
-  function ripple(e, el) {
-    const r = el.getBoundingClientRect();
-    const s = document.createElement("span"); s.className = "ripple";
-    s.style.left = ((e.clientX || r.left + r.width / 2) - r.left) + "px";
-    s.style.top = ((e.clientY || r.top + r.height / 2) - r.top) + "px";
-    el.appendChild(s); s.addEventListener("animationend", () => s.remove());
+  function ripple(e, el, host = el) {
+    const r = el.getBoundingClientRect(); // чтение при нажатии, до любых анимаций
+    // одна «рябь» на кнопку, переиспользуется: не вставляем/не удаляем DOM во время движения
+    let s = host.querySelector(":scope > .ripple");
+    if (!s) { s = document.createElement("span"); s.className = "ripple"; host.appendChild(s); }
+    s.style.left = ((e && e.clientX ? e.clientX : r.left + r.width / 2) - r.left) + "px";
+    s.style.top = ((e && e.clientY ? e.clientY : r.top + r.height / 2) - r.top) + "px";
+    s.animate([{ transform: "scale(0)", opacity: 0.9 }, { transform: "scale(16)", opacity: 0 }], { duration: 900, easing: E.out });
   }
 
-  /* ---------- ИНТРО ---------- */
+  /* ---------- вспышка ---------- */
+  function flash(x, y, at = 0) {
+    const f = $("#flash"); f.style.setProperty("--fx", x + "px"); f.style.setProperty("--fy", y + "px");
+    anim(f, [{ opacity: 0, easing: "cubic-bezier(.2,.8,.3,1)" }, { opacity: 0.85, offset: 0.14, easing: E.out }, { opacity: 0 }], { at, d: 900 });
+  }
+
+  /* ============================================================
+     СЦЕНЫ
+     ============================================================ */
+  const SC = {}; $$(".scene").forEach(s => SC[s.dataset.scene] = s);
+  function show(s) { s.classList.add("is-active"); s.inert = false; }
+  function hide(s) { s.classList.remove("is-active"); s.inert = true; }
+
+  /* ---------- блик и наклон под курсором (только мышь) ---------- */
+  const fine = matchMedia("(hover:hover) and (pointer:fine)").matches;
+  if (fine && !RM && !STILL) {
+    let tx = 0, ty = 0, px = 0, py = 0, running = false, glassEl = null;
+    const loop = () => {
+      px += (tx - px) * 0.08; py += (ty - py) * 0.08;
+      const s = state.scene && SC[state.scene], el = s && $(".tilt", s);
+      if (el) el.style.transform = `rotateY(${(px * 6.5).toFixed(2)}deg) rotateX(${(-py * 5.5).toFixed(2)}deg)`;
+      if (glassEl) glassEl.style.setProperty("--rim", (135 + px * 45 - py * 25).toFixed(0) + "deg");
+      if (Math.abs(tx - px) + Math.abs(ty - py) > 0.002) requestAnimationFrame(loop); else running = false;
+    };
+    window.addEventListener("pointermove", e => {
+      tx = (e.clientX / innerWidth) * 2 - 1; ty = (e.clientY / innerHeight) * 2 - 1;
+      const s = state.scene && SC[state.scene];
+      glassEl = s ? $(".glass:not(.is-off)", s) : null;
+      if (glassEl && !state.busy) {
+        const r = glassEl.getBoundingClientRect();
+        glassEl.style.setProperty("--mx", ((e.clientX - r.left) / r.width * 100).toFixed(1) + "%");
+        glassEl.style.setProperty("--my", ((e.clientY - r.top) / r.height * 100).toFixed(1) + "%");
+      }
+      if (!running) { running = true; requestAnimationFrame(loop); }
+    }, { passive: true });
+  }
+
+  /* ============================================================
+     ИНТРО
+     ============================================================ */
+  const introCard = $("#introCard");
+  setText($("#introEyebrow"), C.intro.eyebrow || "");
   setRich($("#hello"), C.name ? C.intro.title : C.intro.title.replace(/,?\s*<em>\{name\}<\/em>/, ""));
   setRich($("#introLead"), C.intro.lead);
-  $("#startLabel").textContent = C.intro.button;
-  $("#introNote").textContent = C.intro.note;
-  $("#startBtn").addEventListener("click", e => { ripple(e, e.currentTarget); go("quiz"); });
+  setText($("#startLabel"), C.intro.button);
+  setText($("#introNote"), C.intro.note);
+  $("#startBtn").addEventListener("click", e => {
+    if (state.busy || state.scene !== "intro") return;
+    ripple(e, e.currentTarget);
+    switchScene("quiz", FX_SCENE.introQuiz);
+  });
+  function enterIntro(at) {
+    let t = reveal($("#introEyebrow"), "pop", at, 70);
+    t = reveal($("#hello"), "bounce", at + 160, 120);
+    t = reveal($("#introLead"), "rise", at + 520, 16);
+    popIn($("#startBtn"), t - 380);
+    fadeUp($("#introNote"), t - 200);
+    return t + 400;
+  }
 
-  /* ---------- ВОПРОСЫ ---------- */
+  /* ============================================================
+     ВОПРОСЫ
+     ============================================================ */
   const Q = C.quiz.questions;
-  function buildQuestion(i) { // только DOM, без анимаций
-    const q = Q[i], card = $("#quizCard");
-    $("#qCount").textContent = `${i + 1} / ${Q.length}`;
-    $("#qEyebrow").textContent = C.quiz.eyebrow.replace("{n}", i + 1); delete $("#qEyebrow").dataset.split;
-    setRich($("#qTitle"), q.title);
-    $$("[data-reveal]", card).forEach(el => { if (!el.dataset.split) { splitWords(el); el.dataset.split = "1"; } });
-    const list = $("#options"); list.innerHTML = "";
+  const qCards = $$(".qcard");
+  const pearl = $("#pearl");
+  qCards.forEach(card => {
+    card.innerHTML = `<div class="progress"><span class="qcount"></span><div class="bar"><i></i></div></div>
+      <p class="eyebrow qeyebrow"></p><h2 class="q qtitle"></h2><div class="options"></div>`;
+  });
+  let curCard = qCards[0];
+  const other = c => c === qCards[0] ? qCards[1] : qCards[0];
+
+  function buildQuestion(card, i) { // только DOM, без анимаций
+    const q = Q[i];
+    $(".qcount", card).textContent = `${i + 1} / ${Q.length}`;
+    $(".bar i", card).style.transform = `scaleX(${i / Q.length})`;
+    setText($(".qeyebrow", card), C.quiz.eyebrow.replace("{n}", i + 1));
+    setRich($(".qtitle", card), q.title);
+    words($(".qeyebrow", card)); words($(".qtitle", card));
+    const list = $(".options", card); list.textContent = "";
     q.options.forEach((text, k) => {
       const b = document.createElement("button");
-      b.type = "button"; b.className = "opt"; b.style.setProperty("--k", k);
-      b.innerHTML = `<span class="idx">0${k + 1}</span><span class="txt"></span>`;
+      b.type = "button"; b.className = "opt";
+      b.innerHTML = `<span class="rip"></span><span class="idx">0${k + 1}</span><span class="txt"></span>`;
       $(".txt", b).textContent = tpl(text);
-      b.addEventListener("click", e => pick(e, b, k));
+      b.addEventListener("click", e => pick(e, card, b, k));
       list.appendChild(b);
     });
+    card.dataset.q = i;
   }
-  function renderQuestion(i, inDelay = 0) {
-    state.q = i;
-    const card = $("#quizCard");
-    card.style.setProperty("--in-delay", inDelay + "ms");
-    buildQuestion(i);
-    reveal(card, 120 + inDelay);
-    requestAnimationFrame(() => $$(".opt", card).forEach(b => b.classList.add("in")));
-  }
-  // карточка одной высоты для всех вопросов: высота не меняется, сцена не дёргается
+  // карточка одной высоты для всех вопросов: сцена не дёргается ни при смене вопроса, ни в конце анимации
+  let quizH = 0;
   function measureQuiz() {
-    const card = $("#quizCard"), keepQ = state.q;
-    card.style.minHeight = "";
+    const probe = other(curCard), keep = probe.dataset.q; // меряем на скрытой карточке, видимую не трогаем
+    qCards.forEach(c => c.style.height = "");
     let max = 0;
-    for (let i = 0; i < Q.length; i++) { buildQuestion(i); max = Math.max(max, card.offsetHeight); }
-    card.style.minHeight = Math.min(max, innerHeight - 32) + "px";
-    if (state.scene === "quiz") buildQuestion(keepQ);
+    for (let i = 0; i < Q.length; i++) { buildQuestion(probe, i); max = Math.max(max, probe.offsetHeight); }
+    quizH = Math.ceil(max);
+    qCards.forEach(c => c.style.height = quizH + "px");
+    if (keep != null) buildQuestion(probe, +keep);
   }
-  let measureT = 0;
-  window.addEventListener("resize", () => { clearTimeout(measureT); measureT = setTimeout(() => { if (state.scene === "quiz") { measureQuiz(); renderQuestion(state.q, 0); } }, 250); });
+  // если карточка выше экрана — уменьшаем её целиком (свойство scale на обёртке, без перестройки)
+  function fitScenes() {
+    const avail = innerHeight - 24;
+    [["intro", introCard.offsetHeight], ["quiz", quizH], ["result", $("#resultCard").offsetHeight]].forEach(([n, h]) => {
+      const f = h > avail ? Math.max(0.72, avail / h) : 1;
+      $(".tilt", SC[n]).style.setProperty("--fit", f.toFixed(3));
+    });
+  }
+  function measureAll() { measureQuiz(); fitScenes(); }
 
-  async function pick(e, btn, k) {
-    if (state.locked) return;
-    state.locked = true;
-    ripple(e, btn);
-    { const r = $("#quizCard").getBoundingClientRect(), b = btn.getBoundingClientRect();
-      const x = (e.clientX || b.left + b.width / 2) - r.left, y = (e.clientY || b.top + b.height / 2) - r.top;
-      $("#quizCard").style.setProperty("--tx", (x / r.width * 100).toFixed(1) + "%"); $("#quizCard").style.setProperty("--ty", (y / r.height * 100).toFixed(1) + "%"); }
-    btn.classList.add("is-picked");
-    $$(".opt").forEach(b => { if (b !== btn) b.classList.add("is-dim"); });
+  // появление содержимого вопроса: подзаголовок, вопрос по словам, варианты по очереди
+  function enterQuestion(card, at) {
+    reveal($(".qeyebrow", card), "pop", at, 60);
+    const t = reveal($(".qtitle", card), "rise", at + 90, 34);
+    let last = at;
+    $$(".opt", card).forEach((b, k) => {
+      const s = k % 2 ? 1 : -1, d = 760, start = at + 260 + k * 75;
+      if (RM) { anim(b, [{ opacity: 0 }, { opacity: 1 }], { at: start, d: 400 }); last = start + 400; return; }
+      anim(b, [
+        { opacity: 0, transform: T2({ x: 34 * s, y: 18, rz: 4 * s }), easing: E.out },
+        { opacity: 1, transform: T2({ x: -4 * s, y: -3, rz: -0.8 * s }), offset: 0.55, easing: E.sine },
+        { opacity: 1, transform: T2({ x: 1.2 * s, rz: 0.2 * s }), offset: 0.8, easing: E.sine },
+        { opacity: 1, transform: REST },
+      ], { at: start, d });
+      last = start + d;
+    });
+    return Math.max(t, last);
+  }
+
+  // выбор ответа
+  function pick(e, card, btn, k) {
+    if (state.busy || state.scene !== "quiz" || card !== curCard) return;
+    state.busy = true;
     state.answers[state.q] = k;
-    $("#barFill").style.transform = `scaleX(${(state.q + 1) / Q.length})`;
-    await wait(720);
-    if (state.q + 1 < Q.length) { await transitionTo(state.q + 1); state.locked = false; }
-    else go("result", { leave: implodeQuiz, enterClass: "bloom" });
+    const i = state.q, last = i + 1 >= Q.length;
+    ripple(e, btn, $(".rip", btn));
+    const opts = $$(".opt", card);
+    btn.classList.add("is-picked");
+    // нажатый вариант «подпрыгивает», остальные гаснут волной от него
+    if (!RM) anim(btn, [{ transform: REST, easing: E.out }, { transform: T2({ y: 3 }), offset: 0.14, easing: E.out }, { transform: T2({ y: -8, rz: -1.4 }), offset: 0.45, easing: E.sine }, { transform: T2({ y: 1.5, rz: 0.5 }), offset: 0.72, easing: E.sine }, { transform: REST }], { d: 600 });
+    opts.forEach((b, j) => {
+      if (b === btn) return;
+      b.classList.add("is-dim");
+      anim(b, [{ opacity: 1, easing: E.sine }, { opacity: 0.32 }], { d: 420, at: Math.abs(j - k) * 50 });
+    });
+    const bar = $(".bar i", card), from = i / Q.length, to = (i + 1) / Q.length;
+    bar.style.transform = `scaleX(${to})`;
+    anim(bar, [{ transform: `scaleX(${from})`, easing: E.out }, { transform: `scaleX(${to})` }], { d: 800 });
+    const b = bg();
+    if (b && e && e.clientX) { const [nx, ny] = toNDC(e.clientX, e.clientY); b.kick(nx, ny, last ? 1.2 : 1); }
+
+    if (!last) {
+      const nextCard = other(card);
+      // следующий вопрос собирается сразу (DOM + раскладка — сейчас, пока играет отклик на нажатие), движение — позже
+      frames2().then(() => buildQuestion(nextCard, i + 1));
+      sleep(RM ? 380 : 600).then(() => questionTransition(card, nextCard, i + 1));
+    } else {
+      frames2().then(() => prepare("result")); // одометр собирается сразу, пока играет отклик на нажатие
+      sleep(RM ? 380 : 560).then(() => switchScene("result", FX_SCENE.implode, true));
+    }
   }
 
-  /* ---------- переходы между вопросами: каждый раз другой ----------
-     Только transform/opacity (и clip-path на копии без размытия): всё идёт через композитор, без перерисовок. */
-  const EI = "cubic-bezier(.55,0,.8,.2)", EO = "cubic-bezier(.2,.8,.2,1)", EIO = "cubic-bezier(.65,0,.35,1)", SPRING = "cubic-bezier(.34,1.56,.64,1)";
-  const play = async (el, kf, opt) => { const a = el.animate(kf, Object.assign({ fill: "both" }, opt)); await a.finished; a.cancel(); };
-  const nextFrame = () => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))); // тяжёлая вставка DOM — в одном кадре, движение — со следующего
-  function makeGhost(card) {
-    const r = card.getBoundingClientRect(), g = card.cloneNode(true);
-    g.classList.add("ghost"); g.classList.remove("enter", "leave", "above"); g.removeAttribute("id"); g.removeAttribute("aria-live");
-    g.style.width = r.width + "px"; g.style.height = r.height + "px"; g.style.marginTop = (-r.height / 2) + "px"; g.style.minHeight = "0";
-    card.parentNode.appendChild(g);
-    return g;
-  }
-  function makePearl(card) { const p = document.createElement("i"); p.className = "pearl"; card.parentNode.appendChild(p); return p; }
-  const FX = {
-    flip:   { out: [[{ transform: "rotateY(0) scale(1)", opacity: 1 }, { transform: "rotateY(-92deg) scale(.86)", opacity: .1 }], { duration: 420, easing: EI }],
-              in:  [[{ transform: "rotateY(92deg) scale(.86)", opacity: 0, offset: 0 }, { transform: "rotateY(-14deg) scale(1.04)", opacity: 1, offset: .62, easing: EO }, { transform: "rotateY(6deg) scale(.99)", offset: .84, easing: "ease-in-out" }, { transform: "rotateY(0) scale(1)" }], { duration: 1000, easing: EO, delay: 380 }] },
-    cube:   { origin: ["50% 100%", "50% 0%"],
-              out: [[{ transform: "rotateX(0)", opacity: 1 }, { transform: "rotateX(-100deg)", opacity: .1 }], { duration: 720, easing: EIO }],
-              in:  [[{ transform: "rotateX(100deg)", opacity: 0, offset: 0 }, { transform: "rotateX(-10deg)", opacity: 1, offset: .66, easing: EO }, { transform: "rotateX(4deg)", offset: .86, easing: "ease-in-out" }, { transform: "rotateX(0)" }], { duration: 1100, easing: EO, delay: 160 }] },
-    circle: { // старая карточка схлопывается кругом в точку нажатия, под ней уже новая
-              out: [[{ clipPath: "circle(150% at var(--tx,50%) var(--ty,45%))" }, { clipPath: "circle(0% at var(--tx,50%) var(--ty,45%))" }], { duration: 900, easing: EIO }],
-              in:  [[{ transform: "scale(.97)", opacity: 0 }, { transform: "scale(1)", opacity: 1 }], { duration: 500, easing: EO, delay: 150 }] },
-    zoom:   { out: [[{ transform: "scale(1) translateZ(0) rotateZ(0)", opacity: 1 }, { transform: "scale(2.3) translateZ(340px) rotateZ(4deg)", opacity: 0 }], { duration: 680, easing: EI }],
-              in:  [[{ transform: "scale(.4) translateZ(-800px) rotateZ(-8deg)", opacity: 0, offset: 0 }, { transform: "scale(1.06) translateZ(0) rotateZ(1.5deg)", opacity: 1, offset: .72, easing: EO }, { transform: "scale(1) translateZ(0) rotateZ(0)" }], { duration: 1050, easing: EO, delay: 220 }] },
-    orbit:  { out: [[{ transform: "translateX(0) rotateY(0) rotateZ(0) translateZ(0)", opacity: 1 }, { transform: "translateX(-85%) rotateY(-85deg) rotateZ(-12deg) translateZ(-500px)", opacity: 0 }], { duration: 820, easing: EIO }],
-              in:  [[{ transform: "translateX(85%) rotateY(85deg) rotateZ(12deg) translateZ(-500px)", opacity: 0 }, { transform: "translateX(0) rotateY(0) rotateZ(0) translateZ(0)", opacity: 1 }], { duration: 1000, easing: SPRING, delay: 150 }] },
-    drop:   { out: [[{ transform: "translate(0,0) rotateZ(0)", opacity: 1 }, { transform: "translate(-18%,160%) rotateZ(-24deg)", opacity: .4 }], { duration: 780, easing: "cubic-bezier(.5,0,1,.55)" }],
-              in:  [[{ transform: "translate(8%,-150%) rotateZ(12deg)", opacity: 0, offset: 0 }, { transform: "translate(0,0) rotateZ(-5deg)", opacity: 1, offset: .6, easing: "cubic-bezier(.3,0,.7,.4)" }, { transform: "translate(0,-22px) rotateZ(2.5deg)", offset: .78, easing: "ease-out" }, { transform: "translate(0,0) rotateZ(-1deg)", offset: .9, easing: "ease-in" }, { transform: "translate(0,0) rotateZ(0)" }], { duration: 1200, easing: "ease-out", delay: 200 }] },
-    hinge:  { origin: [null, "50% 0%"],
-              out: [[{ transform: "translateY(0) scale(1)", opacity: 1 }, { transform: "translateY(90px) scale(.92)", opacity: 0 }], { duration: 460, easing: EI }],
-              in:  [[{ transform: "rotateX(-110deg)", opacity: 0, offset: 0 }, { transform: "rotateX(16deg)", opacity: 1, offset: .5, easing: "cubic-bezier(.4,0,.8,.6)" }, { transform: "rotateX(-8deg)", offset: .72, easing: "ease-in-out" }, { transform: "rotateX(3deg)", offset: .88, easing: "ease-in-out" }, { transform: "rotateX(0)" }], { duration: 1400, easing: "ease-out", delay: 140 }] },
+  /* ---------- переходы между вопросами ----------
+     out — уходящая карточка, in — приходящая (обе настоящие, одинаково стеклянные).
+     at — когда стартует приходящая, content — когда внутри неё начинают появляться слова и варианты.
+     Все кадры — только transform/opacity; последний кадр in — transform:none. */
+  const QFX = {
+    // переворот, как игральная карта, с подскоком
+    flip: {
+      out: { d: 400, f: [{ transform: "none", opacity: 1, easing: "cubic-bezier(.5,0,.9,.45)" }, { transform: T({ y: -18, ry: -86, s: 0.94 }), opacity: 1, offset: 0.88 }, { transform: T({ y: -18, ry: -90, s: 0.94 }), opacity: 0 }] },
+      in: { at: 360, d: 980, content: 220, f: [
+        { transform: T({ y: -18, ry: 90, s: 0.94 }), opacity: 0, easing: "cubic-bezier(.2,.7,.35,1)" },
+        { transform: T({ y: -16, ry: 76, s: 0.95 }), opacity: 1, offset: 0.06, easing: "cubic-bezier(.2,.7,.35,1)" },
+        { transform: T({ y: 4, ry: -14, s: 1.03 }), opacity: 1, offset: 0.5, easing: E.sine },
+        { transform: T({ y: -2, ry: 6, s: 0.995 }), opacity: 1, offset: 0.72, easing: E.sine },
+        { transform: T({ ry: -2 }), opacity: 1, offset: 0.88, easing: E.sine },
+        { transform: "none", opacity: 1 }] },
+    },
+    // куб: грань уезжает вверх, снизу поворачивается следующая (ось вращения — в глубине, как у настоящего куба)
+    cube: {
+      originZ: true,
+      out: { d: 1000, f: [
+        { transform: "none", opacity: 1, easing: "cubic-bezier(.6,-0.2,.4,1)" },
+        { transform: T({ rx: 95 }), opacity: 0, offset: 0.62, easing: E.sine },
+        { transform: T({ rx: 90 }), opacity: 0 }] },
+      in: { at: 0, d: 1000, content: 380, f: [
+        { transform: T({ rx: -90 }), opacity: 0, easing: "cubic-bezier(.6,-0.2,.4,1)" },
+        { transform: T({ rx: 5 }), opacity: 1, offset: 0.62, easing: E.sine },
+        { transform: T({ rx: -2 }), opacity: 1, offset: 0.82, easing: E.sine },
+        { transform: "none", opacity: 1 }] },
+    },
+    // капля: сжимается с «вдохом», новая выскакивает и дрожит, как желе
+    jelly: {
+      out: { d: 480, f: [{ transform: "none", opacity: 1, easing: E.sine }, { transform: T({ sx: 1.07, sy: 0.92 }), opacity: 1, offset: 0.3, easing: "cubic-bezier(.6,0,.9,.4)" }, { transform: T({ sx: 0.2, sy: 0.26 }), opacity: 0 }] },
+      in: { at: 380, d: 1100, content: 200, f: [
+        { transform: T({ s: 0.3 }), opacity: 0, easing: E.out },
+        { transform: T({ sx: 1.12, sy: 0.88 }), opacity: 1, offset: 0.3, easing: E.sine },
+        { transform: T({ sx: 0.93, sy: 1.07 }), opacity: 1, offset: 0.48, easing: E.sine },
+        { transform: T({ sx: 1.04, sy: 0.97 }), opacity: 1, offset: 0.64, easing: E.sine },
+        { transform: T({ sx: 0.985, sy: 1.012 }), opacity: 1, offset: 0.8, easing: E.sine },
+        { transform: "none", opacity: 1 }] },
+    },
+    // колода: верхнюю карточку замахом смахивают в сторону, следующая поднимается снизу
+    toss: {
+      under: true,
+      out: { d: 720, f: [
+        { transform: "none", opacity: 1, easing: E.sine },
+        { transform: T({ x: 16, rz: 4, s: 1.01 }), opacity: 1, offset: 0.24, easing: "cubic-bezier(.5,0,.85,.4)" },
+        { transform: T({ x: "-70%", y: "-4%", rz: -16, s: 0.98 }), opacity: 1, offset: 0.66, easing: "linear" },
+        { transform: T({ x: "-135%", y: "-9%", rz: -28, s: 0.96 }), opacity: 0 }] },
+      in: { at: 0, d: 1150, content: 420, f: [
+        { transform: T({ y: 34, s: 0.86 }), opacity: 0, easing: E.sine },
+        { transform: T({ y: 34, s: 0.86 }), opacity: 0.55, offset: 0.24, easing: E.sine },
+        { transform: T({ y: 30, s: 0.87 }), opacity: 0.6, offset: 0.36, easing: "cubic-bezier(.3,.7,.4,1)" },
+        { transform: T({ y: -8, s: 1.025 }), opacity: 1, offset: 0.66, easing: E.sine },
+        { transform: T({ y: 2, s: 0.995 }), opacity: 1, offset: 0.84, easing: E.sine },
+        { transform: "none", opacity: 1 }] },
+    },
+    // пролёт: старая летит на нас и тает, новая вылетает из глубины
+    zoom: {
+      under: true,
+      out: { d: 520, f: [{ transform: "none", opacity: 1, easing: "cubic-bezier(.5,0,.85,.5)" }, { transform: T({ s: 1.5, rz: 4 }), opacity: 0 }] },
+      in: { at: 180, d: 1000, content: 260, f: [
+        { transform: T({ s: 0.42, rz: -8 }), opacity: 0, easing: E.out },
+        { transform: T({ s: 0.8, rz: -3 }), opacity: 1, offset: 0.24, easing: E.out },
+        { transform: T({ s: 1.05, rz: 1 }), opacity: 1, offset: 0.56, easing: E.sine },
+        { transform: T({ s: 0.985, rz: -0.3 }), opacity: 1, offset: 0.78, easing: E.sine },
+        { transform: "none", opacity: 1 }] },
+    },
+    // карусель: старая уплывает влево по дуге, новая приезжает справа с перелётом
+    orbit: {
+      out: { d: 660, f: [{ transform: "none", opacity: 1, easing: E.io }, { transform: T({ x: "-62%", z: -280, ry: -55, rz: -5, s: 0.9 }), opacity: 0 }] },
+      in: { at: 150, d: 1050, content: 300, f: [
+        { transform: T({ x: "62%", z: -280, ry: 55, rz: 5, s: 0.9 }), opacity: 0, easing: "cubic-bezier(.25,.75,.35,1)" },
+        { transform: T({ x: "-4%", ry: -8, rz: -1 }), opacity: 1, offset: 0.58, easing: E.sine },
+        { transform: T({ x: "1.2%", ry: 2.5, rz: 0.3 }), opacity: 1, offset: 0.8, easing: E.sine },
+        { transform: "none", opacity: 1 }] },
+    },
+    // падение: маленький подскок и вниз; новая падает сверху, сплющивается о «пол», отскакивает
+    drop: {
+      origin: "50% 100%",
+      out: { d: 640, f: [
+        { transform: "none", opacity: 1, easing: E.out },
+        { transform: T({ y: -20, sx: 0.98, sy: 1.03 }), opacity: 1, offset: 0.2, easing: E.grav },
+        { transform: T({ y: "105%", rz: 8, sx: 0.96, sy: 1.04 }), opacity: 0.8, offset: 0.86, easing: "linear" },
+        { transform: T({ y: "135%", rz: 9.5, sx: 0.96, sy: 1.04 }), opacity: 0 }] },
+      in: { at: 400, d: 1200, content: 380, f: [
+        { transform: T({ y: "-120%", rz: -4, sx: 0.92, sy: 1.1 }), opacity: 0, easing: E.grav },
+        { transform: T({ y: "-70%", rz: -2, sx: 0.93, sy: 1.08 }), opacity: 1, offset: 0.2, easing: E.grav },
+        { transform: T({ y: 0, sx: 0.94, sy: 1.06 }), opacity: 1, offset: 0.4, easing: "linear" },
+        { transform: T({ y: 0, sx: 1.1, sy: 0.88 }), opacity: 1, offset: 0.5, easing: E.out },
+        { transform: T({ y: -30, sx: 0.97, sy: 1.04 }), opacity: 1, offset: 0.66, easing: "cubic-bezier(.45,0,.85,.5)" },
+        { transform: T({ y: 0, sx: 1.035, sy: 0.965 }), opacity: 1, offset: 0.8, easing: E.out },
+        { transform: T({ y: -4, sx: 0.995, sy: 1.005 }), opacity: 1, offset: 0.9, easing: E.sine },
+        { transform: "none", opacity: 1 }] },
+    },
+    // жемчужина: карточка сжимается в светящуюся точку, та подпрыгивает и раскрывается новой карточкой
+    pearl: {
+      pearl: true,
+      out: { d: 520, f: [{ transform: "none", opacity: 1, easing: E.sine }, { transform: T({ sx: 1.05, sy: 0.95 }), opacity: 1, offset: 0.26, easing: "cubic-bezier(.6,0,.9,.4)" }, { transform: T({ s: 0.06, rz: -24 }), opacity: 0.2, offset: 0.96 }, { transform: T({ s: 0.05, rz: -25 }), opacity: 0 }] },
+      in: { at: 1080, d: 950, content: 200, f: [
+        { transform: T({ s: 0.06 }), opacity: 0, easing: E.out },
+        { transform: T({ s: 0.3 }), opacity: 1, offset: 0.1, easing: E.out },
+        { transform: T({ s: 1.07 }), opacity: 1, offset: 0.48, easing: E.sine },
+        { transform: T({ s: 0.975 }), opacity: 1, offset: 0.7, easing: E.sine },
+        { transform: T({ s: 1.008 }), opacity: 1, offset: 0.86, easing: E.sine },
+        { transform: "none", opacity: 1 }] },
+    },
+    // качели: старая откидывается назад, новая падает на верхней «петле» и раскачивается
+    hinge: {
+      origin: "50% 0%", outOrigin: "50% 100%",
+      out: { d: 520, f: [{ transform: "none", opacity: 1, easing: "cubic-bezier(.5,0,.85,.45)" }, { transform: T({ rx: 68, s: 0.94 }), opacity: 0 }] },
+      in: { at: 260, d: 1450, content: 360, f: [
+        { transform: T({ rx: -78 }), opacity: 0, easing: "cubic-bezier(.45,0,.75,.6)" },
+        { transform: T({ rx: -50 }), opacity: 1, offset: 0.12, easing: "cubic-bezier(.3,.3,.7,1)" },
+        { transform: T({ rx: 20 }), opacity: 1, offset: 0.38, easing: E.sine },
+        { transform: T({ rx: -10 }), opacity: 1, offset: 0.58, easing: E.sine },
+        { transform: T({ rx: 4.5 }), opacity: 1, offset: 0.75, easing: E.sine },
+        { transform: T({ rx: -1.5 }), opacity: 1, offset: 0.89, easing: E.sine },
+        { transform: "none", opacity: 1 }] },
+    },
   };
-  async function runFx(name, card, swap) {
-    const fx = FX[name], ghost = makeGhost(card);
-    if (fx.origin) { if (fx.origin[0]) ghost.style.transformOrigin = fx.origin[0]; if (fx.origin[1]) card.style.transformOrigin = fx.origin[1]; }
-    swap(fx.in[1].delay || 0);
-    card.style.opacity = "0"; await nextFrame(); card.style.opacity = "";
-    const a1 = ghost.animate(fx.out[0], Object.assign({ fill: "both" }, fx.out[1]));
-    const a2 = card.animate(fx.in[0], Object.assign({ fill: "both" }, fx.in[1]));
-    await Promise.all([a1.finished, a2.finished]);
-    ghost.remove(); a2.cancel(); card.style.transformOrigin = "";
-  }
-  async function fxBlinds(card, swap) { // карточка режется на полоски, они разлетаются в стороны
-    const N = 4, slices = [];
-    for (let i = 0; i < N; i++) { const g = makeGhost(card); g.style.clipPath = `inset(${i / N * 100}% 0 ${100 - (i + 1) / N * 100}% 0)`; slices.push(g); }
-    swap(360);
-    card.style.opacity = "0"; await nextFrame(); card.style.opacity = "";
-    const outs = slices.map((g, i) => g.animate(
-      [{ transform: "translate(0,0) rotateZ(0)", opacity: 1 }, { transform: `translate(${i % 2 ? 130 : -130}%, ${(i - N / 2) * 18}px) rotateZ(${i % 2 ? 14 : -14}deg)`, opacity: 0 }],
-      { duration: 620, easing: EI, delay: i * 70, fill: "both" }).finished);
-    const a = card.animate([{ transform: "scale(.88) translateZ(-160px)", opacity: 0, offset: 0 }, { transform: "scale(1.05) translateZ(0)", opacity: 1, offset: .7, easing: EO }, { transform: "scale(1) translateZ(0)" }], { duration: 900, easing: EO, delay: 360, fill: "both" });
-    await Promise.all([...outs, a.finished]);
-    slices.forEach(g => g.remove()); a.cancel();
-  }
-  async function fxPearl(card, swap) { // сжимается в жемчужину, та подпрыгивает и раскрывается новой карточкой
-    const ghost = makeGhost(card), pearl = makePearl(card);
-    swap(1050); card.style.opacity = "0"; await nextFrame();
-    const shrink = ghost.animate([{ transform: "scale(1)", opacity: 1 }, { transform: "scale(.04)", opacity: .6 }], { duration: 520, easing: EI, fill: "both" });
-    const glow = pearl.animate([
-      { transform: "scale(0) translateY(0)", opacity: 0, offset: 0 },
-      { transform: "scale(1) translateY(0)", opacity: 1, offset: .5, easing: EI },
-      { transform: "scale(1.1) translateY(-90px)", opacity: 1, offset: .76, easing: "ease-out" },
-      { transform: "scale(1) translateY(0)", opacity: 1, offset: .96, easing: "ease-in" },
-      { transform: "scale(2.2) translateY(0)", opacity: 0 },
-    ], { duration: 1150, fill: "both" });
-    await shrink.finished; ghost.remove();
-    await glow.finished; pearl.remove();
-    card.style.opacity = "";
-    await play(card, [{ transform: "scale(.06)", opacity: 1, offset: 0 }, { transform: "scale(1.07)", opacity: 1, offset: .7, easing: EO }, { transform: "scale(1)" }], { duration: 950, easing: EO });
-  }
-  async function transitionTo(i) {
-    const card = $("#quizCard");
-    const order = C.quiz.transitions || Object.keys(FX);
-    const name = order[(i - 1) % order.length];
-    const swap = d => renderQuestion(i, d);
-    if (name === "blinds") await fxBlinds(card, swap);
-    else if (name === "pearl") await fxPearl(card, swap);
-    else await runFx(FX[name] ? name : "flip", card, swap);
-  }
-  function flash(x, y) {
-    const f = $("#flash"); f.style.setProperty("--fx", x + "px"); f.style.setProperty("--fy", y + "px");
-    f.classList.remove("on"); void f.offsetWidth; f.classList.add("on");
-  }
-  async function implodeQuiz() { // после последнего ответа: карточка сжимается в жемчужину, та взрывается искрами
-    const card = $("#quizCard"), r = card.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
-    const pearl = makePearl(card);
-    const shrink = card.animate([{ transform: "scale(1)", opacity: 1, offset: 0 }, { transform: "scale(1.06)", opacity: 1, offset: .25, easing: EI }, { transform: "scale(.04)", opacity: .5 }], { duration: 760, easing: EI, fill: "both" });
-    const glow = pearl.animate([{ transform: "scale(0)", opacity: 0, offset: 0 }, { transform: "scale(0)", opacity: 0, offset: .35 }, { transform: "scale(1.2)", opacity: 1, offset: .85, easing: EI }, { transform: "scale(3)", opacity: 0 }], { duration: 1150, fill: "both" });
-    await shrink.finished; card.style.opacity = "0"; shrink.cancel();
-    flash(cx, cy);
-    if (window.__bg) window.__bg.burstAt(cx / innerWidth * 2 - 1, -(cy / innerHeight * 2 - 1), 1.3);
-    await glow.finished; pearl.remove();
+  // старые имена из CONFIG, которых больше нет, — ближайшие по духу
+  const QFX_ALIAS = { circle: "jelly", blinds: "toss" };
+  const RM_QFX = {
+    out: { d: 300, f: [{ opacity: 1 }, { opacity: 0 }] },
+    in: { at: 160, d: 420, content: 120, f: [{ opacity: 0 }, { opacity: 1 }] },
+  };
+  function questionFx(i) {
+    if (RM) return RM_QFX;
+    const order = (C.quiz.transitions && C.quiz.transitions.length ? C.quiz.transitions : Object.keys(QFX)).map(n => QFX[n] ? n : QFX_ALIAS[n]).filter(n => QFX[n]);
+    const list = order.length ? order : Object.keys(QFX);
+    return QFX[list[(i - 1) % list.length]];
   }
 
-  /* ---------- РЕЗУЛЬТАТ ---------- */
-  $("#resEyebrow").textContent = C.result.eyebrow;
+  async function questionTransition(oldC, newC, i) {
+    // на случай, если сборка ещё не случилась (очень медленный кадр)
+    if (+newC.dataset.q !== i) buildQuestion(newC, i);
+    const fx = questionFx(i);
+    const oldRect = fx.pearl ? oldC.getBoundingClientRect() : null; // замер до старта движения
+    state.q = i;
+    setBg("quiz", i);
+    const zOld = 2, zNew = fx.under ? 1 : 3;
+    oldC.style.zIndex = zOld; newC.style.zIndex = zNew;
+    const oz = fx.originZ ? ` ${-Math.round(quizH / 2)}px` : "";
+    oldC.style.transformOrigin = (fx.outOrigin || fx.origin || "50% 50%") + oz;
+    newC.style.transformOrigin = (fx.origin || "50% 50%") + oz;
+
+    const aOut = anim(oldC, fx.out.f, { d: fx.out.d, keep: true });
+    newC.classList.remove("is-off"); newC.inert = false;
+    const aIn = anim(newC, fx.in.f, { at: fx.in.at, d: fx.in.d });
+    const contentEnd = enterQuestion(newC, fx.in.at + fx.in.content);
+    if (fx.pearl) pearlHop(fx, oldRect);
+    curCard = newC;
+
+    end(aOut).then(() => {
+      // уходящая карточка уже невидима (последний кадр opacity:0) — прячем её и только потом снимаем анимацию
+      oldC.classList.add("is-off"); oldC.inert = true;
+      stopIn(oldC); if (aOut) aOut.cancel();
+      oldC.style.zIndex = ""; oldC.style.transformOrigin = "";
+    });
+    await Promise.all([end(aOut), end(aIn), sleep(contentEnd)]);
+    newC.style.zIndex = ""; newC.style.transformOrigin = "";
+    state.busy = false;
+  }
+  function pearlHop(fx, r) {
+    // жемчужина появляется, когда карточка почти сжалась, прыгает и «лопается» ровно в момент раскрытия новой
+    const at = fx.out.d - 140, popAt = fx.in.at + 30, d = popAt - at + 260, p = x => +(x / d).toFixed(3);
+    anim(pearl, [
+      { transform: T({ s: 0 }), opacity: 0, easing: E.out },
+      { transform: T({ s: 1.15 }), opacity: 1, offset: p(140), easing: E.out },
+      { transform: T({ y: -86, sx: 0.9, sy: 1.12 }), opacity: 1, offset: p(140 + 260), easing: "cubic-bezier(.45,0,.85,.5)" },
+      { transform: T({ y: 0, sx: 1.28, sy: 0.76 }), opacity: 1, offset: p(140 + 260 + 230), easing: E.out },
+      { transform: T({ s: 1 }), opacity: 1, offset: p(popAt - at), easing: E.out },
+      { transform: T({ s: 2.8 }), opacity: 0 },
+    ], { at, d });
+    setTimeout(() => {
+      const b = bg(); if (!b) return;
+      const [nx, ny] = toNDC(r.left + r.width / 2, r.top + r.height / 2);
+      b.burstAt(nx, ny, 0.55, 70);
+    }, popAt);
+  }
+
+  /* ============================================================
+     РЕЗУЛЬТАТ
+     ============================================================ */
+  setText($("#resEyebrow"), C.result.eyebrow);
   $("#resLabel").textContent = C.result.label;
   setRich($("#resText"), C.result.text);
   $("#resBtnLabel").textContent = C.result.button;
-  $("#resBtn").addEventListener("click", e => { ripple(e, e.currentTarget); go("letter"); });
-  function countTo(el, target, ms) {
-    return new Promise(res => {
-      const t0 = performance.now();
-      const ease = t => 1 - Math.pow(1 - t, 4);
-      (function f(now) {
-        const t = Math.min(1, (now - t0) / ms);
-        el.innerHTML = Math.round(ease(t) * target) + "<small>%</small>";
-        t < 1 ? requestAnimationFrame(f) : res();
-      })(t0);
+  $("#resBtn").addEventListener("click", e => {
+    if (state.busy || state.scene !== "result") return;
+    ripple(e, e.currentTarget);
+    switchScene("letter", FX_SCENE.resultLetter);
+  });
+  // одометр: каждая колонка — лента цифр. В покое лента стоит на месте (transform:none) и показывает итог;
+  // анимация везёт её снизу вверх от нуля. Над итоговой цифрой — «следующая», она мелькает при перелёте.
+  let odo = null, numRect = null;
+  function buildOdometer() {
+    const host = $("#num"), value = Math.max(0, Math.round(Number(C.result.value) || 0));
+    host.textContent = ""; host.setAttribute("aria-label", value + "%");
+    const ds = String(value).split("").map(Number), cols = [];
+    ds.forEach((dg, ci) => {
+      const right = ds.length - 1 - ci, cycles = ds.length === 1 ? 1 : right, n = cycles * 10 + dg;
+      const col = document.createElement("span"); col.className = "col";
+      const strip = document.createElement("span"); strip.className = "strip";
+      const seq = [(dg + 1) % 10]; for (let s = n; s >= 0; s--) seq.push(s % 10);
+      strip.innerHTML = seq.map(v => `<i>${v}</i>`).join("");
+      col.appendChild(strip); host.appendChild(col);
+      cols.push({ col, strip, n, right });
     });
+    const pct = document.createElement("small"); pct.textContent = "%"; host.appendChild(pct);
+    // ширина колонки = ширина итоговой цифры (замер один раз, до анимации)
+    cols.forEach(c => { c.col.style.width = c.strip.children[1].getBoundingClientRect().width + "px"; });
+    odo = { cols, pct };
+  }
+  function enterResult(at) {
+    const s = SC.result;
+    reveal($("#resEyebrow"), "pop", at, 60);
+    const start = at + 250;
+    let land = start;
+    odo.cols.forEach(c => {
+      const d = 1700 + c.right * 260;
+      if (RM) { anim(c.strip, [{ opacity: 0 }, { opacity: 1 }], { at: start, d: 500 }); land = Math.max(land, start + 500); return; }
+      anim(c.strip, [
+        { transform: T2({ y: -c.n * 1.1 + "em" }), easing: "cubic-bezier(.3,.05,.15,1)" },
+        { transform: T2({ y: "0.16em" }), offset: 0.86, easing: E.sine },
+        { transform: T2({ y: "-0.03em" }), offset: 0.95, easing: E.sine },
+        { transform: REST }], { at: start, d });
+      land = Math.max(land, start + d * 0.86);
+    });
+    if (!RM) {
+      // приземление: число подпрыгивает, знак % «впрыгивает» с поворотом, из числа летят искры
+      anim($("#num"), [{ transform: REST, easing: E.out }, { transform: T2({ y: -12 }), offset: 0.22, easing: E.sine }, { transform: T2({ y: 3 }), offset: 0.55, easing: E.sine }, { transform: REST }], { at: land - 40, d: 640 });
+      anim(odo.pct, [{ opacity: 0, transform: T2({ x: -14, y: 12, rz: -50 }), easing: E.out }, { opacity: 1, transform: T2({ rz: 9 }), offset: 0.55, easing: E.sine }, { opacity: 1, transform: REST }], { at: land - 60, d: 700 });
+      const r = numRect;
+      setTimeout(() => { const b = bg(); if (b && state.scene === "result") { const [nx, ny] = toNDC(r.left + r.width / 2, r.top + r.height / 2); b.burstAt(nx, ny, 0.7, 90); } }, land);
+    } else anim(odo.pct, [{ opacity: 0 }, { opacity: 1 }], { at: land, d: 400 });
+    fadeUp($("#resLabel"), land + 80, 700);
+    const t = reveal($("#resText"), "rise", land + 300, 18);
+    return popIn($("#resBtn"), t - 250) ;
   }
 
-  /* ---------- ПИСЬМО ---------- */
-  $("#letterEyebrow").textContent = C.letter.eyebrow;
+  /* ============================================================
+     ПИСЬМО
+     ============================================================ */
+  setText($("#letterEyebrow"), C.letter.eyebrow);
   const body = $("#letterBody");
-  C.letter.paragraphs.forEach((p, i) => {
-    const el = document.createElement("p"); el.className = "text"; el.dataset.reveal = ""; el.dataset.stagger = "30";
-    el.dataset.delay = String(300 + i * 1500); setRich(el, p); body.appendChild(el);
-  });
-  $("#sig").textContent = tpl(C.letter.signature);
+  const paras = C.letter.paragraphs.map(p => { const el = document.createElement("p"); el.className = "text"; setRich(el, p); body.appendChild(el); return el; });
+  $("#sigInk").textContent = tpl(C.letter.signature);
   $("#ps").textContent = tpl(C.letter.ps);
   $("#heartHint").textContent = C.letter.heartHint;
-  $("#heartBtn").addEventListener("click", () => { if (window.__bg) window.__bg.burst(); go("finale"); });
+  const heartBtn = $("#heartBtn");
+  let sigW = 0;
+  heartBtn.addEventListener("click", () => {
+    if (state.busy || state.scene !== "letter") return;
+    state.busy = true;
+    const r = heartBtn.getBoundingClientRect();
+    // уходящая анимация (держится до скрытия сцены), поэтому масштаб здесь можно
+    if (!RM) anim(heartBtn, [{ transform: T(), easing: E.out }, { transform: T({ s: 0.84 }), offset: 0.25, easing: E.out }, { transform: T({ s: 1.3 }), opacity: 1, offset: 0.7, easing: E.sine }, { transform: T({ s: 1.4 }), opacity: 0 }], { d: 520, keep: true });
+    const b = bg(); if (b) { const [nx, ny] = toNDC(r.left + r.width / 2, r.top + r.height / 2); b.burstAt(nx, ny, 1.1, 260); }
+    flash(r.left + r.width / 2, r.top + r.height / 2, 120);
+    switchScene("finale", FX_SCENE.letterFinale, true);
+  });
+  function enterLetter(at) {
+    let t = reveal($("#letterEyebrow"), "pop", at, 60);
+    t = at + 300;
+    paras.forEach(p => { const e = reveal(p, "rise", t, 24); t = e - 260; });
+    // подпись «пишется» слева направо
+    if (RM) anim($("#sig"), [{ opacity: 0 }, { opacity: 1 }], { at: t, d: 500 });
+    else {
+      const d = 1500, e = "cubic-bezier(.45,.05,.3,1)";
+      anim($(".sig-win"), [{ transform: T2({ x: -sigW }), easing: e }, { transform: REST }], { at: t, d });
+      anim($("#sigInk"), [{ transform: T2({ x: sigW }), easing: e }, { transform: REST }], { at: t, d });
+    }
+    t += RM ? 500 : 1100;
+    fadeUp($("#ps"), t, 800);
+    return popIn($("#heartwrap"), t + 500, 820);
+  }
 
-  /* ---------- ФИНАЛ ---------- */
-  $("#finEyebrow").textContent = C.finale.eyebrow;
+  /* ============================================================
+     ФИНАЛ
+     ============================================================ */
+  setText($("#finEyebrow"), C.finale.eyebrow);
   setRich($("#finTitle"), C.finale.title);
   const finBtn = $("#finBtn");
   if (C.replyUrl) { finBtn.href = C.replyUrl; $("#finBtnLabel").textContent = C.finale.buttonReply; }
   else {
     finBtn.removeAttribute("target"); $("#finBtnLabel").textContent = C.finale.buttonRestart;
-    finBtn.addEventListener("click", e => { e.preventDefault(); restart(); });
+    finBtn.addEventListener("click", e => {
+      e.preventDefault();
+      if (state.busy || state.scene !== "finale") return;
+      ripple(e, finBtn);
+      state.answers = []; state.sent = false;
+      switchScene("intro", FX_SCENE.finaleIntro);
+    });
   }
-  function restart() {
-    state.answers = []; $("#barFill").style.transform = "scaleX(0)";
-    $("#finBtn").classList.remove("on");
-    go("intro");
+  function enterFinale(at) {
+    reveal($("#finEyebrow"), "rise", at, 90);
+    const t = reveal($("#finTitle"), "lift", at + 420, 170);
+    if (RM) return fadeUp($("#finBtn"), t + 400);
+    anim($("#finBtn"), [{ opacity: 0, transform: T2({ y: 22 }), easing: "cubic-bezier(.2,.7,.3,1)" }, { opacity: 1, transform: T2({ y: -4 }), offset: 0.6, easing: E.sine }, { opacity: 1, transform: REST }], { at: t + 400, d: 900 });
+    return t + 1300;
   }
 
   /* ---------- Telegram (необязательно) ---------- */
@@ -821,53 +1115,192 @@ window.CONFIG = {
     }).catch(() => {});
   }
 
-  /* ---------- что происходит при входе в сцену ---------- */
-  const onEnter = {
-    intro(s) {
-      reveal(s, 250);
-      const b = $("#startBtn"); b.classList.remove("on"); void b.offsetWidth; b.style.animationDelay = "1150ms"; b.classList.add("on");
+  /* ============================================================
+     СМЕНА СЦЕН
+     ============================================================ */
+  const mainEl = {
+    intro: () => introCard, quiz: () => curCard, result: () => $("#resultCard"),
+    letter: () => $("#letterCard"), finale: () => $("#finaleStage"),
+  };
+  // у финала нет карточки: «входит» подложка (только opacity), текст появляется по словам
+  const inTarget = name => name === "finale" ? $("#finaleShade") : mainEl[name]();
+  // подготовка DOM сцены (до движения; раскладка случится в отдельном кадре, пока сцена скрыта)
+  const PREP = {
+    quiz() {
+      stopIn(SC.quiz);
+      curCard = qCards[0];
+      qCards.forEach(c => { c.classList.toggle("is-off", c !== curCard); c.inert = c !== curCard; c.style.zIndex = ""; c.style.transformOrigin = ""; });
+      state.q = 0; state.answers = [];
+      buildQuestion(curCard, 0);
     },
-    quiz() { const c = $("#quizCard"); c.style.opacity = ""; measureQuiz(); renderQuestion(0); state.locked = false; },
-    async result(s) {
-      reveal(s, 200);
-      sendAnswers();
-      $("#num").innerHTML = "0<small>%</small>";
-      $$(".fade", s).forEach(el => el.classList.remove("on"));
-      $("#resBtn").classList.remove("on");
-      await wait(500);
-      await countTo($("#num"), C.result.value, 2100);
-      $("#resLabel").classList.add("on");
-      await wait(350);
-      $("#resText").classList.add("on");
-      await wait(600);
-      $("#resBtn").classList.add("on");
+    result() { buildOdometer(); numRect = $("#num").getBoundingClientRect(); sendAnswers(); }, // замер — до анимации
+    letter() { $("#letterCard").scrollTop = 0; const sc = $("#letterScroll"); if (sc) sc.scrollTop = 0; sigW = Math.ceil($(".sig-win").getBoundingClientRect().width); heartBtn.getAnimations().forEach(a => a.cancel()); },
+  };
+  const prepped = new Set();
+  function prepare(name) { if (PREP[name] && !prepped.has(name)) { PREP[name](); prepped.add(name); } }
+  const ENTER = {
+    intro: enterIntro, quiz: at => enterQuestion(curCard, at), result: enterResult, letter: enterLetter, finale: enterFinale,
+  };
+  // переходы между сценами: out — уходящая карточка, in — приходящая
+  const RISE_IN = { at: 0, d: 1050, content: 240, f: [
+    { transform: T({ y: 120, rx: -20, s: 0.88 }), opacity: 0, easing: "cubic-bezier(.2,.75,.3,1)" },
+    { transform: T({ y: 30, rx: -6, s: 0.95 }), opacity: 1, offset: 0.3, easing: "cubic-bezier(.2,.6,.4,1)" },
+    { transform: T({ y: -10, rx: 2.5, s: 1.012 }), opacity: 1, offset: 0.6, easing: E.sine },
+    { transform: T({ y: 3, rx: -0.6 }), opacity: 1, offset: 0.8, easing: E.sine },
+    { transform: "none", opacity: 1 }] };
+  const FX_SCENE = {
+    first: { in: Object.assign({}, RISE_IN, { at: 0 }) },
+    // карточка приветствия приседает и улетает вверх-назад, вопросы поднимаются снизу с перелётом
+    introQuiz: {
+      out: { d: 560, o: "50% 100%", f: [{ transform: "none", opacity: 1, easing: E.sine }, { transform: T({ y: 10, sx: 1.015, sy: 0.975 }), opacity: 1, offset: 0.2, easing: E.in }, { transform: T({ y: -70, rx: 18, s: 0.9 }), opacity: 0 }] },
+      in: Object.assign({}, RISE_IN, { at: 300 }),
     },
-    async letter(s) {
-      $("#letterCard").scrollTop = 0;
-      $("#sig").classList.remove("on"); $("#ps").classList.remove("on"); $("#heartwrap").classList.remove("on");
-      reveal(s, 200);
-      const n = C.letter.paragraphs.length;
-      await wait(500 + n * 1500);
-      $("#sig").classList.add("on");
-      await wait(1300);
-      $("#ps").classList.add("on");
-      await wait(700);
-      $("#heartwrap").classList.add("on");
+    // после последнего ответа: карточка сжимается в жемчужину, та вспыхивает, результат распускается из неё
+    implode: {
+      pearl: true,
+      out: { d: 800, f: [
+        { transform: "none", opacity: 1, easing: E.sine },
+        { transform: T({ sx: 1.06, sy: 0.94 }), opacity: 1, offset: 0.24, easing: "cubic-bezier(.6,0,.9,.35)" },
+        { transform: T({ s: 0.05, rz: -40 }), opacity: 0.25, offset: 0.97 },
+        { transform: T({ s: 0.045, rz: -41 }), opacity: 0 }] },
+      in: { at: 1200, d: 1200, content: 260, f: [
+        { transform: T({ s: 0.08, rz: 10 }), opacity: 0, easing: E.out },
+        { transform: T({ s: 0.4, rz: 4 }), opacity: 1, offset: 0.08, easing: E.out },
+        { transform: T({ s: 1.1, rz: -1.5 }), opacity: 1, offset: 0.42, easing: E.sine },
+        { transform: T({ s: 0.96, rz: 0.6 }), opacity: 1, offset: 0.6, easing: E.sine },
+        { transform: T({ s: 1.02 }), opacity: 1, offset: 0.76, easing: E.sine },
+        { transform: T({ s: 0.995 }), opacity: 1, offset: 0.89, easing: E.sine },
+        { transform: "none", opacity: 1 }] },
     },
-    async finale(s) {
-      reveal(s, 900);
-      const b = $("#finBtn"); b.classList.remove("on"); void b.offsetWidth; b.style.animationDelay = "2600ms"; b.classList.add("on");
+    // результат «ложится» назад, письмо раскрывается, как клапан конверта
+    resultLetter: {
+      out: { d: 580, o: "50% 100%", f: [{ transform: "none", opacity: 1, easing: E.sine }, { transform: T({ y: -10, s: 1.02 }), opacity: 1, offset: 0.2, easing: E.in }, { transform: T({ y: 30, rx: 72, s: 0.9 }), opacity: 0 }] },
+      in: { at: 380, d: 1300, o: "50% 0%", content: 300, f: [
+        { transform: T({ rx: 70, s: 0.96 }), opacity: 0, easing: "cubic-bezier(.35,.4,.55,1)" },
+        { transform: T({ rx: 40, s: 0.975 }), opacity: 1, offset: 0.18, easing: "cubic-bezier(.3,.4,.6,1)" },
+        { transform: T({ rx: -9 }), opacity: 1, offset: 0.48, easing: E.sine },
+        { transform: T({ rx: 3.5 }), opacity: 1, offset: 0.68, easing: E.sine },
+        { transform: T({ rx: -1 }), opacity: 1, offset: 0.85, easing: E.sine },
+        { transform: "none", opacity: 1 }] },
+    },
+    // письмо тает вверх, финал проявляется
+    letterFinale: {
+      out: { d: 760, f: [{ transform: "none", opacity: 1, easing: E.out }, { transform: T({ y: -46, s: 1.05 }), opacity: 0 }] },
+      in: { at: 380, d: 1000, content: 500, f: [{ opacity: 0, easing: E.sine }, { opacity: 1 }] },
+    },
+    finaleIntro: {
+      out: { d: 560, f: [{ transform: "none", opacity: 1, easing: E.in }, { transform: T({ y: -30 }), opacity: 0 }] },
+      in: Object.assign({}, RISE_IN, { at: 280 }),
     },
   };
+  const RM_SCENE = {
+    out: { d: 320, f: [{ opacity: 1 }, { opacity: 0 }] },
+    in: { at: 200, d: 480, content: 160, f: [{ opacity: 0 }, { opacity: 1 }] },
+  };
+
+  async function switchScene(to, fx, alreadyBusy) {
+    if (!alreadyBusy && state.busy && state.scene) return;
+    state.busy = true;
+    if (RM) fx = Object.assign({}, fx, RM_SCENE, { pearl: false, out: fx.out ? RM_SCENE.out : null });
+    const fromName = state.scene, from = fromName ? SC[fromName] : null, dest = SC[to];
+    prepare(to);
+    await frames2(); // раскладка подготовленной сцены — в этом кадре; движение начнётся со следующего
+
+    const outEl = from ? mainEl[fromName]() : null, inEl = inTarget(to);
+    let outRect = null;
+    if (fx.pearl && outEl) outRect = outEl.getBoundingClientRect(); // до движения
+    state.scene = to; prepped.delete(to);
+    setBg(to);
+
+    let aOut = null;
+    if (outEl && fx.out) {
+      outEl.style.transformOrigin = fx.out.o || "";
+      aOut = anim(outEl, fx.out.f, { d: fx.out.d, keep: true });
+      if (fromName === "finale") anim($("#finaleShade"), [{ opacity: 1 }, { opacity: 0 }], { d: fx.out.d, e: E.sine, keep: true });
+    }
+    inEl.style.transformOrigin = fx.in.o || "";
+    const aIn = anim(inEl, fx.in.f, { at: fx.in.at, d: fx.in.d });
+    show(dest);
+    const contentEnd = ENTER[to](fx.in.at + (fx.in.content || 0));
+    const aPearl = fx.pearl && outRect ? implodeExtras(fx, outRect) : null;
+
+    // жемчужина живёт в старой сцене — прячем сцену, только когда погасла и она
+    const outDone = Promise.all([end(aOut), end(aPearl)]).then(() => {
+      if (!from) return;
+      hide(from);                       // уже невидима (opacity:0), прячем и только потом снимаем анимации
+      stopIn(from); if (aOut) aOut.cancel();
+      if (outEl) outEl.style.transformOrigin = "";
+    });
+    await Promise.all([outDone, end(aIn), sleep(contentEnd)]);
+    inEl.style.transformOrigin = "";
+    state.busy = false;
+  }
+  function implodeExtras(fx, r) {
+    const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    const at = fx.out.d - 160, popAt = fx.in.at - 40, d = popAt - at + 300, p = x => +(x / d).toFixed(3);
+    const a = anim(pearl, [
+      { transform: T({ s: 0 }), opacity: 0, easing: E.out },
+      { transform: T({ s: 1.2 }), opacity: 1, offset: p(160), easing: E.sine },
+      { transform: T({ s: 0.85 }), opacity: 1, offset: p(160 + (popAt - at - 160) * 0.45), easing: E.sine },
+      { transform: T({ s: 1.35 }), opacity: 1, offset: p(160 + (popAt - at - 160) * 0.8), easing: "cubic-bezier(.6,0,.9,.4)" },
+      { transform: T({ s: 0.7 }), opacity: 1, offset: p(popAt - at), easing: E.out },
+      { transform: T({ s: 3.4 }), opacity: 0 },
+    ], { at, d });
+    flash(cx, cy, popAt - 40);
+    setTimeout(() => { const b = bg(); if (b) { const [nx, ny] = toNDC(cx, cy); b.burstAt(nx, ny, 1.3, 300); } }, popAt);
+    return a;
+  }
+
+  /* ============================================================
+     ЗАМЕРЫ: после загрузки шрифтов и при изменении ширины
+     ============================================================ */
+  let remeasureT = 0, pendingMeasure = false;
+  function remeasureWhenIdle() {
+    if (state.busy) { pendingMeasure = true; return; }
+    pendingMeasure = false;
+    measureAll();
+  }
+  setInterval(() => { if (pendingMeasure && !state.busy) remeasureWhenIdle(); }, 400);
+  window.addEventListener("resize", () => {
+    clearTimeout(remeasureT);
+    remeasureT = setTimeout(remeasureWhenIdle, 250);
+  });
+  if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener("loadingdone", () => { if (booted) remeasureWhenIdle(); });
+
+  /* ---------- FPS-оверлей: ?debug ---------- */
+  if (DEBUG) {
+    const el = document.createElement("div"); el.id = "dbg"; document.body.appendChild(el);
+    let last = performance.now(), t0 = last, n = 0, worst = 0, long = 0, longTotal = 0;
+    (function f(now) {
+      const d = now - last; last = now; n++; if (d > worst) worst = d; if (d > 25) { long++; longTotal++; }
+      if (now - t0 > 500) {
+        el.textContent = `${(n * 1000 / (now - t0)).toFixed(0)} fps · худший кадр ${worst.toFixed(0)} мс · рывков ${long} (всего ${longTotal})\n${window.__bgInfo || "3D: нет"} · ${innerWidth}×${innerHeight}${RM ? " · reduced-motion" : ""}`;
+        t0 = now; n = 0; worst = 0; long = 0;
+      }
+      requestAnimationFrame(f);
+    })(last);
+  }
 
   /* ---------- старт ---------- */
-  // пока 3D грузится, виден лёгкий CSS-фон; как только модуль готов, он сам включит холст (класс has-3d)
-  go("intro");
+  let booted = false;
+  (async () => {
+    // ждём шрифты (не дольше 1.8 с), чтобы замеры и первая анимация шли уже с настоящими шрифтами
+    if (document.fonts && document.fonts.ready) await Promise.race([document.fonts.ready, sleep(1800)]);
+    PREP.quiz();
+    measureAll();
+    booted = true;
+    switchScene("intro", FX_SCENE.first);
+  })();
+
+  // хуки для автотестов
+  window.__app = { state, live, measureAll, jump: (name, fx) => switchScene(name, FX_SCENE[fx] || FX_SCENE.first) };
 })();
 </script>
 
 <!-- ============================================================
      3D-ФОН: жидкое стекло на Three.js
+     Всё движение здесь не зависит от частоты кадров: пружины считаются
+     фиксированным шагом, сглаживание — через exp(-k·dt).
      ============================================================ -->
 <script type="module">
 // three.js лежит рядом с сайтом (vendor/), чтобы не зависеть от CDN; CDN — только запасной вариант
@@ -886,12 +1319,12 @@ try {
   throw e;
 }
 const params = new URLSearchParams(location.search);
-const DEBUG = params.has("debug");
-let lite = params.has("lite");
+const STILL = params.has("still");
+const lite = params.has("lite");
 const baseDPR = Math.min(devicePixelRatio || 1, isMobile ? 1 : 1.5);
 renderer.setPixelRatio(lite ? Math.min(baseDPR, 0.75) : baseDPR);
 if (lite) document.documentElement.classList.add("lite");
-let dbgEl = null; if (DEBUG) { dbgEl = document.createElement("div"); dbgEl.id = "dbg"; document.body.appendChild(dbgEl); }
+window.__bgInfo = `dpr ${renderer.getPixelRatio().toFixed(2)} · ${lite ? "lite" : "full"}${isMobile ? " · phone" : ""}`;
 renderer.setSize(innerWidth, innerHeight, false);
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.05;
@@ -968,12 +1401,15 @@ const bgShow = new THREE.ShaderMaterial({
 });
 const bgPlane = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), bgShow);
 bgPlane.position.z = -22; bgPlane.renderOrder = -1; scene.add(bgPlane);
+let rtW = 0, rtH = 0;
 function fitBg() {
   const d = camera.position.z - bgPlane.position.z;
   const h = 2 * d * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * 1.25;
   bgPlane.scale.set(h * camera.aspect, h, 1);
   bgUniforms.uAspect.value = camera.aspect;
   const k = isMobile ? 0.34 : 0.45, w = Math.max(96, Math.round(innerWidth * k)), hh = Math.max(96, Math.round(innerHeight * k));
+  if (bgRT && w === rtW && hh === rtH) return;
+  rtW = w; rtH = hh;
   if (bgRT) bgRT.dispose();
   bgRT = new THREE.WebGLRenderTarget(w, hh, { depthBuffer: false, stencilBuffer: false, minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter });
   bgShow.uniforms.map.value = bgRT.texture;
@@ -1095,7 +1531,8 @@ const b2 = new THREE.Mesh(sphereGeo, bubbleMat(0.2, 0, 1, 0, 3.0));  b2.scale.se
 const b3 = new THREE.Mesh(sphereGeo, bubbleMat(0.24, 0, 1, 0, 2.6)); b3.scale.setScalar(0.62);
 const b4 = new THREE.Mesh(sphereGeo, bubbleMat(0.2, 0, 1, 0, 3.0));  b4.scale.setScalar(0.18);
 const objs = { blob, heart, b1, b2, b3, b4 };
-for (const k in objs) scene.add(objs[k]);
+const NAMES = Object.keys(objs);
+for (const k of NAMES) scene.add(objs[k]);
 // какой цвет палитры берёт каждый объект: [ключ1, ключ2, доля], кромка
 const TINT = {
   blob:  { mix: ["a", "b", 0.55], rim: ["b", "#ffffff", 0.55] },
@@ -1114,28 +1551,66 @@ const LAYOUT = {
   letter: { blob: [-3.2, -1.4, -3.5, 1.05], heart: [2.9, 2.0, -1.5, 0.9],   b3: [-2.7, 2.5, -4, 0.8],  b1: [2.7, -2.5, -2, 1],    b2: [0.2, 3.1, -5, 1],    b4: [-2.0, 0.6, -1, 1] },
   finale: { blob: [-3.8, -3.4, -5, 1.0],    heart: [0, 1.1, 1.6, 1.75],     b3: [3.6, 3.0, -5, 0.9],   b1: [3.4, -4.0, -3, 1],    b2: [-2.9, 3.0, -4, 1],   b4: [-2.2, -0.6, -1, 1] },
 };
-let mode = "intro";
-const target = {};
-for (const k in objs) target[k] = { pos: new THREE.Vector3(), scale: 1 };
-const baseScale = {}; for (const k in objs) baseScale[k] = objs[k].scale.x;
-function applyLayout(immediate) {
+
+/* ---------- пружины: каждое тело едет к цели с лёгким перелётом ----------
+   x'' = k·(цель − x) − c·x'. Шаг фиксированный (1/120 с), поэтому на 30, 60 и 120 Гц движение одинаковое. */
+const SPRING = { k: 22, c: 6.6 };   // ζ ≈ 0.7: мягкий перелёт и спокойная остановка
+const STEP = 1 / 120;
+let mode = "intro", qIndex = 0, now = 0;
+const body = {};
+NAMES.forEach((n, i) => body[n] = {
+  p: new THREE.Vector3(), v: new THREE.Vector3(), tp: new THREE.Vector3(), next: new THREE.Vector3(),
+  s: 1, sv: 0, ts: 1, nextS: 1, wake: 0, order: i, base: objs[n].scale.x,
+});
+function layoutTarget(n, out) {
   const L = LAYOUT[mode] || LAYOUT.intro;
   const spread = THREE.MathUtils.clamp(camera.aspect / 1.6, 0.52, 1.15);
   const lift = camera.aspect < 0.8 ? 1.12 : 1;
-  for (const k in objs) {
-    let [x, y, z, s] = L[k];
-    if (k === "heart" && mode === "finale" && camera.aspect < 0.8) { s *= 0.66; z -= 0.6; y *= 0.95; }
-    target[k].pos.set(x * spread, y * lift, z); target[k].scale = s * baseScale[k];
-    if (immediate) { objs[k].position.copy(target[k].pos); objs[k].scale.setScalar(target[k].scale); }
+  let [x, y, z, s] = L[n];
+  if (n === "heart" && mode === "finale" && camera.aspect < 0.8) { s *= 0.66; z -= 0.6; y *= 0.95; }
+  if (mode === "quiz" && qIndex > 0) { // каждый вопрос чуть-чуть переставляет пузыри — фон «дышит» вместе с карточкой
+    const a = qIndex * 2.399 + body[n].order * 1.7;
+    x += Math.cos(a) * 0.38; y += Math.sin(a * 1.3) * 0.3; z += Math.sin(a * 0.7) * 0.4;
+  }
+  out.set(x * spread, y * lift, z);
+  return s * body[n].base;
+}
+function applyLayout(immediate) {
+  for (const n of NAMES) {
+    const b = body[n];
+    b.nextS = layoutTarget(n, b.next);
+    // небольшая очередь: тела трогаются друг за другом, а не все разом
+    b.wake = immediate ? 0 : now + b.order * 0.06;
+    if (immediate) { b.tp.copy(b.next); b.ts = b.nextS; b.p.copy(b.next); b.s = b.nextS; b.v.set(0, 0, 0); b.sv = 0; }
   }
 }
+function integrate(dt) {
+  for (const n of NAMES) {
+    const b = body[n];
+    if (b.wake <= now) { b.tp.copy(b.next); b.ts = b.nextS; }
+    let left = dt;
+    while (left > 1e-6) {
+      const h = Math.min(STEP, left); left -= h;
+      b.v.x += (SPRING.k * (b.tp.x - b.p.x) - SPRING.c * b.v.x) * h;
+      b.v.y += (SPRING.k * (b.tp.y - b.p.y) - SPRING.c * b.v.y) * h;
+      b.v.z += (SPRING.k * (b.tp.z - b.p.z) - SPRING.c * b.v.z) * h;
+      b.p.addScaledVector(b.v, h);
+      b.sv += (SPRING.k * 1.4 * (b.ts - b.s) - SPRING.c * 1.1 * b.sv) * h;
+      b.s += b.sv * h;
+    }
+  }
+}
+
 const colTarget = { base: new THREE.Color(), a: new THREE.Color(), b: new THREE.Color(), c: new THREE.Color(), d: new THREE.Color() };
 const col = { base: new THREE.Color(), a: new THREE.Color(), b: new THREE.Color(), c: new THREE.Color(), d: new THREE.Color() };
-function setMode(m) {
+function setMode(m, q = 0) {
   if (!LAYOUT[m]) return;
-  mode = m; applyLayout(false);
+  const changed = m !== mode;
+  mode = m; qIndex = m === "quiz" ? q : 0;
+  applyLayout(STILL);
   const P = PALETTES[m];
   for (const k in colTarget) colTarget[k].set(P[k]);
+  if (changed && m === "finale" && !STILL) body.heart.sv += 1.2; // сердце «вздыхает», выходя на первый план
 }
 const _c1 = new THREE.Color(), _c2 = new THREE.Color();
 function pick(spec) { // ["a"|"#hex", "b"|"#hex", t] -> цвет
@@ -1144,7 +1619,7 @@ function pick(spec) { // ["a"|"#hex", "b"|"#hex", t] -> цвет
   return _c1.lerp(_c2, spec[2]);
 }
 
-/* ---------- частицы: поднимающиеся искры + взрыв ---------- */
+/* ---------- частицы ---------- */
 function softTexture() {
   const c = document.createElement("canvas"); c.width = c.height = 64;
   const g = c.getContext("2d"), grd = g.createRadialGradient(32, 32, 0, 32, 32, 32);
@@ -1153,6 +1628,7 @@ function softTexture() {
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
 }
 const sprite = softTexture();
+// поднимающиеся искры (письмо и финал)
 const RISE_N = isMobile ? 90 : 160;
 const riseGeo = new THREE.BufferGeometry();
 const risePos = new Float32Array(RISE_N * 3), riseSpd = new Float32Array(RISE_N);
@@ -1161,20 +1637,77 @@ riseGeo.setAttribute("position", new THREE.BufferAttribute(risePos, 3));
 const riseMat = new THREE.PointsMaterial({ size: 0.13, map: sprite, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, color: 0xffd0e4, opacity: 0 });
 const risePts = new THREE.Points(riseGeo, riseMat); risePts.visible = false; scene.add(risePts);
 
-const BURST_N = isMobile ? 300 : 420;
-const burstGeo = new THREE.BufferGeometry();
-const burstPos = new Float32Array(BURST_N * 3), burstVel = new Float32Array(BURST_N * 3);
-burstGeo.setAttribute("position", new THREE.BufferAttribute(burstPos, 3));
-const burstMat = new THREE.PointsMaterial({ size: 0.16, map: sprite, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, color: 0xffb3d1, opacity: 0 });
-const burstPts = new THREE.Points(burstGeo, burstMat); burstPts.visible = false; scene.add(burstPts);
-let burstT = -1;
-function burst(o = heart.position, power = 1) {
-  for (let i = 0; i < BURST_N; i++) {
-    const th = Math.random()*Math.PI*2, ph = Math.acos(2*Math.random()-1), v = (1.5 + Math.random()*4) * power;
-    burstPos[i*3] = o.x; burstPos[i*3+1] = o.y; burstPos[i*3+2] = o.z;
-    burstVel[i*3] = Math.sin(ph)*Math.cos(th)*v; burstVel[i*3+1] = Math.sin(ph)*Math.sin(th)*v + 1; burstVel[i*3+2] = Math.cos(ph)*v;
+// вспышки искр: общий пул, несколько вспышек могут идти одновременно; у каждой искры своя жизнь, размер и цвет
+const POOL = isMobile ? 420 : 700;
+const pPos = new Float32Array(POOL * 3), pVel = new Float32Array(POOL * 3), pLife = new Float32Array(POOL), pDecay = new Float32Array(POOL), pSeed = new Float32Array(POOL);
+for (let i = 0; i < POOL; i++) pSeed[i] = Math.random();
+const pGeo = new THREE.BufferGeometry();
+pGeo.setAttribute("position", new THREE.BufferAttribute(pPos, 3));
+pGeo.setAttribute("aLife", new THREE.BufferAttribute(pLife, 1));
+pGeo.setAttribute("aSeed", new THREE.BufferAttribute(pSeed, 1));
+const pMat = new THREE.ShaderMaterial({
+  uniforms: { uScale: { value: 400 } },
+  vertexShader: `
+    attribute float aLife, aSeed; uniform float uScale; varying float vLife, vSeed;
+    void main(){
+      vec4 mv = modelViewMatrix * vec4(position, 1.0); gl_Position = projectionMatrix * mv;
+      float l = clamp(aLife, 0.0, 1.0);
+      gl_PointSize = l > 0.0 ? (0.07 + 0.11 * aSeed) * (0.35 + 0.65 * sqrt(l)) * uScale / max(0.5, -mv.z) : 0.0;
+      vLife = l; vSeed = aSeed;
+    }`,
+  fragmentShader: `
+    varying float vLife, vSeed;
+    void main(){
+      float r = length(gl_PointCoord - 0.5);
+      float a = smoothstep(0.5, 0.0, r); a *= a;
+      vec3 c = mix(vec3(1.0, 0.55, 0.76), vec3(1.0, 0.84, 0.55), vSeed);
+      c = mix(c, vec3(1.0), smoothstep(0.22, 0.0, r) * 0.85);
+      gl_FragColor = vec4(c, a * min(1.0, vLife * 1.6));
+      #include <colorspace_fragment>
+    }`,
+  transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false,
+});
+const pPts = new THREE.Points(pGeo, pMat); pPts.frustumCulled = false; scene.add(pPts);
+let pRing = 0, pAlive = 0;
+function emit(o, n, power) {
+  for (let j = 0; j < n; j++) {
+    const i = pRing; pRing = (pRing + 1) % POOL;
+    const th = Math.random() * Math.PI * 2, ph = Math.acos(2 * Math.random() - 1), v = (1.2 + Math.random() * 3.6) * power;
+    pPos[i*3] = o.x; pPos[i*3+1] = o.y; pPos[i*3+2] = o.z;
+    pVel[i*3] = Math.sin(ph) * Math.cos(th) * v; pVel[i*3+1] = Math.sin(ph) * Math.sin(th) * v + 0.8 * power; pVel[i*3+2] = Math.cos(ph) * v * 0.7;
+    pLife[i] = 1; pDecay[i] = 1 / (1.1 + Math.random() * 1.5);
   }
-  burstGeo.attributes.position.needsUpdate = true; burstPts.visible = true; burstMat.opacity = 1; burstT = 0;
+  pAlive = 3.0;
+}
+function updateParticles(dt) {
+  if (pAlive <= 0) return;
+  pAlive -= dt;
+  const drag = Math.exp(-1.5 * dt), g = 1.4 * dt;
+  for (let i = 0; i < POOL; i++) {
+    if (pLife[i] <= 0) continue;
+    pVel[i*3] *= drag; pVel[i*3+1] = pVel[i*3+1] * drag - g; pVel[i*3+2] *= drag;
+    pPos[i*3] += pVel[i*3] * dt; pPos[i*3+1] += pVel[i*3+1] * dt; pPos[i*3+2] += pVel[i*3+2] * dt;
+    pLife[i] -= pDecay[i] * dt;
+  }
+  pGeo.attributes.position.needsUpdate = true; pGeo.attributes.aLife.needsUpdate = true;
+}
+const _v = new THREE.Vector3(), _d = new THREE.Vector3();
+function screenToWorld(nx, ny, z = 0.8) { // точка экрана (NDC) -> точка в сцене на глубине z
+  _v.set(nx, ny, 0.5).unproject(camera); _d.copy(_v).sub(camera.position).normalize();
+  return camera.position.clone().addScaledVector(_d, (z - camera.position.z) / _d.z);
+}
+function burstAt(nx, ny, power = 1, n = 260) { if (STILL) return; emit(screenToWorld(nx, ny), Math.min(n, POOL), reduced ? power * 0.6 : power); }
+function burst() { if (!STILL) emit(heart.position, 300, 1); }
+// касание ответа: пузыри отталкиваются от пальца и пружинят обратно, из точки касания — горсть искр
+function kick(nx, ny, power = 1) {
+  if (STILL) return;
+  const o = screenToWorld(nx, ny, 0);
+  for (const n of NAMES) {
+    const b = body[n]; _d.set(b.p.x - o.x, b.p.y - o.y, 0.6); const dist = _d.length(); _d.normalize();
+    b.v.addScaledVector(_d, power * 2.6 / (0.8 + dist * 0.6));
+    b.sv += power * 0.35 * b.base;
+  }
+  emit(screenToWorld(nx, ny), 26, 0.45 * power);
 }
 
 /* ---------- параллакс камеры ---------- */
@@ -1183,60 +1716,56 @@ const fine = matchMedia("(hover:hover) and (pointer:fine)").matches;
 window.addEventListener("pointermove", e => { ptx = (e.clientX / innerWidth) * 2 - 1; pty = (e.clientY / innerHeight) * 2 - 1; }, { passive: true });
 
 /* ---------- цикл ---------- */
-const clock = new THREE.Clock();
-let last = 0;
-let dbgAcc = 0, dbgN = 0, dbgT = 0;
+const smooth = (rate, dt) => 1 - Math.exp(-rate * dt);   // доля пути за кадр, не зависящая от частоты кадров
+let lastMs = performance.now(), t = 0, pulseAmp = 0;
+// «тук-тук»: два мягких удара за период
+const gauss = (x, c, w) => Math.exp(-((x - c) / w) * ((x - c) / w));
+const beat = ph => 0.085 * gauss(ph, 0.1, 0.055) + 0.05 * gauss(ph, 0.3, 0.06);
 function tick() {
-  const t = clock.getElapsedTime(), raw = t - last, dt = Math.min(0.05, raw); last = t;
-  if (dbgEl) { dbgAcc += raw; dbgN++; if (t - dbgT > 0.5) { const ms = dbgAcc / dbgN * 1000; dbgEl.textContent = `${(1000 / ms).toFixed(0)} fps · ${ms.toFixed(1)} ms\ndpr ${renderer.getPixelRatio().toFixed(2)} · ${lite ? "lite" : "full"} · ${innerWidth}×${innerHeight}`; dbgAcc = 0; dbgN = 0; dbgT = t; } }
+  const ms = performance.now(), dt = Math.min(0.05, Math.max(0, (ms - lastMs) / 1000)); lastMs = ms;
+  now += dt;
   const speed = reduced ? 0.35 : 1;
-  bgUniforms.uTime.value = t * speed;
-  for (const k in col) { col[k].lerp(colTarget[k], 0.025); }
+  if (!STILL) t += dt * speed;
+  const tt = STILL ? 12 : t;
+  bgUniforms.uTime.value = tt;
+  const kc = STILL ? 1 : smooth(1.6, dt);
+  for (const k in col) col[k].lerp(colTarget[k], kc);
   bgUniforms.uBase.value.copy(col.base); bgUniforms.uA.value.copy(col.a); bgUniforms.uB.value.copy(col.b); bgUniforms.uC.value.copy(col.c); bgUniforms.uD.value.copy(col.d);
 
-  blob.material.uniforms.uTime.value = t * 0.9 * speed;
-  blob.rotation.y = t * 0.1; blob.rotation.x = Math.sin(t * 0.2) * 0.25;
-  heart.rotation.y = Math.sin(t * 0.55) * 0.55; heart.rotation.x = Math.sin(t * 0.4) * 0.12; heart.rotation.z = Math.sin(t * 0.3) * 0.08;
+  blob.material.uniforms.uTime.value = tt * 0.9;
+  blob.rotation.y = tt * 0.1; blob.rotation.x = Math.sin(tt * 0.2) * 0.25;
+  heart.rotation.y = Math.sin(tt * 0.55) * 0.55; heart.rotation.x = Math.sin(tt * 0.4) * 0.12; heart.rotation.z = Math.sin(tt * 0.3) * 0.08;
 
-  const k = 1 - Math.pow(0.02, dt);
-  for (const n in objs) {
-    const o = objs[n], tg = target[n], u = o.material.uniforms;
-    const bob = Math.sin(t * 0.7 + n.length * 1.7 + n.charCodeAt(0)) * 0.12;
-    o.position.x += (tg.pos.x - o.position.x) * k;
-    o.position.y += (tg.pos.y + bob - o.position.y) * k;
-    o.position.z += (tg.pos.z - o.position.z) * k;
-    let s = tg.scale;
-    if (n === "heart" && mode === "finale") { const ph = (t % 1.5) / 1.5; s *= 1 + 0.07 * Math.max(0, Math.sin(ph * Math.PI * 2)) + 0.04 * Math.max(0, Math.sin(ph * Math.PI * 4 - 1)); }
-    o.scale.x += (s - o.scale.x) * k; o.scale.y = o.scale.z = o.scale.x;
-    // цвет из палитры сцены, дальние объекты бледнее
+  integrate(dt);
+  pulseAmp += ((mode === "finale" && !reduced && !STILL ? 1 : 0) - pulseAmp) * smooth(2.2, dt);
+  for (const n of NAMES) {
+    const o = objs[n], b = body[n], u = o.material.uniforms;
+    const bob = STILL ? 0 : Math.sin(tt * 0.7 + n.length * 1.7 + n.charCodeAt(0)) * 0.12;
+    o.position.set(b.p.x, b.p.y + bob, b.p.z);
+    let sx = Math.max(0.01, b.s), sy = sx;
+    if (n === "heart" && pulseAmp > 0.001) { const k = beat((tt % 1.3) / 1.3) * pulseAmp; sx *= 1 + k; sy *= 1 + k * 0.75; }
+    o.scale.set(sx, sy, sx);
     u.uTint.value.copy(pick(TINT[n].mix)); u.uRim.value.copy(pick(TINT[n].rim));
   }
 
-  // искры
+  // поднимающиеся искры
   const wantRise = (mode === "letter" || mode === "finale") ? 0.9 : 0;
-  riseMat.opacity += (wantRise - riseMat.opacity) * 0.02;
+  riseMat.opacity += (wantRise - riseMat.opacity) * (STILL ? 1 : smooth(1.2, dt));
   risePts.visible = riseMat.opacity > 0.01;
-  if (risePts.visible) {
+  if (risePts.visible && !STILL) {
     for (let i = 0; i < RISE_N; i++) {
-      risePos[i*3+1] += riseSpd[i] * dt; risePos[i*3] += Math.sin(t * 0.8 + i) * 0.002;
+      risePos[i*3+1] += riseSpd[i] * dt * speed; risePos[i*3] += Math.sin(tt * 0.8 + i) * 0.12 * dt;
       if (risePos[i*3+1] > 5.5) { risePos[i*3+1] = -5.5; risePos[i*3] = (Math.random()-.5)*14; }
     }
     riseGeo.attributes.position.needsUpdate = true;
   }
-  if (burstT >= 0) {
-    burstT += dt;
-    for (let i = 0; i < BURST_N; i++) {
-      burstPos[i*3] += burstVel[i*3]*dt; burstPos[i*3+1] += burstVel[i*3+1]*dt; burstPos[i*3+2] += burstVel[i*3+2]*dt;
-      burstVel[i*3] *= 0.985; burstVel[i*3+1] = burstVel[i*3+1]*0.985 - 1.6*dt; burstVel[i*3+2] *= 0.985;
-    }
-    burstGeo.attributes.position.needsUpdate = true;
-    burstMat.opacity = Math.max(0, 1 - burstT / 2.4);
-    if (burstT > 2.5) { burstT = -1; burstPts.visible = false; }
-  }
+  updateParticles(dt);
+  pPts.visible = pAlive > 0;
 
   // камера
-  const ax = fine ? ptx : Math.sin(t * 0.25) * 0.35, ay = fine ? pty : Math.cos(t * 0.2) * 0.25;
-  cpx += (ax - cpx) * 0.04; cpy += (ay - cpy) * 0.04;
+  const ax = STILL ? 0 : fine ? ptx : Math.sin(tt * 0.25) * 0.35, ay = STILL ? 0 : fine ? pty : Math.cos(tt * 0.2) * 0.25;
+  const kcam = smooth(2.4, dt);
+  cpx += (ax - cpx) * kcam; cpy += (ay - cpy) * kcam;
   camera.position.x = cpx * 0.75; camera.position.y = -cpy * 0.5;
   camera.lookAt(0, 0.15, 0);
 
@@ -1244,25 +1773,25 @@ function tick() {
   renderer.setRenderTarget(null); renderer.render(scene, camera);
 }
 
+const _sz = new THREE.Vector2();
 function resize() {
   renderer.setSize(innerWidth, innerHeight, false);
   camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
+  renderer.getDrawingBufferSize(_sz);
+  pMat.uniforms.uScale.value = _sz.y / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)));
   fitBg(); applyLayout(false);
 }
 window.addEventListener("resize", resize);
-document.addEventListener("visibilitychange", () => renderer.setAnimationLoop(document.hidden ? null : tick));
+document.addEventListener("visibilitychange", () => { lastMs = performance.now(); renderer.setAnimationLoop(document.hidden ? null : tick); });
 
 resize();
-risePts.visible = burstPts.visible = true; renderer.compile(scene, camera); risePts.visible = burstPts.visible = false;
-mode = window.__bgMode || "intro";
-setMode(mode); applyLayout(true);
+risePts.visible = pPts.visible = true; renderer.compile(scene, camera); risePts.visible = pPts.visible = false;
+mode = window.__bgMode || "intro"; qIndex = window.__bgQ || 0;
+setMode(mode, qIndex); applyLayout(true);
 for (const k in col) col[k].copy(colTarget[k]);
+lastMs = performance.now();
 renderer.setAnimationLoop(tick);
-function burstAt(nx, ny, power = 1) { // точка экрана (NDC) -> точка в сцене на глубине z=0.8
-  const v = new THREE.Vector3(nx, ny, 0.5).unproject(camera), d = v.sub(camera.position).normalize();
-  burst(camera.position.clone().addScaledVector(d, (0.8 - camera.position.z) / d.z), power);
-}
-window.__bg = { setMode, burst: () => burst(), burstAt };
+window.__bg = { setMode, burst, burstAt, kick };
 document.documentElement.classList.add("has-3d");
 </script>
 </body>
