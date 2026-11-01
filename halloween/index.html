@@ -191,7 +191,8 @@
       <p class="eyebrow" id="finEyebrow"></p>
       <p class="display" id="finTitle"></p>
       <p class="fin-sub" id="finSub"></p>
-      <a class="btn" id="finBtn" href="#" target="_blank" rel="noopener"><span id="finBtnLabel"></span><span class="arr">→</span></a>
+      <button class="btn primary" id="finBtn" type="button"><span id="finBtnLabel"></span></button>
+      <a class="fin-link" id="finLink" href="#"></a>
     </div>
   </section>
 </main>
@@ -221,7 +222,7 @@
 <script>
 window.CONFIG = {
   name: "Ксюня",          // её имя. Пустая строка — обращение без имени
-  replyUrl: "",           // ссылка «Написать мне» в финале, например "https://t.me/username". Пусто — кнопка «Ещё раз»
+  replyUrl: "",           // ссылка «написать мне» под кнопкой в финале, например "https://t.me/username". Пусто — «пройти ещё раз»
   sound: true,            // звук по умолчанию (переключатель — справа вверху)
   scares: true,           // false — без скримеров (останутся молнии и темнота)
 
@@ -239,7 +240,7 @@ window.CONFIG = {
     transitions: ["flicker", "flip", "cube", "jelly", "toss", "pearl", "drop", "orbit", "hinge"],
     // is — какая нечисть стоит за ответом: pumpkin, ghost, vampire, witch.
     // onEnter — пугалка, когда вопрос появился; onAnswer — после ответа.
-    // Пугалки: bats, peek (привидение выглядывает), spider, cat, lightning, dark (гаснет свет), boo (скример)
+    // Пугалки: bats, peek (привидение выглядывает), spider, cat, lightning, dark (гаснет свет), boo (скример), knock (стук в дверь)
     questions: [
       {
         title: "Полночь. Под кроватью что-то шуршит. Твои действия?",
@@ -314,6 +315,7 @@ window.CONFIG = {
       },
       {
         title: "Стучат в дверь: «Сладость или гадость!» Что сделаешь?",
+        onEnter: "knock",
         options: [
           { text: "Отдам все конфеты и ещё испеку пирог", is: "pumpkin" },
           { text: "Превращу всех в лягушек. Милых, с бантиками", is: "witch" },
@@ -382,8 +384,12 @@ window.CONFIG = {
     eyebrow: "сладость или гадость?",
     title:   "Сладость. Это <em>ты</em>",
     sub:     "С Хэллоуином, {name} 🎃",
-    buttonReply:   "Написать мне",
-    buttonRestart: "Ещё раз, если не страшно",
+    button:      "🍬 Забрать сладость",
+    buttonAgain: "🍭 Ещё сладость",
+    // что говорит каждый следующий тап по кнопке (последняя фраза повторяется)
+    gifts: ["Сладость получена! С Хэллоуином 🎃", "Ещё одна! Для самой милой нечисти 🍭", "Шоколадка за смелость 🍫", "Ну всё, а то зубки заболят 😄"],
+    restart:     "пройти ещё раз, если не страшно",
+    buttonReply: "написать мне",            // если задан replyUrl, ссылка внизу ведёт туда
   },
 
   // Необязательно: ответы тихо уходят в личного Telegram-бота автора.

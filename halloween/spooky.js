@@ -1,7 +1,7 @@
 /* ============================================================
    ПУГАЛКИ И ЗВУК
-   • Звук целиком синтезируется Web Audio (никаких файлов): гул, ветер,
-     музыкальная шкатулка, гром, «бу!», писк летучих мышей, мяу и т. д.
+   • Звук — готовые записи из открытых библиотек (CC0 / CC BY 4.0, см. README):
+     эффекты через Web Audio, фоновая музыка через <audio>.
    • Пугалки — отдельный слой поверх сцены, только transform/opacity.
    Всё доступно как window.Spooky.
    ============================================================ */
@@ -23,236 +23,154 @@
     .forEach(n => { const i = new Image(); i.decoding = "async"; i.src = "assets/" + n; });
 
   /* ============================================================
-     ЗВУК
+     ЗВУК: готовые записи (assets/sound, источники — в README)
+     • эффекты — короткие mp3, декодируются в Web Audio: играют без задержки и внахлёст;
+     • музыка — два <audio> (жутковатый эмбиент и милый лоу-фай), плавная смена.
      ============================================================ */
   const Snd = (() => {
-    let ctx = null, master = null, wet = null, noise = null, started = false, musicTimer = 0;
+    const BASE = "assets/sound/";
+    const FILES = ["pop", "whoosh", "whoosh2", "ghost", "ghost2", "squeak", "wings", "thunder", "boo", "boom", "creak", "static",
+      "switch", "clock", "spring", "springup", "glitch", "laugh", "meow", "knock", "crack", "magic", "sparkle", "rise", "popper", "confetti"];
+    const MUSIC_VOL = 0.55;
+    let ctx = null, master = null, started = false, mood = "spooky";
     let on = C.sound !== false;
     try { const v = localStorage.getItem("hw-sound"); if (v === "0") on = false; else if (v === "1") on = true; } catch (e) {}
-    const mtof = m => 440 * Math.pow(2, (m - 69) / 12);
-    const LEVEL = 0.9;
+    const raw = {}, buf = {}, decoding = {};
+    // эффекты скачиваем заранее, но после самой страницы (≈600 КБ)
+    const prefetch = () => FILES.forEach(n => { if (!raw[n]) raw[n] = fetch(BASE + n + ".mp3").then(r => r.ok ? r.arrayBuffer() : null).catch(() => null); });
+    if (document.readyState === "complete") setTimeout(prefetch, 1200); else addEventListener("load", () => setTimeout(prefetch, 1200));
 
+    function decode(n) {
+      if (buf[n] || decoding[n] || !ctx) return decoding[n];
+      prefetch();
+      decoding[n] = raw[n].then(ab => ab && new Promise((res, rej) => {
+        // старый Safari умеет только колбэки
+        try { const p = ctx.decodeAudioData(ab, res, rej); if (p && p.then) p.then(res, rej); } catch (e) { rej(e); }
+      })).then(b => { if (b) buf[n] = b; return b; }).catch(e => { if (DEBUG) console.error("decode " + n, e); });
+      return decoding[n];
+    }
     function init() {
       if (ctx) return true;
       const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return false;
       try { ctx = new AC(); } catch (e) { return false; }
-      master = ctx.createGain(); master.gain.value = on ? LEVEL : 0;
-      const comp = ctx.createDynamicsCompressor();
-      comp.threshold.value = -14; comp.knee.value = 10; comp.ratio.value = 5; comp.attack.value = 0.004; comp.release.value = 0.2;
+      master = ctx.createGain(); master.gain.value = on ? 1 : 0;
+      const comp = ctx.createDynamicsCompressor(); // страхует от перегруза, когда звучит несколько эффектов сразу
+      comp.threshold.value = -10; comp.knee.value = 8; comp.ratio.value = 4; comp.attack.value = 0.003; comp.release.value = 0.25;
       master.connect(comp); comp.connect(ctx.destination);
-      const conv = ctx.createConvolver(); conv.buffer = impulse(3.2, 2.6);
-      wet = ctx.createGain(); const wetOut = ctx.createGain(); wetOut.gain.value = 0.5;
-      wet.connect(conv); conv.connect(wetOut); wetOut.connect(master);
-      noise = makeNoise(3);
+      FILES.forEach(decode);
       return true;
     }
-    function impulse(sec, decay) {
-      const len = Math.floor(ctx.sampleRate * sec), b = ctx.createBuffer(2, len, ctx.sampleRate);
-      for (let ch = 0; ch < 2; ch++) { const d = b.getChannelData(ch); for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, decay); }
-      return b;
+    function play(n, o = {}) {
+      if (!ctx || !started || !on) return null;
+      const b = buf[n]; if (!b) { decode(n); return null; }
+      const src = ctx.createBufferSource(), g = ctx.createGain(), t = ctx.currentTime + (o.delay || 0);
+      src.buffer = b; src.loop = !!o.loop; src.playbackRate.value = o.rate || 1;
+      g.gain.setValueAtTime(o.fadeIn ? 0.0001 : (o.vol ?? 1), t);
+      if (o.fadeIn) g.gain.exponentialRampToValueAtTime(o.vol ?? 1, t + o.fadeIn);
+      src.connect(g); g.connect(master);
+      src.start(t);
+      return {
+        stop(f = 0.25) { try { const n = ctx.currentTime; g.gain.cancelScheduledValues(n); g.gain.setValueAtTime(g.gain.value || 0.0001, n); g.gain.exponentialRampToValueAtTime(0.0001, n + f); src.stop(n + f + 0.05); } catch (e) {} },
+      };
     }
-    function makeNoise(sec) {
-      const len = Math.floor(ctx.sampleRate * sec), b = ctx.createBuffer(1, len, ctx.sampleRate), d = b.getChannelData(0);
-      for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
-      return b;
-    }
-    const now = () => ctx.currentTime;
-    // выход с отправкой в реверб
-    function out(send = 0) {
-      const g = ctx.createGain(); g.gain.value = 0; g.connect(master);
-      if (send) { const s = ctx.createGain(); s.gain.value = send; g.connect(s); s.connect(wet); }
-      return g;
-    }
-    function osc(type, f) { const o = ctx.createOscillator(); o.type = type; o.frequency.value = f; return o; }
-    function noiseSrc(loop = false) { const s = ctx.createBufferSource(); s.buffer = noise; s.loop = loop; return s; }
-    function filt(type, f, q = 1) { const b = ctx.createBiquadFilter(); b.type = type; b.frequency.value = f; b.Q.value = q; return b; }
-    function env(p, t, a, peak, d) { p.setValueAtTime(0.0001, t); p.exponentialRampToValueAtTime(peak, t + a); p.exponentialRampToValueAtTime(0.0001, t + a + d); }
-    function amp(v) { const g = ctx.createGain(); g.gain.value = v; return g; }
-
-    /* ---------- фон: гул, ветер, шкатулка ---------- */
-    const MEL_SPOOKY = [81, 0, 76, 0, 81, 84, 83, 0, 80, 0, 76, 0, 77, 76, 75, 76, 0, 0, 0, 0,
-      69, 0, 72, 0, 76, 74, 72, 0, 71, 0, 68, 0, 69, 71, 72, 0, 0, 0, 0, 0,
-      88, 0, 84, 0, 81, 0, 83, 84, 83, 0, 80, 0, 76, 0, 0, 0, 77, 76, 75, 76, 0, 0, 0, 0, 0, 0, 0, 0];
-    const MEL_SWEET = [76, 0, 81, 0, 85, 83, 81, 0, 78, 0, 81, 0, 83, 0, 0, 0,
-      74, 0, 78, 0, 83, 81, 78, 0, 76, 0, 80, 0, 81, 0, 0, 0,
-      85, 0, 88, 0, 86, 85, 83, 0, 81, 0, 83, 0, 85, 0, 0, 0, 0, 0, 0, 0];
-    let mel = MEL_SPOOKY, step = 0, nextNote = 0;
-    const BEAT = 0.36;
-    function bell(f, t, v = 0.05, dur = 1.8, send = 0.9) {
-      const g = out(send);
-      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(v, t + 0.006); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-      [[1, 1], [2.76, 0.22], [5.4, 0.07]].forEach(([k, a]) => { const o = osc("sine", f * k), og = amp(a); o.connect(og); og.connect(g); o.start(t); o.stop(t + dur + 0.05); });
-    }
-    function tickMusic() {
-      if (!ctx || ctx.state !== "running" || !on) return;
-      if (nextNote < now() - 0.3) nextNote = now() + 0.1; // вкладка спала — не наверстываем пропущенные ноты
-      while (nextNote < now() + 0.3) {
-        const m = mel[step % mel.length];
-        if (m) bell(mtof(m), nextNote, 0.032);
-        step++; nextNote += BEAT;
-      }
-    }
-    function ambient() {
-      const t = now();
-      // гул
-      const dr = out(0.3), lp = filt("lowpass", 320, 0.7); lp.connect(dr);
-      dr.gain.setValueAtTime(0, t); dr.gain.linearRampToValueAtTime(0.05, t + 4);
-      [[55, "sine", 0.9], [82.41, "sine", 0.5], [110.6, "triangle", 0.22], [164.2, "sine", 0.1]].forEach(([f, ty, v]) => { const o = osc(ty, f), g = amp(v); o.connect(g); g.connect(lp); o.start(); });
-      const lfo = osc("sine", 0.06), lg = amp(140); lfo.connect(lg); lg.connect(lp.frequency); lfo.start();
-      // ветер
-      const wn = noiseSrc(true), bp = filt("bandpass", 520, 0.9), wg = out(0.25);
-      wn.connect(bp); bp.connect(wg);
-      wg.gain.setValueAtTime(0, t); wg.gain.linearRampToValueAtTime(0.028, t + 6);
-      const l2 = osc("sine", 0.045), l2g = amp(330); l2.connect(l2g); l2g.connect(bp.frequency); l2.start();
-      const l3 = osc("sine", 0.11), l3g = amp(0.016); l3.connect(l3g); l3g.connect(wg.gain); l3.start();
-      wn.start();
-      nextNote = now() + 1.2;
-      musicTimer = setInterval(tickMusic, 90);
-    }
-
-    /* ---------- эффекты ---------- */
-    const FX = {
-      // нажатие на ответ
-      pop() {
-        const t = now(), o = osc("sine", 520), g = out(0.25);
-        o.frequency.exponentialRampToValueAtTime(980, t + 0.07); env(g.gain, t, 0.005, 0.13, 0.16);
-        o.connect(g); o.start(t); o.stop(t + 0.25);
-      },
-      // свист воздуха
-      whoosh(dur = 0.8) {
-        const t = now(), s = noiseSrc(), bp = filt("bandpass", 300, 1.4), g = out(0.3);
-        s.connect(bp); bp.connect(g);
-        bp.frequency.setValueAtTime(260, t); bp.frequency.exponentialRampToValueAtTime(2400, t + dur * 0.45); bp.frequency.exponentialRampToValueAtTime(320, t + dur);
-        g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.26, t + dur * 0.4); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-        s.start(t, Math.random()); s.stop(t + dur + 0.05);
-      },
-      // привидение: «у-у-у»
-      ooo() {
-        const t = now(), o = osc("sine", 300), o2 = osc("triangle", 450), lp = filt("lowpass", 1200, 0.8), g = out(0.8);
-        const vib = osc("sine", 5.5), vg = amp(14); vib.connect(vg); vg.connect(o.frequency); vg.connect(o2.frequency);
-        o.frequency.setValueAtTime(300, t); o.frequency.linearRampToValueAtTime(390, t + 0.35); o.frequency.exponentialRampToValueAtTime(240, t + 1.2);
-        o2.frequency.setValueAtTime(450, t); o2.frequency.linearRampToValueAtTime(585, t + 0.35); o2.frequency.exponentialRampToValueAtTime(360, t + 1.2);
-        const g2 = amp(0.18); o2.connect(g2); g2.connect(lp); o.connect(lp); lp.connect(g);
-        g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.13, t + 0.25); g.gain.setValueAtTime(0.13, t + 0.8); g.gain.exponentialRampToValueAtTime(0.0001, t + 1.35);
-        [o, o2, vib].forEach(x => { x.start(t); x.stop(t + 1.4); });
-      },
-      // писк летучих мышей
-      squeaks(n = 6, span = 1) {
-        for (let i = 0; i < n; i++) {
-          const t = now() + Math.random() * span, f = rnd(3200, 5600), o = osc("sine", f), g = out(0.25);
-          o.frequency.setValueAtTime(f, t); o.frequency.exponentialRampToValueAtTime(f * 0.7, t + 0.06);
-          env(g.gain, t, 0.004, 0.032, 0.07); o.connect(g); o.start(t); o.stop(t + 0.1);
-        }
-      },
-      // шелест крыльев
-      flutter(dur = 1.4) {
-        const t = now(), s = noiseSrc(), lp = filt("lowpass", 1400, 0.7), am = amp(0.5), g = out(0.1);
-        const lfo = osc("square", 17), lg = amp(0.5); lfo.connect(lg); lg.connect(am.gain);
-        s.connect(lp); lp.connect(am); am.connect(g);
-        g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.09, t + 0.2); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-        s.start(t, Math.random()); s.stop(t + dur); lfo.start(t); lfo.stop(t + dur);
-      },
-      // гром: треск и раскат
-      thunder(delay = 0.2) {
-        const t = now() + delay;
-        const c = noiseSrc(), hp = filt("highpass", 1200, 0.7), cg = out(0.4);
-        c.connect(hp); hp.connect(cg); env(cg.gain, t, 0.003, 0.3, 0.25); c.start(t, Math.random()); c.stop(t + 0.35);
-        const r = noiseSrc(), lp = filt("lowpass", 260, 0.8), rg = out(0.35);
-        r.connect(lp); lp.connect(rg);
-        const N = 64, curve = new Float32Array(N);
-        for (let i = 0; i < N; i++) { const x = i / (N - 1); curve[i] = Math.pow(1 - x, 1.6) * (0.55 + 0.45 * Math.random()) * 0.65 * Math.min(1, x * 12); }
-        rg.gain.setValueCurveAtTime(curve, t + 0.05, 3.2);
-        lp.frequency.setValueAtTime(260, t); lp.frequency.exponentialRampToValueAtTime(90, t + 3.2);
-        r.start(t, Math.random()); r.stop(t + 3.4);
-      },
-      // главный скример: удар, диссонанс и «БУ!»
-      boo() {
-        const t = now();
-        const k = osc("sine", 160), kg = out(0.2);
-        k.frequency.exponentialRampToValueAtTime(38, t + 0.35); env(kg.gain, t, 0.004, 0.7, 0.45); k.connect(kg); k.start(t); k.stop(t + 0.5);
-        const lp = filt("lowpass", 600, 1.2), cg = out(0.5); lp.connect(cg);
-        lp.frequency.setValueAtTime(600, t); lp.frequency.exponentialRampToValueAtTime(4200, t + 0.04); lp.frequency.exponentialRampToValueAtTime(700, t + 1.4);
-        [220, 233.1, 329.6, 349.2, 466.2].forEach(f => { const o = osc("sawtooth", f); o.detune.value = rnd(-12, 12); o.connect(lp); o.start(t); o.stop(t + 1.8); });
-        cg.gain.setValueAtTime(0.0001, t); cg.gain.exponentialRampToValueAtTime(0.15, t + 0.015); cg.gain.exponentialRampToValueAtTime(0.0001, t + 1.7);
-        const v = osc("sawtooth", 210), f1 = filt("bandpass", 320, 6), f2 = filt("bandpass", 800, 8), vg = out(0.4);
-        v.frequency.exponentialRampToValueAtTime(140, t + 0.6);
-        v.connect(f1); v.connect(f2); f1.connect(vg); f2.connect(vg);
-        vg.gain.setValueAtTime(0.0001, t); vg.gain.exponentialRampToValueAtTime(0.9, t + 0.03); vg.gain.exponentialRampToValueAtTime(0.0001, t + 0.7);
-        v.start(t); v.stop(t + 0.75);
-        const n = noiseSrc(), nb = filt("bandpass", 1500, 0.6), ng = out(0.3); n.connect(nb); nb.connect(ng);
-        env(ng.gain, t, 0.005, 0.2, 0.5); n.start(t, Math.random()); n.stop(t + 0.6);
-      },
-      // мигающая лампа
-      buzz(dur = 0.9) {
-        const t = now(), o = osc("sawtooth", 100), o2 = osc("square", 50), bp = filt("bandpass", 900, 0.8), g = out(0.1);
-        o.connect(bp); o2.connect(bp); bp.connect(g);
-        let x = t; g.gain.setValueAtTime(0, t);
-        while (x < t + dur) { g.gain.setValueAtTime(Math.random() < 0.6 ? rnd(0.02, 0.055) : 0, x); x += rnd(0.03, 0.09); }
-        g.gain.setValueAtTime(0, t + dur);
-        o.start(t); o2.start(t); o.stop(t + dur + 0.05); o2.stop(t + dur + 0.05);
-      },
-      // щелчок выключателя
-      click() {
-        const t = now(), n = noiseSrc(), hp = filt("highpass", 2500), g = out(0.1);
-        n.connect(hp); hp.connect(g); env(g.gain, t, 0.001, 0.22, 0.035); n.start(t, Math.random()); n.stop(t + 0.07);
-      },
-      // паук на паутинке: вниз — «вжжжух», вверх — коротко
-      zip(down = true) {
-        const t = now(), d = down ? 0.7 : 0.3, o = osc("triangle", down ? 1700 : 320), g = out(0.2);
-        const trem = osc("square", 38), tg = amp(0.5), am = amp(0.5); trem.connect(tg); tg.connect(am.gain);
-        o.frequency.exponentialRampToValueAtTime(down ? 260 : 2200, t + d); o.connect(am); am.connect(g); env(g.gain, t, 0.01, 0.045, d);
-        [o, trem].forEach(x => { x.start(t); x.stop(t + d + 0.05); });
-      },
-      // «сломанный» одометр
-      glitch(dur = 0.7) {
-        const t = now(), g = out(0.1); g.gain.setValueAtTime(1, t);
-        let x = t;
-        while (x < t + dur) {
-          const o = osc(Math.random() < 0.5 ? "square" : "sawtooth", rnd(70, 1400)), d = rnd(0.025, 0.07), og = amp(rnd(0.025, 0.07));
-          o.connect(og); og.connect(g); o.start(x); o.stop(x + d * 0.8); x += d;
-        }
-      },
-      meow() {
-        const t = now(), o = osc("sawtooth", 520), f = filt("bandpass", 700, 3), f2 = filt("bandpass", 2400, 5), g = out(0.35);
-        o.frequency.linearRampToValueAtTime(820, t + 0.18); o.frequency.exponentialRampToValueAtTime(470, t + 0.62);
-        f.frequency.linearRampToValueAtTime(1500, t + 0.2); f.frequency.exponentialRampToValueAtTime(800, t + 0.6);
-        o.connect(f); o.connect(f2); f.connect(g); f2.connect(g);
-        g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.32, t + 0.06); g.gain.setValueAtTime(0.28, t + 0.36); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.66);
-        o.start(t); o.stop(t + 0.7);
-      },
-      // печать трескается
-      crack() {
-        const t = now(), n = noiseSrc(), hp = filt("highpass", 900), g = out(0.3);
-        n.connect(hp); hp.connect(g); env(g.gain, t, 0.002, 0.3, 0.14); n.start(t, Math.random()); n.stop(t + 0.2);
-        const o = osc("sine", 300), og = out(0.2); o.frequency.exponentialRampToValueAtTime(70, t + 0.25); env(og.gain, t, 0.003, 0.45, 0.25); o.connect(og); o.start(t); o.stop(t + 0.32);
-      },
-      chime() { const t = now(); [76, 81, 85, 88, 93, 97].forEach((m, i) => bell(mtof(m), t + i * 0.085, 0.06, 2.4)); },
-      sparkle() { const t = now(); [88, 93, 96, 100].forEach((m, i) => bell(mtof(m), t + i * 0.05, 0.035, 1.2)); },
+    const vary = (a, b) => a + Math.random() * (b - a);
+    // «реплики»: имена, которые зовёт остальной код
+    const CUES = {
+      pop: () => play("pop", { vol: 0.55, rate: vary(0.92, 1.1) }),
+      whoosh: () => play(Math.random() < 0.5 ? "whoosh" : "whoosh2", { vol: 0.45, rate: vary(0.9, 1.1) }),
+      ooo: () => play(Math.random() < 0.5 ? "ghost" : "ghost2", { vol: 0.75, rate: vary(0.85, 1) }),
+      squeaks: (n = 5, span = 1) => { for (let i = 0; i < Math.min(n, 6); i++) play("squeak", { vol: 0.3, rate: vary(1.9, 2.6), delay: Math.random() * span }); },
+      flutter: () => play("wings", { vol: 0.5, rate: vary(1.2, 1.45) }),
+      thunder: (delay = 0.2) => play("thunder", { vol: 0.85, delay }),
+      boo: () => { play("boo", { vol: 1 }); play("boom", { vol: 0.75 }); },
+      buzz: () => { play("static", { vol: 0.3 }); play("static", { vol: 0.22, delay: 0.42, rate: 0.85 }); },
+      click: () => play("switch", { vol: 0.7 }),
+      zip: (down = true) => play(down ? "spring" : "springup", { vol: 0.5, rate: down ? 0.9 : 1.25 }),
+      glitch: () => { play("glitch", { vol: 0.65 }); play("static", { vol: 0.25, delay: 0.1 }); play("glitch", { vol: 0.55, delay: 0.28, rate: 0.8 }); },
+      laugh: () => play("laugh", { vol: 0.7 }),
+      meow: () => play("meow", { vol: 0.8 }),
+      crack: () => play("crack", { vol: 0.9 }),
+      chime: () => play("magic", { vol: 0.6 }),
+      sparkle: () => play("sparkle", { vol: 0.5, rate: vary(0.95, 1.1) }),
+      knock: () => play("knock", { vol: 0.9 }),
+      creak: () => play("creak", { vol: 0.75 }),
+      rise: () => play("rise", { vol: 0.6 }),
+      popper: () => play("popper", { vol: 0.75, rate: vary(0.95, 1.08) }),
+      confetti: () => play("confetti", { vol: 0.75 }),
     };
+
+    /* ---------- музыка ---------- */
+    const music = {};
+    function track(name) {
+      if (music[name]) return music[name];
+      const a = new Audio(BASE + "music-" + name + ".mp3");
+      a.loop = true; a.preload = "auto"; a.setAttribute("playsinline", ""); a.volume = 0;
+      return music[name] = a;
+    }
+    const fades = new Map();
+    function fadeTo(a, v, ms, then) {
+      clearInterval(fades.get(a));
+      const from = a.volume, t0 = performance.now();
+      const id = setInterval(() => {
+        const k = Math.min(1, (performance.now() - t0) / ms);
+        try { a.volume = Math.max(0, Math.min(1, from + (v - from) * k)); } catch (e) {}
+        if (k >= 1) { clearInterval(id); fades.delete(a); if (then) then(); }
+      }, 50);
+      fades.set(a, id);
+    }
+    function playMusic() {
+      if (!started) return;
+      const cur = track(mood), other = track(mood === "spooky" ? "sweet" : "spooky");
+      if (!on || document.hidden) { cur.pause(); other.pause(); return; }
+      fadeTo(other, 0, 900, () => other.pause());
+      const p = cur.play(); if (p && p.catch) p.catch(() => {});
+      fadeTo(cur, MUSIC_VOL, 1400);
+    }
+    // iOS разрешает запуск <audio> только из нажатия: «разблокируем» обе дорожки сразу
+    function unlockMusic() {
+      ["spooky", "sweet"].forEach(n => {
+        const a = track(n); if (n === mood) return;
+        a.muted = true;
+        const p = a.play();
+        const done = () => { a.pause(); a.currentTime = 0; a.muted = false; };
+        if (p && p.then) p.then(done, done); else done();
+      });
+    }
 
     return {
       start() {
-        if (!init()) return;
-        if (ctx.state === "suspended") ctx.resume();
-        if (!started) { started = true; ambient(); }
+        try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch (e) {}
+        if (init() && ctx.state !== "running") ctx.resume();
+        if (ctx) { try { const b = ctx.createBufferSource(); b.buffer = ctx.createBuffer(1, 1, 22050); b.connect(ctx.destination); b.start(0); } catch (e) {} }
+        if (!started) { started = true; unlockMusic(); }
+        playMusic();
       },
       play(name, ...a) {
-        if (!ctx || !started || !on) return;
-        if (ctx.state === "suspended") ctx.resume();
-        try { FX[name] && FX[name](...a); } catch (e) { if (DEBUG) console.error("sfx " + name, e); } // звук — не повод ломать страницу
+        if (!ctx || !started || !on) return null;
+        if (ctx.state !== "running") ctx.resume();
+        try { return CUES[name] ? CUES[name](...a) : play(name, a[0] || {}); } catch (e) { if (DEBUG) console.error("sfx " + name, e); return null; }
       },
+      loop(name, vol = 0.5) { return play(name, { vol, loop: true, fadeIn: 0.6 }); },
       setOn(v) {
         on = !!v;
         try { localStorage.setItem("hw-sound", on ? "1" : "0"); } catch (e) {}
         if (on) this.start();
-        if (master) master.gain.setTargetAtTime(on ? LEVEL : 0, ctx.currentTime, 0.08);
+        if (master) master.gain.setTargetAtTime(on ? 1 : 0, ctx.currentTime, 0.06);
+        playMusic();
       },
       isOn: () => on,
-      mood(m) { const next = m === "sweet" ? MEL_SWEET : MEL_SPOOKY; if (next !== mel) { mel = next; step = 0; } },
-      _suspend(h) { if (!ctx || !started) return; if (h) ctx.suspend(); else ctx.resume(); },
+      mood(m) { const next = m === "sweet" ? "sweet" : "spooky"; if (next !== mood) { mood = next; playMusic(); } },
+      _suspend(h) {
+        if (!started) return;
+        if (ctx) { if (h) ctx.suspend(); else if (ctx.state !== "running") ctx.resume(); }
+        if (h) Object.values(music).forEach(a => a.pause()); else if (on) { const a = music[mood]; if (a && a.paused) { const p = a.play(); if (p && p.catch) p.catch(() => {}); } }
+      },
+      _debug: () => ({ state: ctx && ctx.state, loaded: Object.keys(buf).length, total: FILES.length, music: Object.fromEntries(Object.entries(music).map(([k, a]) => [k, { paused: a.paused, vol: +a.volume.toFixed(2), t: +a.currentTime.toFixed(1), err: a.error && a.error.code }])) }),
     };
   })();
   document.addEventListener("visibilitychange", () => Snd._suspend(document.hidden));
+  // iOS может «прервать» звук (звонок, сворачивание) — возобновляем на ближайшее касание
+  addEventListener("pointerdown", () => { if (!document.hidden) Snd._suspend(false); }, { passive: true });
 
   // кнопка звука
   const sndBtn = $("#snd");
@@ -310,7 +228,11 @@
     }
   }
 
-  /* ---------- привидение выглядывает из-за края экрана ---------- */
+  // где сейчас карточка вопроса и заголовок (пугалки появляются прямо на них, чтобы их нельзя было пропустить)
+  const rectOf = el => el && el.isConnected ? el.getBoundingClientRect() : null;
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+  /* ---------- привидение выглядывает из-за края карточки ---------- */
   let peekEl = null;
   async function peek(o = {}) {
     if (!peekEl) peekEl = make("peek", `<img src="assets/ghost.png" alt="" draggable="false"><span class="say"></span>`);
@@ -318,49 +240,55 @@
     if (e._busy) return; e._busy = true;
     say.textContent = o.say || pickOne(["бу!", "бу-бу!", "ку-ку!", "а вот и я!"]);
     e.classList.toggle("r", right);
-    const W = innerWidth, H = innerHeight, w = e.offsetWidth || 150, y = H * rnd(0.16, 0.42);
-    const xOut = right ? W + 10 : -w - 10, xIn = right ? W - w * 0.7 : -w * 0.3;
-    const rOut = right ? -38 : 38, rIn = right ? -15 : 15, s = right ? -1 : 1;
+    const W = innerWidth, H = innerHeight, w = e.offsetWidth || 150, h = e.offsetHeight || w;
+    const cr = rectOf(o.card), tr0 = rectOf(o.title);
+    const y = tr0 ? clamp(tr0.top + tr0.height / 2 - h * 0.5, 8, H - h - 8) : H * rnd(0.16, 0.42);
+    // заходит на край карточки: на телефоне — почти на треть экрана
+    const xIn = cr ? (right ? Math.min(W - w * 0.78, cr.right - w * 0.4) : Math.max(-w * 0.22, cr.left - w * 0.6)) : (right ? W - w * 0.7 : -w * 0.3);
+    const xOut = right ? W + 10 : -w - 10;
+    const rOut = right ? -38 : 38, rIn = right ? -14 : 14, s = right ? -1 : 1;
     const tr = (x, r) => `translate(${x.toFixed(1)}px,${y.toFixed(1)}px) rotate(${r}deg)`;
     e.style.visibility = "visible";
-    Snd.play("whoosh", 0.6); setTimeout(() => Snd.play("ooo"), 260);
-    const d = RM ? 2200 : 2700;
+    Snd.play("whoosh"); setTimeout(() => Snd.play("ooo"), 380);
+    const d = RM ? 2600 : 3300;
     const a = A(e, RM
       ? [{ transform: tr(xIn, rIn), opacity: 0 }, { transform: tr(xIn, rIn), opacity: 1, offset: 0.15 }, { transform: tr(xIn, rIn), opacity: 1, offset: 0.85 }, { transform: tr(xIn, rIn), opacity: 0 }]
       : [
         { transform: tr(xOut, rOut), easing: OUT_BACK },
-        { transform: tr(xIn, rIn), offset: 0.2, easing: "ease-in-out" },
-        { transform: tr(xIn - 6 * s, rIn + 7 * s), offset: 0.38, easing: "ease-in-out" },
+        { transform: tr(xIn, rIn), offset: 0.17, easing: "ease-in-out" },
+        { transform: tr(xIn - 6 * s, rIn + 7 * s), offset: 0.36, easing: "ease-in-out" },
         { transform: tr(xIn + 3 * s, rIn - 4 * s), offset: 0.56, easing: "ease-in-out" },
-        { transform: tr(xIn, rIn), offset: 0.76, easing: IN },
+        { transform: tr(xIn, rIn), offset: 0.8, easing: IN },
         { transform: tr(xOut, rOut) },
       ], { d });
-    A(say, [{ opacity: 0, transform: "translate(0px,10px) scale(.5)", easing: OUT_BACK }, { opacity: 1, transform: "translate(0px,0px) scale(1)", offset: 0.16 }, { opacity: 1, transform: "translate(0px,0px) scale(1)", offset: 0.84 }, { opacity: 0, transform: "translate(0px,-6px) scale(.9)" }], { at: 520, d: 1450 });
+    A(say, [{ opacity: 0, transform: "translate(0px,10px) scale(.5)", easing: OUT_BACK }, { opacity: 1, transform: "translate(0px,0px) scale(1)", offset: 0.14 }, { opacity: 1, transform: "translate(0px,0px) scale(1)", offset: 0.86 }, { opacity: 0, transform: "translate(0px,-6px) scale(.9)" }], { at: 560, d: 1900 });
     await done(a); clear(e); e._busy = false;
   }
 
-  /* ---------- паук спускается на паутинке (можно спугнуть нажатием) ---------- */
+  /* ---------- паук спускается прямо на вопрос (можно спугнуть нажатием) ---------- */
   let spiderEl = null;
-  function spider() {
+  function spider(o = {}) {
     return new Promise(resolve => {
       if (!spiderEl) {
         spiderEl = make("spider", `<i></i><img src="assets/spider.png" alt="Паук" draggable="false">`);
         spiderEl.addEventListener("pointerdown", e => { e.stopPropagation(); e.preventDefault(); if (spiderEl._flee) spiderEl._flee(true); });
       }
-      const e = spiderEl, img = e.lastChild, W = innerWidth, H = innerHeight;
+      const e = spiderEl, img = e.lastChild, W = innerWidth, H = innerHeight, sw = e.offsetWidth || 72;
       if (e._busy) return resolve(); e._busy = true;
-      const x = W * pickOne([rnd(0.1, 0.26), rnd(0.74, 0.9)]) - 31, y = H * rnd(0.14, 0.26);
+      const t = rectOf(o.title);
+      const x = t ? clamp(t.left + t.width * rnd(0.55, 0.9) - sw / 2, 6, W - sw - 6) : W * pickOne([rnd(0.1, 0.26), rnd(0.74, 0.9)]) - sw / 2;
+      const y = t ? clamp(t.top + t.height * 0.5 - sw * 0.5, 30, H - sw - 30) : H * rnd(0.14, 0.26);
       const tr = yy => `translate(${x.toFixed(1)}px,${yy.toFixed(1)}px)`;
       e.style.visibility = "visible"; Snd.play("zip", true);
       const down = A(e, RM
         ? [{ transform: tr(y), opacity: 0 }, { transform: tr(y), opacity: 1 }]
-        : [{ transform: tr(-150), easing: "cubic-bezier(.3,.6,.4,1)" }, { transform: tr(y + 20), offset: 0.6, easing: "ease-in-out" }, { transform: tr(y - 10), offset: 0.8, easing: "ease-in-out" }, { transform: tr(y + 4), offset: 0.92, easing: "ease-in-out" }, { transform: tr(y) }],
-        { d: RM ? 400 : 1300, fill: "forwards" });
+        : [{ transform: tr(-150), easing: "cubic-bezier(.3,.6,.4,1)" }, { transform: tr(y + 22), offset: 0.6, easing: "ease-in-out" }, { transform: tr(y - 12), offset: 0.8, easing: "ease-in-out" }, { transform: tr(y + 4), offset: 0.92, easing: "ease-in-out" }, { transform: tr(y) }],
+        { d: RM ? 400 : 1400, fill: "forwards" });
       if (!RM) A(img, [{ transform: "rotate(-9deg)" }, { transform: "rotate(9deg)" }, { transform: "rotate(-9deg)" }], { d: 560, it: Infinity, e: "ease-in-out", fill: "none" });
       let gone = false, timer = 0;
       const flee = fast => {
         if (gone) return; gone = true; clearTimeout(timer);
-        if (fast) { Snd.play("squeaks", 3, 0.2); }
+        if (fast) Snd.play("squeaks", 3, 0.2);
         Snd.play("zip", false);
         const cy = new DOMMatrixReadOnly(getComputedStyle(e).transform).m42;
         down.cancel();
@@ -368,30 +296,56 @@
         up.finished.then(() => { clear(e); e._flee = null; e._busy = false; resolve(); }, () => { e._busy = false; resolve(); });
       };
       e._flee = flee;
-      timer = setTimeout(() => flee(false), 4300);
+      timer = setTimeout(() => flee(false), 5200);
     });
   }
 
-  /* ---------- чёрный кот выглядывает снизу ---------- */
+  /* ---------- чёрный кот выглядывает из-за нижнего края карточки ---------- */
   let catEl = null;
-  async function cat() {
-    if (!catEl) catEl = make("cat", `<img src="assets/cat.png" alt="" draggable="false"><span class="say">мяу</span>`);
-    const e = catEl, say = e.lastChild;
+  async function cat(o = {}) {
+    if (!catEl) catEl = make("cat", `<div class="cat-win"><img src="assets/cat.png" alt="" draggable="false"></div><span class="say">мяу</span>`);
+    const e = catEl, img = e.querySelector("img"), say = e.lastChild;
     if (e._busy) return; e._busy = true;
-    const W = innerWidth, w = e.offsetWidth || 150, h = e.offsetHeight || 150;
-    const x = W * pickOne([rnd(0.03, 0.18), rnd(0.62, 0.8)]);
-    const tr = (yy, r) => `translate(${Math.min(x, W - w).toFixed(1)}px,${yy.toFixed(1)}px) rotate(${r}deg)`;
+    const W = innerWidth, H = innerHeight, w = e.offsetWidth || 150, h = w;
+    const cr = rectOf(o.card);
+    // окно кота заканчивается ровно по нижнему краю карточки: кот «вылезает» из-за неё на ответы
+    const bottom = cr ? Math.min(cr.bottom - 6, H) : H;
+    const x = cr ? clamp(cr.left + cr.width * pickOne([0.06, 0.58]), 4, W - w - 4) : W * pickOne([rnd(0.03, 0.18), rnd(0.62, 0.8)]);
+    e.style.transform = `translate(${x.toFixed(1)}px,${(bottom - h).toFixed(1)}px)`;
     e.style.visibility = "visible";
-    setTimeout(() => Snd.play("meow"), 700);
-    const a = A(e, [
-      { transform: tr(h, 0), easing: OUT_BACK },
-      { transform: tr(h * 0.36, -4), offset: 0.2, easing: "ease-in-out" },
-      { transform: tr(h * 0.36, 4), offset: 0.48, easing: "ease-in-out" },
-      { transform: tr(h * 0.36, -2), offset: 0.76, easing: IN },
-      { transform: tr(h, 0) },
-    ], { d: 3200 });
-    A(say, [{ opacity: 0, transform: "translate(0px,10px) scale(.5)", easing: OUT_BACK }, { opacity: 1, transform: "translate(0px,0px) scale(1)", offset: 0.18 }, { opacity: 1, transform: "translate(0px,0px) scale(1)", offset: 0.85 }, { opacity: 0, transform: "translate(0px,-6px) scale(.9)" }], { at: 680, d: 1500 });
+    setTimeout(() => Snd.play("meow"), 650);
+    const tr = (k, r) => `translate(0px,${(k * 100).toFixed(1)}%) rotate(${r}deg)`;
+    const a = A(img, [
+      { transform: tr(1, 0), easing: OUT_BACK },
+      { transform: tr(0.22, -4), offset: 0.18, easing: "ease-in-out" },
+      { transform: tr(0.22, 4), offset: 0.46, easing: "ease-in-out" },
+      { transform: tr(0.22, -2), offset: 0.8, easing: IN },
+      { transform: tr(1, 0) },
+    ], { d: 3800 });
+    A(say, [{ opacity: 0, transform: "translate(0px,10px) scale(.5)", easing: OUT_BACK }, { opacity: 1, transform: "translate(0px,0px) scale(1)", offset: 0.15 }, { opacity: 1, transform: "translate(0px,0px) scale(1)", offset: 0.86 }, { opacity: 0, transform: "translate(0px,-6px) scale(.9)" }], { at: 640, d: 2000 });
     await done(a); clear(e); e._busy = false;
+  }
+
+  /* ---------- фонтан конфет из точки (кнопка в финале) ---------- */
+  const burstPool = [];
+  function candyBurst(x, y, n = innerWidth < 600 ? 14 : 20) {
+    if (STILL) return;
+    const IM = ["candy", "lollipop", "chocolate", "candy", "pumpkin", "lollipop"];
+    for (let i = 0; i < n; i++) {
+      let e = burstPool[i];
+      if (!e) { e = make("candy", `<img src="assets/${IM[i % IM.length]}.png" alt="" draggable="false">`); burstPool[i] = e; }
+      e.getAnimations().forEach(a => a.cancel());
+      const s = rnd(30, 56); e.style.width = s.toFixed(0) + "px";
+      const vx = rnd(-320, 320), vy = rnd(-820, -460), g = 1500, T = rnd(1.1, 1.6), r0 = rnd(-60, 60), r1 = r0 + rnd(-420, 420);
+      const f = [];
+      for (let k = 0; k <= 10; k++) {
+        const t = T * k / 10, px = x - s / 2 + vx * t, py = y - s / 2 + vy * t + g * t * t / 2;
+        f.push({ transform: `translate(${px.toFixed(1)}px,${py.toFixed(1)}px) rotate(${(r0 + (r1 - r0) * k / 10).toFixed(0)}deg) scale(${k === 0 ? 0.3 : 1})`, opacity: k > 7 ? 1 - (k - 7) / 3 : 1 });
+      }
+      e.style.visibility = "visible";
+      const a = A(e, RM ? [{ opacity: 0 }] : f, { d: T * 1000, at: i * 18 });
+      a.finished.then(() => { e.style.visibility = "hidden"; a.cancel(); }, () => {});
+    }
   }
 
   /* ---------- молния ---------- */
@@ -416,9 +370,12 @@
 
   /* ---------- темнота с фонариком ---------- */
   const Dark = (() => {
-    const d = $("#dark");
-    let active = false, raf = 0, touched = false, t0 = 0, x = 0, y = 0, tx = 0, ty = 0, aIn = null;
-    const move = e => { touched = true; tx = e.clientX; ty = e.clientY; };
+    const d = $("#dark"), root = document.documentElement;
+    const hint = document.createElement("p"); hint.className = "dark-hint"; d.appendChild(hint);
+    let active = false, raf = 0, touched = false, t0 = 0, x = 0, y = 0, tx = 0, ty = 0, aIn = null, aHint = null, clock = null, clockT = 0;
+    const hideHint = () => { if (aHint) { aHint.cancel(); aHint = null; A(hint, [{ opacity: 1 }, { opacity: 0 }], { d: 400, fill: "none" }); } };
+    const move = e => { if (!touched) hideHint(); touched = true; tx = e.clientX; ty = e.clientY; };
+    const tmove = e => { const p = e.touches && e.touches[0]; if (p) move(p); };
     function loop(t) {
       if (!active) return;
       if (!touched) { const s = (t - t0) / 1000; tx = innerWidth * (0.5 + 0.3 * Math.sin(s * 0.85)); ty = innerHeight * (0.52 + 0.17 * Math.sin(s * 1.37 + 1)); }
@@ -428,28 +385,44 @@
     }
     return {
       get active() { return active; },
-      on() {
+      on(o = {}) {
         if (active) return Promise.resolve();
         active = true; touched = false; t0 = performance.now();
         x = tx = innerWidth / 2; y = ty = innerHeight / 2;
         addEventListener("pointermove", move, { passive: true }); addEventListener("pointerdown", move, { passive: true });
+        addEventListener("touchmove", tmove, { passive: true }); addEventListener("touchstart", tmove, { passive: true });
+        root.classList.add("is-dark"); // палец водит фонариком, а не прокручивает и не обновляет страницу
+        hint.textContent = o.hint || "🔦 свети, чтобы прочитать";
+        aHint = A(hint, [{ opacity: 0, transform: "translate(-50%,10px)" }, { opacity: 1, transform: "translate(-50%,0px)" }], { at: 2500, d: 700, fill: "both" });
         d.classList.add("on"); raf = requestAnimationFrame(loop);
-        Snd.play("buzz", 0.85); setTimeout(() => Snd.play("click"), 860);
+        // лампа долго «борется»: мигает, трещит, щёлкает — и гаснет; в темноте тикают часы
+        Snd.play("buzz"); setTimeout(() => Snd.play("buzz"), 1000); setTimeout(() => Snd.play("click"), 2150);
+        clockT = setTimeout(() => { clock = Snd.loop("clock", 0.4); }, 2300);
         aIn = A(d, RM ? [{ opacity: 0 }, { opacity: 1 }]
-          : [{ opacity: 0 }, { opacity: 0.8, offset: 0.12 }, { opacity: 0.1, offset: 0.2 }, { opacity: 0.9, offset: 0.34 }, { opacity: 0.3, offset: 0.46 }, { opacity: 0.95, offset: 0.6 }, { opacity: 0.55, offset: 0.75 }, { opacity: 1 }],
-          { d: RM ? 400 : 950, fill: "forwards" });
+          : [{ opacity: 0 }, { opacity: 0.75, offset: 0.06 }, { opacity: 0.05, offset: 0.1 }, { opacity: 0.85, offset: 0.18 }, { opacity: 0.2, offset: 0.24 },
+             { opacity: 0.3, offset: 0.36 }, { opacity: 0.9, offset: 0.42 }, { opacity: 0.4, offset: 0.5 }, { opacity: 0.95, offset: 0.62 },
+             { opacity: 0.6, offset: 0.72 }, { opacity: 0.97, offset: 0.84 }, { opacity: 0.85, offset: 0.92 }, { opacity: 1 }],
+          { d: RM ? 400 : 2300, fill: "forwards" });
         const b = bg(); if (b && b.dim) b.dim(1);
         return Promise.resolve();
       },
       async off() {
         if (!active) return;
-        Snd.play("click");
-        const a = A(d, RM ? [{ opacity: 1 }, { opacity: 0 }] : [{ opacity: 1 }, { opacity: 0.25, offset: 0.2 }, { opacity: 0.85, offset: 0.36 }, { opacity: 0 }], { d: RM ? 300 : 650, fill: "forwards" });
+        clearTimeout(clockT); if (clock) { clock.stop(0.8); clock = null; }
+        // свет возвращается не сразу: лампа пару раз моргает
+        Snd.play("buzz"); setTimeout(() => Snd.play("click"), 1250);
+        const a = A(d, RM ? [{ opacity: 1 }, { opacity: 0 }]
+          : [{ opacity: 1 }, { opacity: 0.55, offset: 0.12 }, { opacity: 0.95, offset: 0.2 }, { opacity: 0.35, offset: 0.36 }, { opacity: 0.9, offset: 0.44 },
+             { opacity: 0.6, offset: 0.62 }, { opacity: 0.85, offset: 0.7 }, { opacity: 0 }],
+          { d: RM ? 300 : 1400, fill: "forwards" });
         if (aIn) { aIn.cancel(); aIn = null; }
         const b = bg(); if (b && b.dim) b.dim(0);
         await done(a);
         active = false; cancelAnimationFrame(raf);
         removeEventListener("pointermove", move); removeEventListener("pointerdown", move);
+        removeEventListener("touchmove", tmove); removeEventListener("touchstart", tmove);
+        root.classList.remove("is-dark");
+        if (aHint) { aHint.cancel(); aHint = null; }
         d.classList.remove("on"); a.cancel();
       },
     };
@@ -476,14 +449,14 @@
       A(bgE, [{ opacity: 0 }, { opacity: 0.92 }], { d: 400, fill: "forwards" });
       A(gh, [{ opacity: 0 }, { opacity: 1 }], { at: 300, d: 400, fill: "forwards" });
       A(tx, [{ opacity: 0 }, { opacity: 1 }], { at: 400, d: 400, fill: "forwards" });
-      Snd.play("ooo");
+      Snd.play("boo");
       await sleep(1900);
       A(root, [{ opacity: 1 }, { opacity: 0 }], { d: 400, fill: "forwards" });
       await sleep(420);
     } else {
-      Snd.play("buzz", 0.95);
+      Snd.play("buzz"); setTimeout(() => Snd.play("creak"), 1050);
       A(bgE, [{ opacity: 0 }, { opacity: 0.85, offset: 0.12 }, { opacity: 0.15, offset: 0.22 }, { opacity: 0.92, offset: 0.4 }, { opacity: 0.35, offset: 0.52 }, { opacity: 1, offset: 0.7 }, { opacity: 1 }], { d: 950, fill: "forwards" });
-      await sleep(1300); // темнота и тишина…
+      await sleep(2300); // темнота, скрип… и тишина
       Snd.play("boo"); buzzPhone([60, 40, 120]);
       A(gh, [{ opacity: 0, transform: "translate(0px,24%) scale(.12) rotate(-12deg)", easing: "cubic-bezier(.2,.9,.3,1.2)" }, { opacity: 1, transform: "translate(0px,0%) scale(1) rotate(0deg)" }], { d: 240, fill: "forwards" });
       const sh = [{ transform: "translate(0px,0%) scale(1) rotate(0deg)" }];
@@ -569,18 +542,19 @@
   /* ---------- единая точка входа для сценария ---------- */
   function run(name, o) {
     if (!name) return Promise.resolve();
-    if (C.scares === false && name !== "lightning" && name !== "dark") return Promise.resolve();
+    if (C.scares === false && !["lightning", "dark", "knock"].includes(name)) return Promise.resolve();
     switch (name) {
       case "bats": bats(o); break;
       case "peek": peek(o); break;
-      case "spider": spider(); break;
-      case "cat": cat(); break;
+      case "spider": spider(o); break;
+      case "cat": cat(o); break;
+      case "knock": Snd.play("knock"); break;
       case "lightning": lightning(); break;
-      case "dark": return Dark.on();
+      case "dark": return Dark.on(o);
       case "boo": return boo();
     }
     return Promise.resolve();
   }
 
-  window.Spooky = { Snd, run, bats, peek, spider, cat, lightning, boo, shake, toast, Dark, Eyes, Candy };
+  window.Spooky = { Snd, run, bats, peek, spider, cat, lightning, boo, shake, toast, candyBurst, Dark, Eyes, Candy };
 })();

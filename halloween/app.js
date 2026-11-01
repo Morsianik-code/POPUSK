@@ -306,7 +306,7 @@
     // пугалка этого вопроса
     if (q.onEnter) {
       const delay = q.onEnter === "dark" ? at + 650 : q.onEnter === "lightning" ? at + 200 : at + 900;
-      setTimeout(() => { if (state.scene === "quiz" && state.q === i) S.run(q.onEnter); }, delay);
+      setTimeout(() => { if (state.scene === "quiz" && state.q === i) S.run(q.onEnter, { card, title: $(".qtitle", card), hint: fine ? "🔦 свети мышкой, чтобы прочитать" : "🔦 води пальцем по экрану, чтобы прочитать" }); }, delay);
     }
     return Math.max(t, last);
   }
@@ -334,7 +334,7 @@
     if (b && e && e.clientX) { const [nx, ny] = toNDC(e.clientX, e.clientY); b.kick(nx, ny, last ? 1.2 : 1); }
 
     // свет возвращается, как только ответила на «тёмный» вопрос
-    const lights = q.onEnter === "dark" ? S.Dark.off() : Promise.resolve();
+    const lights = q.onEnter === "dark" ? sleep(1100).then(() => S.Dark.off()) : Promise.resolve();
     const after = async () => { await lights; if (q.onAnswer) await S.run(q.onAnswer); };
     if (!last) {
       const nextCard = other(card);
@@ -619,7 +619,7 @@
       jitter(num, tA, 720, 12);
       setTimeout(() => {
         if (state.scene !== "result") return;
-        num.classList.add("glitch"); S.Snd.play("glitch", 0.7);
+        num.classList.add("glitch"); S.Snd.play("glitch"); setTimeout(() => { if (state.scene === "result") S.Snd.play("laugh"); }, 260);
         const b = bg(); if (b) b.kick(0, 0.2, 0.8);
         setTimeout(() => num.classList.remove("glitch"), 720);
       }, tA);
@@ -707,30 +707,48 @@
   setText($("#finEyebrow"), C.finale.eyebrow);
   setRich($("#finTitle"), C.finale.title);
   setText($("#finSub"), C.finale.sub || "");
-  const finBtn = $("#finBtn");
-  if (C.replyUrl) { finBtn.href = C.replyUrl; $("#finBtnLabel").textContent = C.finale.buttonReply; }
+  // главная кнопка — «забрать сладость»: каждый тап — фонтан конфет; маленькая ссылка ниже — пройти заново (или написать)
+  const finBtn = $("#finBtn"), finLink = $("#finLink"), F = C.finale;
+  let gifts = 0, giftAt = 0;
+  setText($("#finBtnLabel"), F.button);
+  finBtn.addEventListener("click", e => {
+    if (state.scene !== "finale" || performance.now() - giftAt < 300) return;
+    giftAt = performance.now();
+    const r = finBtn.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    ripple(e, finBtn);
+    S.Snd.play("popper"); S.Snd.play("pop"); if (gifts === 0) S.Snd.play("rise");
+    S.candyBurst(cx, cy);
+    const b = bg(); if (b) { const [nx, ny] = toNDC(cx, cy); b.burstAt(nx, ny, 0.9, 140); }
+    if (!RM) anim(finBtn, [{ transform: REST, easing: E.out }, { transform: T2({ y: 4 }), offset: 0.15, easing: E.out }, { transform: T2({ y: -10, rz: -2 }), offset: 0.45, easing: E.sine }, { transform: T2({ y: 2, rz: 1 }), offset: 0.72, easing: E.sine }, { transform: REST }], { d: 620 });
+    const list = F.gifts || [];
+    if (list.length) S.toast(tpl(list[Math.min(gifts, list.length - 1)]), "assets/candy.png", 2400);
+    gifts++;
+    if (F.buttonAgain && gifts === 1) setText($("#finBtnLabel"), F.buttonAgain);
+  });
+  if (C.replyUrl) { finLink.href = C.replyUrl; finLink.target = "_blank"; finLink.rel = "noopener"; setText(finLink, F.buttonReply); }
   else {
-    finBtn.removeAttribute("target"); $("#finBtnLabel").textContent = C.finale.buttonRestart;
-    finBtn.addEventListener("click", e => {
+    setText(finLink, F.restart || F.buttonRestart);
+    finLink.addEventListener("click", e => {
       e.preventDefault();
       if (state.busy || state.scene !== "finale") return;
       S.Snd.play("pop");
-      ripple(e, finBtn);
       state.answers = []; state.sent = false;
       S.Candy.stop(); S.Snd.mood("spooky");
       switchScene("intro", FX_SCENE.finaleIntro);
     });
   }
   function enterFinale(at) {
+    gifts = 0; setText($("#finBtnLabel"), F.button);
     reveal($("#finEyebrow"), "rise", at, 90);
     let t = reveal($("#finTitle"), "lift", at + 420, 170);
     if ($("#finSub").textContent) fadeUp($("#finSub"), t - 200, 900);
-    setTimeout(() => { if (state.scene !== "finale") return; S.bats({ from: [innerWidth / 2, innerHeight * 0.4], n: innerWidth < 600 ? 8 : 12 }); }, at + 200);
+    setTimeout(() => { if (state.scene !== "finale") return; S.Snd.play("confetti"); S.bats({ from: [innerWidth / 2, innerHeight * 0.4], n: innerWidth < 600 ? 8 : 12 }); }, at + 200);
     setTimeout(() => { if (state.scene === "finale") S.Candy.start(); }, at + 700);
     setTimeout(() => { if (state.scene === "finale") S.peek({ say: "с праздником!" }); }, at + 7000);
-    if (RM) return fadeUp($("#finBtn"), t + 400);
-    anim($("#finBtn"), [{ opacity: 0, transform: T2({ y: 22 }), easing: "cubic-bezier(.2,.7,.3,1)" }, { opacity: 1, transform: T2({ y: -4 }), offset: 0.6, easing: E.sine }, { opacity: 1, transform: REST }], { at: t + 400, d: 900 });
-    return t + 1300;
+    fadeUp(finLink, t + 900, 800);
+    if (RM) return fadeUp(finBtn, t + 400);
+    anim(finBtn, [{ opacity: 0, transform: T2({ y: 22 }), easing: "cubic-bezier(.2,.7,.3,1)" }, { opacity: 1, transform: T2({ y: -4 }), offset: 0.6, easing: E.sine }, { opacity: 1, transform: REST }], { at: t + 400, d: 900 });
+    return t + 1700;
   }
 
   /* ---------- Telegram (необязательно) ---------- */
