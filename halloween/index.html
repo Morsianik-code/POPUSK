@@ -1,0 +1,398 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0d0716">
+<meta name="robots" content="noindex, nofollow">
+<title>🕯 не открывай после полуночи</title>
+<meta name="description" content="Тут кое-что для тебя. Если не страшно.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="🕯 не открывай после полуночи">
+<meta property="og:description" content="Тут кое-что для тебя. Если не страшно.">
+<link rel="icon" type="image/png" href="assets/pumpkin.png">
+
+<link rel="modulepreload" href="../vendor/three.module.min.js">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;600;700;800;900&family=Rubik+Wet+Paint&family=Caveat:wght@600;700&family=Kurale&family=Unbounded:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<canvas id="bg" aria-hidden="true"></canvas>
+<div class="fallback" aria-hidden="true"><i class="fb-moon"></i></div>
+
+<!-- кладбище, дом с привидениями и мёртвое дерево на горизонте -->
+<div class="ground" aria-hidden="true">
+  <svg viewBox="0 0 1440 300" preserveAspectRatio="xMidYMax meet">
+    <defs>
+      <radialGradient id="win" cx="50%" cy="55%" r="65%">
+        <stop offset="0" stop-color="#fff1b8"/><stop offset=".45" stop-color="#ffb43c"/><stop offset="1" stop-color="#ff6a14"/>
+      </radialGradient>
+      <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+        <stop offset="0" stop-color="#ff9a3c" stop-opacity=".55"/><stop offset="1" stop-color="#ff7a1a" stop-opacity="0"/>
+      </radialGradient>
+      <radialGradient id="pk" cx="45%" cy="40%" r="70%">
+        <stop offset="0" stop-color="#ffb35c"/><stop offset=".6" stop-color="#ff7a1a"/><stop offset="1" stop-color="#b8420c"/>
+      </radialGradient>
+      <linearGradient id="hill" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#1c0f30"/><stop offset="1" stop-color="#0b0614"/>
+      </linearGradient>
+    </defs>
+    <path fill="url(#hill)" d="M0,300 L0,215 C120,190 240,205 360,200 C480,195 560,175 680,185 C800,195 900,170 1040,178 C1180,186 1300,165 1440,180 L1440,300 Z"/>
+    <!-- свечение окон (мерцает) -->
+    <g class="flick">
+      <circle cx="850" cy="180" r="90" fill="url(#glow)"/>
+      <circle cx="760" cy="244" r="46" fill="url(#glow)"/>
+      <circle cx="612" cy="250" r="30" fill="url(#glow)"/>
+      <circle cx="596" cy="150" r="34" fill="url(#glow)"/>
+    </g>
+    <g fill="#07030c">
+      <path d="M0,300 L0,262 C90,250 180,258 300,252 C420,246 470,236 560,240 C650,244 700,250 780,246 C860,242 950,236 1040,244 C1160,254 1280,246 1440,252 L1440,300 Z"/>
+      <!-- дом -->
+      <g transform="rotate(-1.6 860 244)">
+        <path d="M800,246 L800,160 L788,160 L845,102 L902,160 L890,160 L890,246 Z"/>
+        <path d="M884,246 L884,120 L876,120 L912,46 L948,120 L940,120 L940,246 Z"/>
+        <path d="M812,142 L812,110 L826,108 L828,128 Z"/>
+        <path d="M824,214 L845,198 L866,214 Z"/>
+        <path d="M912,46 L912,30 L926,34 L912,38" stroke="#07030c" stroke-width="2" fill="none"/>
+      </g>
+      <!-- дерево -->
+      <path d="M518,244 C522,215 514,190 523,168 C530,150 521,132 527,116 L537,116 C534,135 541,152 537,170 C532,192 541,214 546,244 Z"/>
+      <g fill="none" stroke="#07030c" stroke-linecap="round">
+        <path stroke-width="6" d="M528,150 C510,138 498,128 476,124"/>
+        <path stroke-width="3" d="M478,124 C470,118 466,110 460,98"/>
+        <path stroke-width="2.5" d="M492,131 C486,120 489,112 482,103"/>
+        <path stroke-width="6" d="M535,140 C552,128 568,124 588,111"/>
+        <path stroke-width="3" d="M586,112 C594,104 598,96 606,85"/>
+        <path stroke-width="2.5" d="M566,124 C576,128 586,131 598,128"/>
+        <path stroke-width="4.5" d="M531,122 C526,104 531,92 522,74"/>
+        <path stroke-width="2.5" d="M522,76 C516,67 512,61 507,50"/>
+        <path stroke-width="2.5" d="M526,96 C536,88 542,80 547,68"/>
+        <path stroke-width="3.5" d="M537,172 C551,166 561,160 569,149"/>
+        <path stroke-width="1.2" d="M596,129 L596,144"/>
+      </g>
+      <!-- надгробия и кресты -->
+      <path d="M628,252 v-30 a14,14 0 0 1 28,0 v30 z"/>
+      <path d="M684,252 v-22 a10,10 0 0 1 20,0 v22 z"/>
+      <path d="M722,252 v-34 h6 v10 h10 v6 h-10 v18 z"/>
+      <path d="M300,258 v-26 a12,12 0 0 1 24,0 v26 z"/>
+      <path d="M352,256 v-30 h6 v9 h9 v6 h-9 v15 z"/>
+      <path d="M1080,252 v-28 a13,13 0 0 1 26,0 v28 z"/>
+      <path d="M1128,252 v-36 h6 v11 h11 v6 h-11 v19 z"/>
+      <path d="M1300,256 v-24 a11,11 0 0 1 22,0 v24 z"/>
+      <!-- ограды -->
+      <path d="M60,236 h200 v3 h-200 z M60,252 h200 v3 h-200 z"/>
+      <path d="M62,264 v-36 l3,-8 l3,8 v36 z M78,264 v-36 l3,-8 l3,8 v36 z M94,264 v-36 l3,-8 l3,8 v36 z M110,264 v-36 l3,-8 l3,8 v36 z M126,264 v-36 l3,-8 l3,8 v36 z M142,264 v-36 l3,-8 l3,8 v36 z M158,264 v-36 l3,-8 l3,8 v36 z M174,264 v-36 l3,-8 l3,8 v36 z M190,264 v-36 l3,-8 l3,8 v36 z M206,264 v-36 l3,-8 l3,8 v36 z M222,264 v-36 l3,-8 l3,8 v36 z M238,264 v-36 l3,-8 l3,8 v36 z M254,264 v-36 l3,-8 l3,8 v36 z"/>
+      <path d="M1180,240 h240 v3 h-240 z M1180,256 h240 v3 h-240 z"/>
+      <path d="M1182,268 v-36 l3,-8 l3,8 v36 z M1198,268 v-36 l3,-8 l3,8 v36 z M1214,268 v-36 l3,-8 l3,8 v36 z M1230,268 v-36 l3,-8 l3,8 v36 z M1246,268 v-36 l3,-8 l3,8 v36 z M1262,268 v-36 l3,-8 l3,8 v36 z M1278,268 v-36 l3,-8 l3,8 v36 z M1294,268 v-36 l3,-8 l3,8 v36 z M1310,268 v-36 l3,-8 l3,8 v36 z M1326,268 v-36 l3,-8 l3,8 v36 z M1342,268 v-36 l3,-8 l3,8 v36 z M1358,268 v-36 l3,-8 l3,8 v36 z M1374,268 v-36 l3,-8 l3,8 v36 z M1390,268 v-36 l3,-8 l3,8 v36 z M1406,268 v-36 l3,-8 l3,8 v36 z"/>
+    </g>
+    <!-- окна дома -->
+    <g class="flick2" transform="rotate(-1.6 860 244)">
+      <rect x="812" y="172" width="18" height="24" rx="1" fill="url(#win)"/>
+      <rect x="858" y="172" width="18" height="24" rx="1" fill="url(#win)"/>
+      <path d="M904,142 a8,8 0 0 1 16,0 v18 h-16 z" fill="url(#win)"/>
+      <circle cx="845" cy="138" r="7" fill="url(#win)"/>
+      <rect x="836" y="216" width="18" height="30" fill="url(#win)" opacity=".55"/>
+      <path d="M821,172 v24 M812,184 h18 M867,172 v24 M858,184 h18 M912,134 v26 M845,131 v14 M838,138 h14" stroke="#07030c" stroke-width="2"/>
+    </g>
+    <!-- тыквы-фонари на земле и фонарик на ветке -->
+    <g>
+      <ellipse cx="760" cy="244" rx="14" ry="10.5" fill="url(#pk)"/>
+      <path d="M760,234 q1,-5 4,-6" stroke="#2f4a12" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+      <path d="M753,241 l3,-4 l3,4 z M761,241 l3,-4 l3,4 z M752,246 q8,6 16,0 l-3,2 l-2,-2 l-3,3 l-3,-3 l-2,2 z" fill="#3a1204" class="flick2"/>
+      <ellipse cx="612" cy="250" rx="9" ry="7" fill="url(#pk)"/>
+      <path d="M607,249 l2,-3 l2,3 z M613,249 l2,-3 l2,3 z M607,252 q5,4 10,0 z" fill="#3a1204"/>
+      <rect x="591" y="143" width="10" height="13" rx="2" fill="url(#win)" class="flick"/>
+    </g>
+  </svg>
+</div>
+<div class="fog" aria-hidden="true"><i></i><i></i></div>
+<div id="eyes" aria-hidden="true"></div>
+<div class="grain" aria-hidden="true"></div>
+<div id="flash" aria-hidden="true"></div>
+<div id="bolt" aria-hidden="true"></div>
+
+<main>
+  <!-- ИНТРО -->
+  <section class="scene" data-scene="intro" inert>
+    <div class="float"><div class="tilt">
+      <img class="peeker" id="peeker" src="assets/ghost.png" alt="" aria-hidden="true" draggable="false">
+      <article class="card glass" id="introCard">
+        <span class="web-spider" aria-hidden="true"><i></i><img src="assets/spider.png" alt="" draggable="false"></span>
+        <h1 id="hello"></h1>
+        <p class="lead" id="introLead"></p>
+        <div class="row">
+          <button class="btn primary" id="startBtn" type="button"><span id="startLabel"></span><span class="arr">→</span></button>
+        </div>
+        <p class="note" id="introNote"></p>
+      </article>
+    </div></div>
+  </section>
+
+  <!-- ВОПРОСЫ: две одинаковые карточки по очереди — уходящая и приходящая -->
+  <section class="scene" data-scene="quiz" inert>
+    <div class="float"><div class="tilt">
+      <div class="stack" id="quizStack" aria-live="polite">
+        <article class="card glass qcard"></article>
+        <article class="card glass qcard is-off" inert></article>
+        <i class="pearl" id="pearl" aria-hidden="true"></i>
+      </div>
+    </div></div>
+  </section>
+
+  <!-- РЕЗУЛЬТАТ -->
+  <section class="scene" data-scene="result" inert>
+    <div class="float"><div class="tilt">
+      <article class="card glass" id="resultCard" style="text-align:center">
+        <p class="eyebrow" id="resEyebrow"></p>
+        <div class="creature" aria-hidden="true">
+          <img id="creatureImg" alt="" draggable="false">
+          <img id="devil" src="assets/devil.png" alt="" draggable="false">
+          <span class="say" id="devilSay"></span>
+        </div>
+        <div class="num" id="num" role="img"></div>
+        <p class="label" id="resLabel"></p>
+        <p class="lead" id="resText"></p>
+        <button class="btn" id="resBtn" type="button"><span id="resBtnLabel"></span><span class="arr">→</span></button>
+      </article>
+    </div></div>
+  </section>
+
+  <!-- ПИСЬМО-ПРОКЛЯТИЕ на пергаменте -->
+  <section class="scene" data-scene="letter" inert>
+    <div class="float"><div class="tilt">
+      <article class="card letter parchment" id="letterCard">
+        <div class="letter-scroll" id="letterScroll">
+        <p class="eyebrow" id="letterEyebrow"></p>
+        <div id="letterBody"></div>
+        <p class="sig" id="sig"><span class="sig-win"><span class="sig-ink" id="sigInk"></span></span></p>
+        <p class="ps" id="ps"></p>
+        <div class="heartwrap" id="heartwrap">
+          <button class="heart-btn" id="heartBtn" type="button" aria-label="Сорвать печать">
+            <span class="core"><svg viewBox="0 0 64 64" aria-hidden="true">
+              <path class="st" d="M31 17c-1-5 1-9 5-11"/>
+              <path class="pb" d="M32 18c-5-3-13-3-18 2-7 7-7 23 1 31 5 5 12 6 17 3 5 3 12 2 17-3 8-8 8-24 1-31-5-5-13-5-18-2z"/>
+              <path class="fc" d="M20 32l5-7 5 7zM34 32l5-7 5 7zM18 39c5 8 23 8 28 0l-4 2-3-3-3 4-4-4-4 4-3-4-3 3z"/>
+            </svg></span>
+          </button>
+          <span id="heartHint"></span>
+        </div>
+        </div>
+      </article>
+    </div></div>
+  </section>
+
+  <!-- ФИНАЛ -->
+  <section class="scene" data-scene="finale" inert>
+    <div class="finale-shade" id="finaleShade" aria-hidden="true"></div>
+    <div class="finale-stage" id="finaleStage">
+      <p class="eyebrow" id="finEyebrow"></p>
+      <p class="display" id="finTitle"></p>
+      <p class="fin-sub" id="finSub"></p>
+      <a class="btn" id="finBtn" href="#" target="_blank" rel="noopener"><span id="finBtnLabel"></span><span class="arr">→</span></a>
+    </div>
+  </section>
+</main>
+
+<!-- слой «пугалок»: летучие мыши, привидения, паук, кот, конфеты -->
+<div id="scare" aria-hidden="true"></div>
+<!-- «кто выключил свет»: темнота с фонариком -->
+<div id="dark" aria-hidden="true"></div>
+<!-- главный скример -->
+<div id="boo" aria-hidden="true">
+  <div class="boo-bg"></div>
+  <img class="boo-ghost" src="assets/ghost.svg" alt="" draggable="false">
+  <p class="boo-text">БУ!</p>
+</div>
+<div id="toast" role="status"><img src="assets/scream.png" alt="" draggable="false"><span></span></div>
+<button id="snd" type="button" aria-label="Звук" aria-pressed="true">
+  <svg class="on" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5h3.2L12 5.6v12.8l-4.8-3.9H4z"/><path class="wv" d="M15.5 9a4.2 4.2 0 0 1 0 6M18 6.6a7.6 7.6 0 0 1 0 10.8"/></svg>
+  <svg class="off" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5h3.2L12 5.6v12.8l-4.8-3.9H4z"/><path class="wv" d="M16 9.5l5 5M21 9.5l-5 5"/></svg>
+</button>
+
+<noscript><div>Для этой страницы нужен JavaScript — включи его, пожалуйста, и обнови страницу.</div></noscript>
+
+<!-- ============================================================
+     НАСТРОЙКИ. Всё, что нужно менять под себя, — здесь.
+     {name} в текстах заменяется на имя.
+     ============================================================ -->
+<script>
+window.CONFIG = {
+  name: "Ксюня",          // её имя. Пустая строка — обращение без имени
+  replyUrl: "",           // ссылка «Написать мне» в финале, например "https://t.me/username". Пусто — кнопка «Ещё раз»
+  sound: true,            // звук по умолчанию (переключатель — справа вверху)
+  scares: true,           // false — без скримеров (останутся молнии и темнота)
+
+  intro: {
+    title:  "Сладость или гадость, <em>{name}?</em>",
+    lead:   "Этой ночью граница между мирами тоньше паутинки. Ответь на <strong>10 вопросов</strong> — и я узнаю, какая нечисть живёт у тебя внутри. Если станет страшно, держись за экран.",
+    button: "Войти, если не страшно",
+    note:   "🔊 со звуком страшнее (и милее)",
+  },
+
+  quiz: {
+    eyebrow: "вопрос {n}",
+    // Переходы между вопросами по кругу: flicker (карточка мигает, как лампочка в подвале), flip, cube, jelly,
+    // toss, zoom, orbit, drop, pearl (огонёк), hinge
+    transitions: ["flicker", "flip", "cube", "jelly", "toss", "pearl", "drop", "orbit", "hinge"],
+    // is — какая нечисть стоит за ответом: pumpkin, ghost, vampire, witch.
+    // onEnter — пугалка, когда вопрос появился; onAnswer — после ответа.
+    // Пугалки: bats, peek (привидение выглядывает), spider, cat, lightning, dark (гаснет свет), boo (скример)
+    questions: [
+      {
+        title: "Полночь. Под кроватью что-то шуршит. Твои действия?",
+        options: [
+          { text: "Накроюсь одеялом с головой: одеяло спасает от всего", is: "pumpkin" },
+          { text: "Шепну: «Ты тоже не спишь?»", is: "ghost" },
+          { text: "Посмотрю туда так, что оно само уйдёт", is: "vampire" },
+          { text: "Предложу ему чай и выведаю все тайны", is: "witch" },
+        ],
+      },
+      {
+        title: "Тебя позвали на бал нечисти. В чём пойдёшь?",
+        options: [
+          { text: "Чёрный бархат, красная помада и много драмы", is: "vampire" },
+          { text: "Остроконечная шляпа и кот на плече", is: "witch" },
+          { text: "Костюм тыквы: мягко, тепло и карманы для конфет", is: "pumpkin" },
+          { text: "Простыня с дырками. Классика вечна", is: "ghost" },
+        ],
+        onAnswer: "bats",
+      },
+      {
+        title: "Что ты сваришь в своём котле?",
+        options: [
+          { text: "Немного тумана и лунного света", is: "ghost" },
+          { text: "Какао с зефирками. Котёл огромный", is: "pumpkin" },
+          { text: "Всё подряд, а потом посмотрим, что взорвётся", is: "witch" },
+          { text: "Что-то красное. Это вишнёвый сок. Наверное", is: "vampire" },
+        ],
+      },
+      {
+        title: "Твоё любимое время суток?",
+        options: [
+          { text: "Вечер: на улице темно, а дома тепло", is: "pumpkin" },
+          { text: "Полночь. Самое время выйти в свет", is: "vampire" },
+          { text: "Три часа ночи, когда все спят и можно бродить", is: "ghost" },
+          { text: "Полнолуние. Время неважно, главное — луна", is: "witch" },
+        ],
+        onEnter: "peek",
+      },
+      {
+        title: "Кто живёт с тобой в твоём замке?",
+        options: [
+          { text: "Чёрный кот, который всё понимает", is: "witch" },
+          { text: "Никто. Хотя стулья иногда двигаются сами", is: "ghost" },
+          { text: "Толстый хомяк, который ест больше меня", is: "pumpkin" },
+          { text: "Летучая мышь по имени Граф", is: "vampire" },
+        ],
+        onEnter: "lightning",
+      },
+      {
+        eyebrow: "ой… кто выключил свет? · {light}",
+        title: "Темно, хоть глаз выколи. Что будешь делать?",
+        options: [
+          { text: "Найду плед и подожду, пока само включится", is: "pumpkin" },
+          { text: "Наконец-то. Глазам больше не больно", is: "vampire" },
+          { text: "Щёлкну пальцами — и будет свет", is: "witch" },
+          { text: "Ничего. В темноте я как дома", is: "ghost" },
+        ],
+        onEnter: "dark",
+      },
+      {
+        title: "Чего ты боишься на самом деле?",
+        options: [
+          { text: "Что закончится какао", is: "pumpkin" },
+          { text: "Тишины в три часа ночи", is: "ghost" },
+          { text: "Солнца. И понедельников", is: "vampire" },
+          { text: "Ничего не боюсь", is: "witch" },
+        ],
+        // этот ответ «передумывает», если на него навести или нажать
+        trick: { option: 3, text: "Ничего не боюсь… кроме пауков 🕷" },
+        onEnter: "spider",
+      },
+      {
+        title: "Стучат в дверь: «Сладость или гадость!» Что сделаешь?",
+        options: [
+          { text: "Отдам все конфеты и ещё испеку пирог", is: "pumpkin" },
+          { text: "Превращу всех в лягушек. Милых, с бантиками", is: "witch" },
+          { text: "Тихо открою… а за дверью уже никого", is: "ghost" },
+          { text: "Выберу гадость. Но очень стильную", is: "vampire" },
+        ],
+        onAnswer: "boo",
+      },
+      {
+        title: "Выбери заклинание",
+        options: [
+          { text: "Чтобы никогда-никогда не стареть", is: "vampire" },
+          { text: "Чтобы всем вокруг всегда было тепло", is: "pumpkin" },
+          { text: "Чтобы проходить сквозь стены. И дедлайны", is: "ghost" },
+          { text: "Чтобы любое желание сбывалось с первого раза", is: "witch" },
+        ],
+        onEnter: "cat",
+      },
+      {
+        title: "Последний. Как думаешь, зачем я сделал этот сайт?",
+        options: [
+          { text: "Чтобы меня напугать", is: "vampire" },
+          { text: "Чтобы узнать, какая я нечисть", is: "witch" },
+          { text: "Потому что Хэллоуин — лучший праздник", is: "pumpkin" },
+          { text: "Ты что-то задумал…", is: "ghost" },
+        ],
+        onEnter: "peek",
+        onAnswer: "bats",
+      },
+    ],
+  },
+
+  // кем она окажется. Побеждает нечисть, за которую больше ответов
+  creatures: {
+    pumpkin: { name: "тыковка",   img: "assets/pumpkin.png", text: "Тёплая, уютная и светишься изнутри. Рядом с тобой даже в самую тёмную ночь не страшно. И подозреваю, что у тебя всегда есть конфеты." },
+    ghost:   { name: "привидение", img: "assets/ghost.png",   text: "Тихая, загадочная и чуть-чуть прозрачная, когда хочется спрятаться от всех. Появляешься внезапно, но всегда очень вовремя. Бу!" },
+    vampire: { name: "вампирка",  img: "assets/vampire.png", text: "Ночная, стильная и с юмором острее клыков. Солнце — так себе идея, а вот полночь — твоё время." },
+    witch:   { name: "ведьмочка", img: "assets/witch.png",   text: "Умная, немного хаотичная и точно владеешь магией. Как ещё объяснить, что рядом с тобой всё становится лучше?" },
+  },
+
+  result: {
+    eyebrow:   "вскрытие показало…",
+    fake:      666,               // сначала одометр «случайно» докручивается до этого числа
+    fakeLabel: "уровень жути",
+    oops:      "ой, не та цифра",
+    value:     100,
+    label:     "{creature}",     // подпись под настоящим числом
+    button:    "И что теперь?",
+  },
+
+  letter: {
+    eyebrow: "официальное проклятие",
+    paragraphs: [
+      "{name}, этой ночью, когда граница между мирами тоньше паутинки, я накладываю на тебя проклятие.",
+      "Отныне ты обречена получать сладости без повода, смеяться до икоты и просыпаться от того, что кто-то прислал тебе мем.",
+      "Ты будешь притягивать хороших людей, как тыква-фонарь притягивает мотыльков. Даже не пытайся отбиться: я, например, прилип намертво.",
+      "А когда станет темно и страшно, рядом обязательно окажется кто-то, кто включит свет. Ну, или хотя бы фонарик. Этим кем-то буду я.",
+      "Проклятие снятию не подлежит. Срок действия — <em>вечность</em>. Побочные эффекты: улыбка.",
+    ],
+    signature: "твой друн-некромант «кышлик»",
+    ps:        "P.S. Если ночью что-то скрипнет — не бойся. Это я пишу тебе сообщение.",
+    heartHint: "сорви печать, если не боишься",
+  },
+
+  finale: {
+    eyebrow: "сладость или гадость?",
+    title:   "Сладость. Это <em>ты</em>",
+    sub:     "С Хэллоуином, {name} 🎃",
+    buttonReply:   "Написать мне",
+    buttonRestart: "Ещё раз, если не страшно",
+  },
+
+  // Необязательно: ответы тихо уходят в личного Telegram-бота автора.
+  // Для неё это невидимо. enabled:false — сайт вообще не выходит в сеть.
+  tg: { enabled: false, token: "", chatId: "" },
+};
+</script>
+<script src="spooky.js"></script>
+<script src="app.js"></script>
+<script type="module" src="bg.js"></script>
+</body>
+</html>
