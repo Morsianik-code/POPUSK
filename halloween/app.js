@@ -203,7 +203,7 @@
   S.Snd.onChange(syncIntroSound); syncIntroSound();
   $("#startBtn").addEventListener("click", e => {
     if (state.busy || state.scene !== "intro") return;
-    S.Snd.start(); S.Snd.play("pop");          // звук можно включить только по нажатию
+    S.Snd.start(); S.Snd.play("pop"); S.Snd.play("bell"); // звук можно включить только по нажатию
     ripple(e, e.currentTarget);
     switchScene("quiz", FX_SCENE.introQuiz);
     setTimeout(() => S.lightning(), 420);       // гром на входе
@@ -268,7 +268,7 @@
         b._swap = () => {
           if (b._swapped) return; b._swapped = true;
           $(".txt", b).textContent = tpl(trick.text);
-          jitter(b, 0, 520, 6); S.Snd.play("squeaks", 2, 0.12);
+          jitter(b, 0, 520, 6); S.Snd.play("ooo");
         };
         b.addEventListener("pointerenter", e => { if (e.pointerType === "mouse" && card === curCard && !state.busy) b._swap(); });
       }
@@ -630,7 +630,7 @@
       jitter(num, tA, 720, 12);
       setTimeout(() => {
         if (state.scene !== "result") return;
-        num.classList.add("glitch"); S.Snd.play("glitch"); setTimeout(() => { if (state.scene === "result") S.Snd.play("laugh"); }, 260);
+        num.classList.add("glitch"); S.Snd.play("glitch"); setTimeout(() => { if (state.scene === "result") S.Snd.play("laugh"); }, 1500);
         const b = bg(); if (b) b.kick(0, 0.2, 0.8);
         setTimeout(() => num.classList.remove("glitch"), 720);
       }, tA);
@@ -665,7 +665,7 @@
       fadeUp(label, land + 80, 700);
     }
     popImg($("#creatureImg"), land - 120, true);
-    setTimeout(() => { if (state.scene === "result") S.Snd.play("chime"); }, land);
+    setTimeout(() => { if (state.scene === "result") { S.Snd.play("chime"); S.Snd.play("creature", creatureKey); } }, land);
     const t = reveal($("#resText"), "rise", land + 320, 18);
     return popIn($("#resBtn"), t - 250);
   }
@@ -685,7 +685,7 @@
     if (state.busy || state.scene !== "letter") return;
     state.busy = true;
     const r = heartBtn.getBoundingClientRect();
-    S.Snd.play("crack"); setTimeout(() => S.Snd.play("chime"), 160);
+    S.Snd.play("crack"); setTimeout(() => S.Snd.play("magic"), 160);
     if (!RM) anim(heartBtn, [
       { transform: T(), easing: E.out },
       { transform: T({ s: 0.84, rz: -8 }), offset: 0.2, easing: E.out },
@@ -697,7 +697,7 @@
     switchScene("finale", FX_SCENE.letterFinale, true);
   });
   function enterLetter(at) {
-    S.Snd.mood("sweet");
+    S.Snd.mood("letter");
     let t = reveal($("#letterEyebrow"), "pop", at, 60);
     t = at + 300;
     paras.forEach(p => { const e = reveal(p, "rise", t, 24); t = e - 260; });
@@ -749,6 +749,7 @@
     });
   }
   function enterFinale(at) {
+    S.Snd.mood("finale");
     gifts = 0; setText($("#finBtnLabel"), F.button);
     reveal($("#finEyebrow"), "rise", at, 90);
     let t = reveal($("#finTitle"), "lift", at + 420, 170);
@@ -757,6 +758,7 @@
     setTimeout(() => { if (state.scene === "finale") S.Candy.start(); }, at + 700);
     setTimeout(() => { if (state.scene === "finale") S.peek({ say: "с праздником!" }); }, at + 7000);
     fadeUp(finLink, t + 900, 800);
+    fadeUp($("#credits"), t + 1300, 800);
     if (RM) return fadeUp(finBtn, t + 400);
     anim(finBtn, [{ opacity: 0, transform: T2({ y: 22 }), easing: "cubic-bezier(.2,.7,.3,1)" }, { opacity: 1, transform: T2({ y: -4 }), offset: 0.6, easing: E.sine }, { opacity: 1, transform: REST }], { at: t + 400, d: 900 });
     return t + 1700;

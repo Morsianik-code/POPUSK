@@ -24,14 +24,18 @@
 
   /* ============================================================
      ЗВУК: готовые записи (assets/sound, источники — в README)
-     • эффекты — короткие mp3, декодируются в Web Audio: играют без задержки и внахлёст;
-     • музыка — два <audio> (жутковатый эмбиент и милый лоу-фай), плавная смена.
+     • только настоящие записи: оркестр, орган, BigSoundBank, Oculus Audio Pack, котёнок;
+     • эффекты декодируются в Web Audio: играют без задержки и внахлёст;
+     • музыка — один <audio>, дорожки меняются по сценам (качается только та, что играет):
+       «В пещере горного короля» (Григ), «Graveyard Shift» (K. MacLeod), «Пляска смерти» (Сен-Санс).
      ============================================================ */
   const Snd = (() => {
     const BASE = "assets/sound/";
-    const FILES = ["pop", "whoosh", "whoosh2", "ghost", "ghost2", "squeak", "wings", "thunder", "boo", "boom", "creak", "static",
-      "switch", "clock", "spring", "springup", "glitch", "laugh", "meow", "knock", "crack", "magic", "sparkle", "rise", "popper", "confetti"];
-    const MUSIC_VOL = 0.55;
+    const FILES = ["pop", "whoosh", "whoosh2", "swoosh", "giggle", "giggle2", "wings", "thunder", "toccata", "cackle", "bell", "cauldron",
+      "door", "cheers", "laugh", "boo", "scream", "organ", "strings", "off", "on", "boing", "tear", "belltree", "victory", "mallet",
+      "chimes", "magic", "clock", "knock", "creak", "meow"];
+    const TRACKS = { spooky: "music-quiz.mp3", letter: "music-letter.mp3", finale: "music-finale.mp3" };
+    const MUSIC_VOL = 0.6;
     let ctx = null, master = null, started = false, mood = "spooky";
     let on = C.sound !== false;
     try { const v = localStorage.getItem("hw-sound"); if (v === "0") on = false; else if (v === "1") on = true; } catch (e) {}
@@ -62,7 +66,13 @@
     }
     function play(n, o = {}) {
       if (!ctx || !started || !on) return null;
-      const b = buf[n]; if (!b) { decode(n); return null; }
+      const b = buf[n];
+      if (DEBUG) (window.__sndLog = window.__sndLog || []).push(b ? n : "MISSING:" + n);
+      if (!b) { // ещё декодируется (первое нажатие): сыграем, как только будет готово, если не поздно
+        const t0 = performance.now(), d = decode(n);
+        if (d && !o._late) d.then(bb => { if (bb && performance.now() - t0 < 1500) play(n, Object.assign({}, o, { _late: true })); });
+        return null;
+      }
       const src = ctx.createBufferSource(), g = ctx.createGain(), t = ctx.currentTime + (o.delay || 0);
       src.buffer = b; src.loop = !!o.loop; src.playbackRate.value = o.rate || 1;
       g.gain.setValueAtTime(o.fadeIn ? 0.0001 : (o.vol ?? 1), t);
@@ -75,66 +85,70 @@
     }
     const vary = (a, b) => a + Math.random() * (b - a);
     // «реплики»: имена, которые зовёт остальной код
+    const pick2 = (a, b) => Math.random() < 0.5 ? a : b;
+    // «реплики»: имена, которые зовёт остальной код
     const CUES = {
-      pop: () => play("pop", { vol: 0.55, rate: vary(0.92, 1.1) }),
-      whoosh: () => play(Math.random() < 0.5 ? "whoosh" : "whoosh2", { vol: 0.45, rate: vary(0.9, 1.1) }),
-      ooo: () => play(Math.random() < 0.5 ? "ghost" : "ghost2", { vol: 0.75, rate: vary(0.85, 1) }),
-      squeaks: (n = 5, span = 1) => { for (let i = 0; i < Math.min(n, 6); i++) play("squeak", { vol: 0.3, rate: vary(1.9, 2.6), delay: Math.random() * span }); },
-      flutter: () => play("wings", { vol: 0.5, rate: vary(1.2, 1.45) }),
-      thunder: (delay = 0.2) => play("thunder", { vol: 0.85, delay }),
-      boo: () => { play("boo", { vol: 1 }); play("boom", { vol: 0.75 }); },
-      buzz: () => { play("static", { vol: 0.3 }); play("static", { vol: 0.22, delay: 0.42, rate: 0.85 }); },
-      click: () => play("switch", { vol: 0.7 }),
-      zip: (down = true) => play(down ? "spring" : "springup", { vol: 0.5, rate: down ? 0.9 : 1.25 }),
-      glitch: () => { play("glitch", { vol: 0.65 }); play("static", { vol: 0.25, delay: 0.1 }); play("glitch", { vol: 0.55, delay: 0.28, rate: 0.8 }); },
-      laugh: () => play("laugh", { vol: 0.7 }),
-      meow: () => play("meow", { vol: 0.8 }),
-      crack: () => play("crack", { vol: 0.9 }),
-      chime: () => play("magic", { vol: 0.6 }),
-      sparkle: () => play("sparkle", { vol: 0.5, rate: vary(0.95, 1.1) }),
-      knock: () => play("knock", { vol: 0.9 }),
-      creak: () => play("creak", { vol: 0.75 }),
-      rise: () => play("rise", { vol: 0.6 }),
-      popper: () => play("popper", { vol: 0.75, rate: vary(0.95, 1.08) }),
-      confetti: () => play("confetti", { vol: 0.75 }),
+      pop: () => play("pop", { vol: 0.6, rate: vary(0.95, 1.08) }),
+      whoosh: () => play(pick2("whoosh", "swoosh"), { vol: 0.55 }),
+      ooo: () => play(pick2("giggle", "giggle2"), { vol: 0.8 }),       // привидение хихикает
+      squeaks: () => play("whoosh2", { vol: 0.5 }),
+      flutter: () => play("wings", { vol: 0.55, rate: vary(1.2, 1.45) }),
+      thunder: (delay = 0.2) => play("thunder", { vol: 0.95, delay }),
+      boo: () => { play("boo", { vol: 1 }); play("scream", { vol: 0.55, delay: 0.08 }); },
+      // мигающая лампа: кто-то щёлкает выключателем
+      buzz: () => { let t = 0; for (let k = 0; k < 5; k++) { play(k % 2 ? "on" : "off", { vol: 0.55, delay: t }); t += vary(0.12, 0.3); } },
+      click: () => play("off", { vol: 0.8 }),
+      clickOn: () => play("on", { vol: 0.8 }),
+      zip: (down = true) => down ? play("boing", { vol: 0.6 }) : play("whoosh2", { vol: 0.6, rate: 1.2 }),
+      glitch: () => play("toccata", { vol: 1 }),                       // та-да-да-а-а… (Бах)
+      laugh: () => play("laugh", { vol: 0.8 }),
+      cackle: () => play("cackle", { vol: 0.9 }),
+      meow: () => play("meow", { vol: 0.85 }),
+      crack: () => play("tear", { vol: 0.9 }),
+      chime: () => play("victory", { vol: 0.7 }),
+      sparkle: () => play("belltree", { vol: 0.55 }),
+      knock: () => play("knock", { vol: 0.95 }),
+      creak: () => play("creak", { vol: 0.8 }),
+      door: () => play("door", { vol: 0.9 }),
+      bell: () => play("bell", { vol: 0.9 }),
+      organ: () => play("organ", { vol: 0.6 }),
+      strings: () => play("strings", { vol: 0.55 }),
+      rise: () => play("mallet", { vol: 0.7 }),
+      popper: () => play(pick2("chimes", "belltree"), { vol: 0.6 }),
+      confetti: () => play("cheers", { vol: 0.8 }),
+      // голос существа в результате
+      creature: k => play({ pumpkin: "cauldron", ghost: "giggle", vampire: "laugh", witch: "cackle" }[k] || "cauldron", { vol: 0.9 }),
     };
 
-    /* ---------- музыка ---------- */
-    const music = {};
-    function track(name) {
-      if (music[name]) return music[name];
-      const a = new Audio(BASE + "music-" + name + ".mp3");
-      a.loop = true; a.preload = "auto"; a.setAttribute("playsinline", ""); a.volume = 0;
-      return music[name] = a;
+    /* ---------- музыка: один плеер, дорожка меняется по сцене ---------- */
+    let player = null, curTrack = null, swapToken = 0;
+    function ensurePlayer() {
+      if (player) return player;
+      player = new Audio(); player.loop = true; player.preload = "auto"; player.setAttribute("playsinline", ""); player.volume = 0;
+      return player;
     }
-    const fades = new Map();
+    let fadeId = 0;
     function fadeTo(a, v, ms, then) {
-      clearInterval(fades.get(a));
+      clearInterval(fadeId);
       const from = a.volume, t0 = performance.now();
-      const id = setInterval(() => {
+      fadeId = setInterval(() => {
         const k = Math.min(1, (performance.now() - t0) / ms);
         try { a.volume = Math.max(0, Math.min(1, from + (v - from) * k)); } catch (e) {}
-        if (k >= 1) { clearInterval(id); fades.delete(a); if (then) then(); }
+        if (k >= 1) { clearInterval(fadeId); if (then) then(); }
       }, 50);
-      fades.set(a, id);
     }
+    const go = a => { const p = a.play(); if (p && p.catch) p.catch(e => { if (DEBUG) console.error("music", e); }); };
     function playMusic() {
       if (!started) return;
-      const cur = track(mood), other = track(mood === "spooky" ? "sweet" : "spooky");
-      if (!on || document.hidden) { cur.pause(); other.pause(); return; }
-      fadeTo(other, 0, 900, () => other.pause());
-      const p = cur.play(); if (p && p.catch) p.catch(() => {});
-      fadeTo(cur, MUSIC_VOL, 1400);
-    }
-    // iOS разрешает запуск <audio> только из нажатия: «разблокируем» обе дорожки сразу
-    function unlockMusic() {
-      ["spooky", "sweet"].forEach(n => {
-        const a = track(n); if (n === mood) return;
-        a.muted = true;
-        const p = a.play();
-        const done = () => { a.pause(); a.currentTime = 0; a.muted = false; };
-        if (p && p.then) p.then(done, done); else done();
-      });
+      const a = ensurePlayer(), want = TRACKS[mood] || TRACKS.spooky, token = ++swapToken;
+      if (!on || document.hidden) { fadeTo(a, 0, 350, () => a.pause()); return; }
+      if (curTrack === want) { if (a.paused) go(a); fadeTo(a, MUSIC_VOL, 900); return; }
+      const swap = () => {
+        if (token !== swapToken) return;
+        curTrack = want; a.src = BASE + want; go(a); fadeTo(a, MUSIC_VOL, 1300);
+      };
+      // iOS громкость не меняет — там смена просто резче
+      if (curTrack && !a.paused) fadeTo(a, 0, 800, swap); else swap();
     }
 
     const listeners = [];
@@ -145,12 +159,12 @@
         try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch (e) {}
         if (init() && ctx.state !== "running") ctx.resume();
         if (ctx) { try { const b = ctx.createBufferSource(); b.buffer = ctx.createBuffer(1, 1, 22050); b.connect(ctx.destination); b.start(0); } catch (e) {} }
-        if (!started) { started = true; unlockMusic(); }
+        if (!started) { started = true; ensurePlayer(); }
         playMusic(); emit();
       },
       // звук реально играет (до первого нажатия браузер его не пускает)
       playing: () => on && started,
-      toggle() { if (on && started) this.setOn(false); else { this.setOn(true); this.play("sparkle"); } },
+      toggle() { if (on && started) this.setOn(false); else { this.setOn(true); this.play("cackle"); } },
       onChange(f) { listeners.push(f); },
       play(name, ...a) {
         if (!ctx || !started || !on) return null;
@@ -166,13 +180,13 @@
         playMusic(); emit();
       },
       isOn: () => on,
-      mood(m) { const next = m === "sweet" ? "sweet" : "spooky"; if (next !== mood) { mood = next; playMusic(); } },
+      mood(m) { const next = TRACKS[m] ? m : m === "sweet" ? "letter" : "spooky"; if (next !== mood) { mood = next; playMusic(); } },
       _suspend(h) {
         if (!started) return;
         if (ctx) { if (h) ctx.suspend(); else if (ctx.state !== "running") ctx.resume(); }
-        if (h) Object.values(music).forEach(a => a.pause()); else if (on) { const a = music[mood]; if (a && a.paused) { const p = a.play(); if (p && p.catch) p.catch(() => {}); } }
+        if (player) { if (h) player.pause(); else if (on && player.paused && curTrack) go(player); }
       },
-      _debug: () => ({ state: ctx && ctx.state, loaded: Object.keys(buf).length, total: FILES.length, music: Object.fromEntries(Object.entries(music).map(([k, a]) => [k, { paused: a.paused, vol: +a.volume.toFixed(2), t: +a.currentTime.toFixed(1), err: a.error && a.error.code }])) }),
+      _debug: () => ({ state: ctx && ctx.state, loaded: Object.keys(buf).length, total: FILES.length, music: player ? { track: curTrack, paused: player.paused, vol: +player.volume.toFixed(2), t: +player.currentTime.toFixed(1), err: player.error && player.error.code } : null }),
     };
   })();
   document.addEventListener("visibilitychange", () => Snd._suspend(document.hidden));
@@ -207,7 +221,7 @@
   function bats(o = {}) {
     if (RM || STILL) return;
     const W = innerWidth, H = innerHeight, n = o.n || (W < 600 ? 7 : 11), ltrAll = Math.random() < 0.5;
-    Snd.play("squeaks", 7, 1.4); Snd.play("flutter", 1.6);
+    Snd.play("flutter"); setTimeout(() => Snd.play("flutter"), 700);
     for (let i = 0; i < n; i++) {
       let b = batPool[i];
       if (!b) { b = make("bat", `<img src="assets/bat.png" alt="" draggable="false">`); batPool[i] = b; }
@@ -287,7 +301,7 @@
       const x = t ? clamp(t.left + t.width * rnd(0.55, 0.9) - sw / 2, 6, W - sw - 6) : W * pickOne([rnd(0.1, 0.26), rnd(0.74, 0.9)]) - sw / 2;
       const y = t ? clamp(t.top + t.height * 0.5 - sw * 0.5, 30, H - sw - 30) : H * rnd(0.14, 0.26);
       const tr = yy => `translate(${x.toFixed(1)}px,${yy.toFixed(1)}px)`;
-      e.style.visibility = "visible"; Snd.play("zip", true);
+      e.style.visibility = "visible"; Snd.play("strings"); setTimeout(() => Snd.play("zip", true), 650);
       const down = A(e, RM
         ? [{ transform: tr(y), opacity: 0 }, { transform: tr(y), opacity: 1 }]
         : [{ transform: tr(-150), easing: "cubic-bezier(.3,.6,.4,1)" }, { transform: tr(y + 22), offset: 0.6, easing: "ease-in-out" }, { transform: tr(y - 12), offset: 0.8, easing: "ease-in-out" }, { transform: tr(y + 4), offset: 0.92, easing: "ease-in-out" }, { transform: tr(y) }],
@@ -405,7 +419,7 @@
         d.classList.add("on"); raf = requestAnimationFrame(loop);
         // лампа долго «борется»: мигает, трещит, щёлкает — и гаснет; в темноте тикают часы
         Snd.play("buzz"); setTimeout(() => Snd.play("buzz"), 1000); setTimeout(() => Snd.play("click"), 2150);
-        clockT = setTimeout(() => { clock = Snd.loop("clock", 0.4); }, 2300);
+        clockT = setTimeout(() => { Snd.play("organ"); clock = Snd.loop("clock", 0.45); }, 2250);
         aIn = A(d, RM ? [{ opacity: 0 }, { opacity: 1 }]
           : [{ opacity: 0 }, { opacity: 0.75, offset: 0.06 }, { opacity: 0.05, offset: 0.1 }, { opacity: 0.85, offset: 0.18 }, { opacity: 0.2, offset: 0.24 },
              { opacity: 0.3, offset: 0.36 }, { opacity: 0.9, offset: 0.42 }, { opacity: 0.4, offset: 0.5 }, { opacity: 0.95, offset: 0.62 },
@@ -418,7 +432,7 @@
         if (!active) return;
         clearTimeout(clockT); if (clock) { clock.stop(0.8); clock = null; }
         // свет возвращается не сразу: лампа пару раз моргает
-        Snd.play("buzz"); setTimeout(() => Snd.play("click"), 1250);
+        Snd.play("buzz"); setTimeout(() => Snd.play("clickOn"), 1250);
         const a = A(d, RM ? [{ opacity: 1 }, { opacity: 0 }]
           : [{ opacity: 1 }, { opacity: 0.55, offset: 0.12 }, { opacity: 0.95, offset: 0.2 }, { opacity: 0.35, offset: 0.36 }, { opacity: 0.9, offset: 0.44 },
              { opacity: 0.6, offset: 0.62 }, { opacity: 0.85, offset: 0.7 }, { opacity: 0 }],
@@ -556,7 +570,7 @@
       case "peek": peek(o); break;
       case "spider": spider(o); break;
       case "cat": cat(o); break;
-      case "knock": Snd.play("knock"); break;
+      case "knock": Snd.play("knock"); setTimeout(() => Snd.play("door"), 1500); break;
       case "lightning": lightning(); break;
       case "dark": return Dark.on(o);
       case "boo": return boo();

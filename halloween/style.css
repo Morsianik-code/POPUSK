@@ -362,6 +362,7 @@ html.rm .scene.is-active :is(.eyebrow,h1,.lead,.q,p.text,.display,.sig){will-cha
 .finale-stage .eyebrow{font-size:clamp(1.7rem,3.8vw,2.3rem);margin:0 0 .1em;text-shadow:0 2px 6px rgba(20,6,26,.6),0 8px 30px rgba(20,6,26,.6)}
 .fin-sub{font-family:var(--font-script);font-weight:700;font-size:clamp(1.5rem,3.4vw,2rem);color:var(--gold);margin:.2em 0 0;text-shadow:0 2px 6px rgba(20,6,26,.6)}
 .finale-stage .btn{margin-top:1.2rem;font-size:1.08rem;padding:1.05rem 1.9rem}
+.credits{max-width:min(92vw,640px);margin:.6rem 0 0;font-size:.62rem;line-height:1.45;color:rgba(255,238,220,.5);text-shadow:0 1px 4px rgba(20,6,26,.8)}
 .fin-link{font-weight:800;font-size:.92rem;color:var(--muted);text-decoration:underline;text-decoration-color:rgba(255,238,220,.35);text-underline-offset:4px;margin-top:.5rem;padding:6px 10px;
   text-shadow:0 2px 6px rgba(20,6,26,.7);transform:translate(0px,0px) rotate(0deg)}
 

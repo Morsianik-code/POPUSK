@@ -55,9 +55,13 @@
 - **Результат**: одометр «случайно» докручивается до 666, ломается —
   и чертёнок признаётся, что это не та цифра.
 - **Письмо** — «официальное проклятие» на пергаменте с сургучной печатью.
-- **Звук** — готовые записи (см. ниже): фоновая музыка «дом с привидениями»
-  на вопросах и милый лоу-фай «Ghosts» на проклятии и в финале, гром, скрип,
-  стук в дверь, тиканье часов в темноте, смех чертёнка, мяу котёнка, «бу!».
+- **Звук** — только настоящие записи, ничего синтетического. Музыка, которую все знают:
+  «В пещере горного короля» Грига на вопросах (живой оркестр), «Graveyard Shift»
+  на проклятии и кульминация «Пляски смерти» Сен-Санса в финале. На «666» звучит
+  органное вступление «Токкаты и фуги ре минор» Баха с громом. Ещё: бой часов
+  при входе, смех ведьмы, гром, стук и скрип двери, щелчки выключателя, тиканье
+  часов и жуткий орган в темноте, хихиканье привидения, мяу котёнка, крик на «БУ!»,
+  у каждой нечисти свой голос в результате, вой волков и ликующая толпа в финале.
   Браузеры не дают сайту играть звук до первого нажатия, поэтому под «Войти»
   есть кнопка «Включить звук»: музыка начинается прямо на первом экране.
   Выключить можно ей же или значком справа вверху.
@@ -73,10 +77,14 @@
 - 3D-эмодзи — [Microsoft Fluent Emoji](https://github.com/microsoft/fluentui-emoji) (MIT, лицензия в `halloween/assets/LICENSE-fluentui-emoji.txt`).
 - Текстура Луны — из примеров [three.js](https://github.com/mrdoob/three.js/tree/dev/examples/textures/planets) (MIT).
 - Шрифты — Google Fonts: Rubik Wet Paint, Caveat, Kurale, Nunito, Unbounded.
-- Звуки (`halloween/assets/sound/`, обрезаны, нормализованы и перекодированы в mp3):
+- Звуки и музыка (`halloween/assets/sound/`; обрезаны, выровнены по громкости, перекодированы в mp3):
+  - «In the Hall of the Mountain King» (Э. Григ), Musopen Symphony Orchestra — public domain (`music-quiz`);
+  - «Graveyard Shift» и «Danse Macabre» (К. Сен-Санс) by Kevin MacLeod (incompetech.com),
+    Licensed under Creative Commons: By Attribution 3.0 License, https://creativecommons.org/licenses/by/3.0/ (`music-letter`, `music-finale`);
+  - «Toccata und Fuge d-moll, BWV 565» (И. С. Бах), орган — Norbert Schenk, CC BY 4.0, вместе с громом BigSoundBank (`toccata`);
+  - BigSoundBank (Joseph Sardin), CC0: гром, смех ведьмы, колокол, бурлящий котёл, скрип двери;
+    вой волков — U.S. Fish and Wildlife Service, public domain (`thunder`, `cackle`, `bell`, `cauldron`, `door`, `cheers`).
+    Эти файлы и подборка музыки взяты из пакета [hanley-tech/luckydrop](https://github.com/hanley-tech/luckydrop/tree/main/public/sounds/halloween), там же подробные источники;
   - **Oculus Audio Pack** из [facebookincubator/Meta-open-sound](https://github.com/facebookincubator/Meta-open-sound), © Meta, [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/):
-    `boo`, `creak`, `clock`, `laugh`, `knock`, `magic`, `wings`;
-  - [wyzowl/sfx-kit](https://github.com/wyzowl/sfx-kit), CC0: `thunder`, `boom`, `whoosh`, `whoosh2`, `switch`, `glitch`, `sparkle`, `popper`, `confetti`;
-  - [alvana-audio](https://github.com/seyedpouramir/alvana-audio), CC0: музыка HoliznaCC0 «Floor 1» (Haunted Mansion) и «Ghosts»,
-    `pop`, `ghost`, `ghost2`, `squeak`, `static`, `spring`, `springup`, `crack`, `rise`;
-  - [aurthur/spank-kitten-sounds](https://github.com/aurthur/spank-kitten-sounds), CC0: `meow`.
+    смех, крик, орган, струнные, выключатель, стук, скрип, часы, шелест крыльев, шорох бумаги, колокольчики, фанфары, щелчки;
+  - мяу котёнка — [aurthur/spank-kitten-sounds](https://github.com/aurthur/spank-kitten-sounds), CC0.
