@@ -137,14 +137,21 @@
       });
     }
 
+    const listeners = [];
+    const emit = () => listeners.forEach(f => { try { f(); } catch (e) {} });
     return {
+      // запуск звука: только из нажатия (кнопка «Включить звук», «Войти…» или значок справа вверху)
       start() {
         try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch (e) {}
         if (init() && ctx.state !== "running") ctx.resume();
         if (ctx) { try { const b = ctx.createBufferSource(); b.buffer = ctx.createBuffer(1, 1, 22050); b.connect(ctx.destination); b.start(0); } catch (e) {} }
         if (!started) { started = true; unlockMusic(); }
-        playMusic();
+        playMusic(); emit();
       },
+      // звук реально играет (до первого нажатия браузер его не пускает)
+      playing: () => on && started,
+      toggle() { if (on && started) this.setOn(false); else { this.setOn(true); this.play("sparkle"); } },
+      onChange(f) { listeners.push(f); },
       play(name, ...a) {
         if (!ctx || !started || !on) return null;
         if (ctx.state !== "running") ctx.resume();
@@ -156,7 +163,7 @@
         try { localStorage.setItem("hw-sound", on ? "1" : "0"); } catch (e) {}
         if (on) this.start();
         if (master) master.gain.setTargetAtTime(on ? 1 : 0, ctx.currentTime, 0.06);
-        playMusic();
+        playMusic(); emit();
       },
       isOn: () => on,
       mood(m) { const next = m === "sweet" ? "sweet" : "spooky"; if (next !== mood) { mood = next; playMusic(); } },
@@ -174,8 +181,9 @@
 
   // кнопка звука
   const sndBtn = $("#snd");
-  const syncSnd = () => { sndBtn.classList.toggle("is-off", !Snd.isOn()); sndBtn.setAttribute("aria-pressed", String(Snd.isOn())); sndBtn.setAttribute("aria-label", Snd.isOn() ? "Выключить звук" : "Включить звук"); };
-  sndBtn.addEventListener("click", () => { Snd.setOn(!Snd.isOn()); syncSnd(); if (Snd.isOn()) Snd.play("sparkle"); });
+  const syncSnd = () => { const p = Snd.playing(); sndBtn.classList.toggle("is-off", !p); sndBtn.setAttribute("aria-pressed", String(p)); sndBtn.setAttribute("aria-label", p ? "Выключить звук" : "Включить звук"); };
+  sndBtn.addEventListener("click", () => Snd.toggle());
+  Snd.onChange(syncSnd);
   syncSnd();
 
   /* ============================================================

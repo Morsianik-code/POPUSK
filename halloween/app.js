@@ -189,7 +189,18 @@
   setRich($("#hello"), C.name ? C.intro.title : C.intro.title.replace(/,?\s*<em>\{name\}([^<]*)<\/em>/, "$1"));
   setRich($("#introLead"), C.intro.lead);
   setText($("#startLabel"), C.intro.button);
-  setText($("#introNote"), C.intro.note || "");
+  // кнопка звука под «Войти»: браузер не даёт сайту играть звук до первого нажатия
+  const introSound = $("#introSound");
+  const syncIntroSound = () => {
+    const p = S.Snd.playing();
+    introSound.classList.toggle("is-on", p); introSound.setAttribute("aria-pressed", String(p));
+    setText($(".lbl", introSound), p ? (C.intro.soundOn || "Звук включён") : (C.intro.soundOff || "Включить звук"));
+  };
+  introSound.addEventListener("click", () => {
+    S.Snd.toggle();
+    if (!RM) anim(introSound, [{ transform: REST, easing: E.out }, { transform: T2({ y: 3 }), offset: 0.2, easing: E.out }, { transform: T2({ y: -5, rz: -1.5 }), offset: 0.55, easing: E.sine }, { transform: REST }], { d: 480 });
+  });
+  S.Snd.onChange(syncIntroSound); syncIntroSound();
   $("#startBtn").addEventListener("click", e => {
     if (state.busy || state.scene !== "intro") return;
     S.Snd.start(); S.Snd.play("pop");          // звук можно включить только по нажатию
@@ -201,7 +212,7 @@
     let t = reveal($("#hello"), "bounce", at + 60, 110);
     t = reveal($("#introLead"), "rise", at + 420, 16);
     popIn($("#startBtn"), t - 380);
-    if ($("#introNote").textContent) fadeUp($("#introNote"), t - 120, 700);
+    popIn(introSound, t - 220, 760);
     setTimeout(peekOver, t + 900);
     return t + 400;
   }

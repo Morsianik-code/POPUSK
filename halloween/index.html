@@ -126,7 +126,9 @@
         <div class="row">
           <button class="btn primary" id="startBtn" type="button"><span id="startLabel"></span><span class="arr">→</span></button>
         </div>
-        <p class="note" id="introNote"></p>
+        <button class="sound-btn" id="introSound" type="button" aria-pressed="false">
+          <span class="eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span class="lbl"></span>
+        </button>
       </article>
     </div></div>
   </section>
@@ -230,7 +232,8 @@ window.CONFIG = {
     title:  "Сладость или гадость, <em>{name}?</em>",
     lead:   "Этой ночью граница между мирами тоньше паутинки. Ответь на <strong>10 вопросов</strong> — и я узнаю, какая нечисть живёт у тебя внутри. Если станет страшно, держись за экран.",
     button: "Войти, если не страшно",
-    note:   "🔊 со звуком страшнее (и милее)",
+    soundOff: "Включить звук — так страшнее",   // кнопка под «Войти»: звук ещё не играет
+    soundOn:  "Звук включён",                   // музыка уже играет (нажатие выключит)
   },
 
   quiz: {

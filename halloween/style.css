@@ -169,7 +169,7 @@ main{position:fixed;inset:0;z-index:3}
 html.lite .glass{-webkit-backdrop-filter:none;backdrop-filter:none;
   background:linear-gradient(135deg,rgba(255,196,140,.12),rgba(255,255,255,.04) 40%,rgba(255,255,255,.02) 60%,rgba(180,120,255,.09)),linear-gradient(180deg,rgba(24,10,34,.88),rgba(18,8,28,.92))}
 html.lite .float{animation:none}
-html.still .float,html.still .grain,html.still .fog i,html.still .ground g,html.still .web-spider,html.still .web-spider img,html.still .creature{animation:none}
+html.still .sound-btn::after,html.still .sound-btn .eq i,html.still .float,html.still .grain,html.still .fog i,html.still .ground g,html.still .web-spider,html.still .web-spider img,html.still .creature{animation:none}
 
 /* ============================================================
    ТИПОГРАФИКА
@@ -188,8 +188,8 @@ h1 em:not(:has(.w)),.display em:not(:has(.w)){background:linear-gradient(170deg,
 .row{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
 
 .w{display:inline-block;transform-origin:50% 75%}
-.w,.opt,.btn,.note,.label,.ps,.heartwrap,.num,.num small,.num .strip,.sig-win,.sig-ink,.heart-btn,.creature img,.creature .say,.fin-sub{transform:translate(0px,0px) rotate(0deg)}
-.scene.is-active :is(.w,.opt,.btn,.note,.label,.ps,.heartwrap,.num,.num small,.num .strip,.sig-win,.sig-ink,.heart-btn,.fin-sub){will-change:transform}
+.w,.opt,.btn,.sound-btn,.note,.label,.ps,.heartwrap,.num,.num small,.num .strip,.sig-win,.sig-ink,.heart-btn,.creature img,.creature .say,.fin-sub{transform:translate(0px,0px) rotate(0deg)}
+.scene.is-active :is(.w,.opt,.btn,.sound-btn,.note,.label,.ps,.heartwrap,.num,.num small,.num .strip,.sig-win,.sig-ink,.heart-btn,.fin-sub){will-change:transform}
 .scene.is-active .qcard.is-off :is(.w,.opt){will-change:auto}
 html.rm .scene.is-active :is(.eyebrow,h1,.lead,.q,p.text,.display,.sig){will-change:opacity}
 
@@ -226,6 +226,27 @@ html.rm .scene.is-active :is(.eyebrow,h1,.lead,.q,p.text,.display,.sig){will-cha
   .btn:hover::before{transform:translateX(420%) skewX(-18deg)}
   .btn:hover .arr{transform:translateX(5px)}
 }
+/* кнопка звука под «Войти» */
+.sound-btn{position:relative;display:inline-flex;align-items:center;gap:10px;margin-top:14px;padding:.72rem 1.2rem .72rem 1rem;border-radius:999px;cursor:pointer;
+  font-family:var(--font-ui);font-weight:800;font-size:.95rem;line-height:1.1;color:var(--ink);text-align:left;
+  border:1px solid rgba(255,220,190,.34);background:linear-gradient(135deg,rgba(255,220,190,.17),rgba(255,255,255,.05));
+  box-shadow:inset 0 1px 0 rgba(255,235,210,.42),0 10px 24px -14px rgba(0,0,0,.8);-webkit-user-select:none;user-select:none;
+  transition:background .35s,border-color .35s,box-shadow .35s}
+.sound-btn .eq{flex:none;display:inline-flex;align-items:flex-end;gap:2.5px;height:17px}
+.sound-btn .eq i{display:block;width:3.5px;height:100%;border-radius:2px;background:var(--gold);transform-origin:50% 100%;transform:scaleY(.28);opacity:.75}
+.sound-btn .eq i:nth-child(2){transform:scaleY(.5)}
+.sound-btn .eq i:nth-child(3){transform:scaleY(.38)}
+/* пока звук выключен — кнопка зовёт: от неё расходится кольцо */
+.sound-btn:not(.is-on)::after{content:"";position:absolute;inset:-2px;border-radius:inherit;border:2px solid rgba(255,190,110,.75);pointer-events:none;opacity:0;animation:callme 1.9s cubic-bezier(.2,.7,.3,1) infinite}
+@keyframes callme{0%{transform:scale(1,1);opacity:0}15%{opacity:.8}70%,100%{transform:scale(1.08,1.45);opacity:0}}
+.sound-btn.is-on{border-color:rgba(255,200,120,.6);background:linear-gradient(135deg,rgba(255,160,70,.3),rgba(255,95,162,.16));
+  box-shadow:inset 0 1px 0 rgba(255,240,220,.55),0 0 26px -6px rgba(255,140,40,.6),0 10px 24px -14px rgba(0,0,0,.8)}
+.sound-btn.is-on .eq i{opacity:1;animation:eq .8s ease-in-out infinite alternate}
+.sound-btn.is-on .eq i:nth-child(2){animation-duration:.55s;animation-delay:-.2s}
+.sound-btn.is-on .eq i:nth-child(3){animation-duration:.7s;animation-delay:-.4s}
+.sound-btn.is-on .eq i:nth-child(4){animation-duration:.95s;animation-delay:-.1s}
+@keyframes eq{0%{transform:scaleY(.22)}100%{transform:scaleY(1)}}
+@media (hover:hover){.sound-btn:not(.is-on):hover{border-color:rgba(255,200,150,.55);background:linear-gradient(135deg,rgba(255,200,150,.24),rgba(255,255,255,.07))}}
 .ripple{
   position:absolute;width:30px;height:30px;margin:-15px 0 0 -15px;border-radius:50%;pointer-events:none;opacity:0;
   background:radial-gradient(circle,rgba(255,240,220,.8),rgba(255,255,255,0) 62%);
@@ -426,7 +447,7 @@ html.rm .scene.is-active :is(.eyebrow,h1,.lead,.q,p.text,.display,.sig){will-cha
   .progress{margin-bottom:12px}
 }
 @media (prefers-reduced-motion:reduce){
-  .float,.grain,.heart-btn .core,.heart-btn::after,.fog i,.web-spider,.web-spider img,.bat img,.creature{animation:none}
+  .float,.grain,.heart-btn .core,.heart-btn::after,.fog i,.web-spider,.web-spider img,.bat img,.creature,.sound-btn::after,.sound-btn.is-on .eq i{animation:none}
 }
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 noscript div{position:fixed;inset:0;display:grid;place-items:center;padding:24px;z-index:9;text-align:center;font-size:1.1rem;background:var(--bg)}
