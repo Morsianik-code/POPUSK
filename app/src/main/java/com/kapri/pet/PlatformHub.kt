@@ -27,6 +27,7 @@ object PlatformHub {
     @Volatile
     var requestScan: (() -> Unit)? = null
 
+    @Synchronized
     fun publish(list: List<Rect>) {
         if (list.isEmpty() && platforms.isEmpty()) return
         platforms = list

@@ -62,6 +62,8 @@ class PetService : Service(), Choreographer.FrameCallback,
     private var grabDy = 0f
     private var moved = false
 
+    private val reloadSkin = Runnable { loadSkin() }
+
     private val screenReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             when (intent.action) {
@@ -77,7 +79,10 @@ class PetService : Service(), Choreographer.FrameCallback,
         super.onCreate()
         prefs = Prefs.of(this)
         wm = getSystemService(WINDOW_SERVICE) as WindowManager
-        startInForeground()
+        if (!startInForeground()) {
+            stopSelf()
+            return
+        }
 
         if (!Settings.canDrawOverlays(this)) {
             prefs.edit().putBoolean(Prefs.ENABLED, false).apply()
@@ -172,7 +177,7 @@ class PetService : Service(), Choreographer.FrameCallback,
 
     // ---------- уведомление ----------
 
-    private fun startInForeground() {
+    private fun startInForeground(): Boolean {
         val nm = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
         nm.createNotificationChannel(
             NotificationChannel(CHANNEL, getString(R.string.notif_channel), NotificationManager.IMPORTANCE_LOW)
@@ -192,10 +197,16 @@ class PetService : Service(), Choreographer.FrameCallback,
             .setOngoing(true)
             .addAction(Notification.Action.Builder(null, getString(R.string.notif_stop), stop).build())
             .build()
-        if (Build.VERSION.SDK_INT >= 34) {
-            startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
-        } else {
-            startForeground(NOTIFICATION_ID, notification)
+        // Система может запретить запуск из фона (например, при перезапуске без разрешений).
+        return try {
+            if (Build.VERSION.SDK_INT >= 34) {
+                startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
+            } else {
+                startForeground(NOTIFICATION_ID, notification)
+            }
+            true
+        } catch (e: Exception) {
+            false
         }
     }
 
@@ -279,7 +290,11 @@ class PetService : Service(), Choreographer.FrameCallback,
             Prefs.SKIN_ON, Prefs.SKIN_VERSION -> loadSkin()
             Prefs.SIZE_DP -> {
                 applySettings()
-                if (prefs.getBoolean(Prefs.SKIN_ON, false)) loadSkin()
+                // Ползунок шлёт десятки значений подряд — кадры скина перечитываем один раз в конце.
+                petView?.let {
+                    it.removeCallbacks(reloadSkin)
+                    if (prefs.getBoolean(Prefs.SKIN_ON, false)) it.postDelayed(reloadSkin, 400L)
+                }
             }
             else -> applySettings()
         }

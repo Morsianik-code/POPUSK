@@ -621,7 +621,26 @@ class PetEngine(private val rnd: Random = Random.Default) {
             }
         }
         val t = target
-        if (t != null) target = match(t)
+        if (t != null) target = matchTarget(t)
+    }
+
+    /**
+     * Цель прыжка после обновления экрана. Питомец ещё в полёте и может быть далеко сбоку,
+     * поэтому сравниваем с самим старым прямоугольником, а не с местом, где питомец сейчас.
+     */
+    private fun matchTarget(old: Rect): Rect? {
+        var best: Rect? = null
+        var bestDiff = size * 0.6f
+        for (p in platforms) {
+            if (p.left >= old.right || old.left >= p.right) continue
+            if (abs(p.left - old.left) > size * 0.5f || abs(p.right - old.right) > size * 0.5f) continue
+            val diff = abs(p.top - old.top).toFloat()
+            if (diff <= bestDiff) {
+                bestDiff = diff
+                best = p
+            }
+        }
+        return best
     }
 
     /** Ищет тот же элемент после небольшого сдвига (например, при прокрутке). */

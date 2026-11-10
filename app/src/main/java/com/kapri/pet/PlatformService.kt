@@ -3,7 +3,7 @@ package com.kapri.pet
 import android.accessibilityservice.AccessibilityService
 import android.graphics.Rect
 import android.os.Handler
-import android.os.Looper
+import android.os.HandlerThread
 import android.os.SystemClock
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
@@ -17,8 +17,14 @@ import kotlin.math.max
  */
 class PlatformService : AccessibilityService() {
 
-    private val handler = Handler(Looper.getMainLooper())
+    // Дерево элементов читается в отдельном потоке, чтобы не тормозить анимацию питомца.
+    private val scanThread = HandlerThread("kapri-scan").apply { start() }
+    private val scanHandler = Handler(scanThread.looper)
+
+    @Volatile
     private var pending = false
+
+    @Volatile
     private var lastScan = 0L
     private val scanTask = Runnable {
         pending = false
@@ -32,14 +38,19 @@ class PlatformService : AccessibilityService() {
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (!PlatformHub.wanted || event == null) return
-        if (event.packageName?.toString() == packageName) return
+        if (event.packageName?.toString() == packageName) {
+            // Открылся наш собственный экран — платформы прошлого приложения надо сбросить.
+            if (event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) schedule(120L)
+            return
+        }
         schedule(120L)
     }
 
     override fun onInterrupt() = Unit
 
     override fun onDestroy() {
-        handler.removeCallbacks(scanTask)
+        scanHandler.removeCallbacks(scanTask)
+        scanThread.quitSafely()
         PlatformHub.requestScan = null
         PlatformHub.publish(emptyList())
         super.onDestroy()
@@ -50,7 +61,7 @@ class PlatformService : AccessibilityService() {
         if (pending) return
         pending = true
         val sinceLast = SystemClock.uptimeMillis() - lastScan
-        handler.postDelayed(scanTask, max(delay, SCAN_INTERVAL - sinceLast))
+        scanHandler.postDelayed(scanTask, max(delay, SCAN_INTERVAL - sinceLast))
     }
 
     private fun scan() {
@@ -82,21 +93,34 @@ class PlatformService : AccessibilityService() {
         val others = ArrayList<Rect>()
         val queue = ArrayDeque<AccessibilityNodeInfo>()
         val inList = ArrayDeque<Boolean>()
+        // Видимая область ближайшего списка-предка: строки, уехавшие под шапку, не считаются.
+        val clipTop = ArrayDeque<Int>()
+        val clipBottom = ArrayDeque<Int>()
         queue.add(root)
         inList.add(false)
+        clipTop.add(0)
+        clipBottom.add(dm.heightPixels * 2)
         val r = Rect()
         var visited = 0
         while (queue.isNotEmpty() && visited < MAX_NODES) {
             val node = queue.removeFirst()
             val listItem = inList.removeFirst()
+            var top = clipTop.removeFirst()
+            var bottom = clipBottom.removeFirst()
             visited++
             if (!node.isVisibleToUser) continue
             // Список считается списком и тогда, когда прокручивать нечего (короткий чат):
             // в этом случае isScrollable ложно, поэтому смотрим ещё и на класс.
             val container = node.isScrollable || isListClass(node.className)
+            node.getBoundsInScreen(r)
+            if (container) {
+                top = max(top, r.top)
+                bottom = minOf(bottom, r.bottom)
+            }
             if (visited > 1 && !container) {
-                node.getBoundsInScreen(r)
-                if (r.width() >= minW && r.height() in minH..maxH && r.top > topLimit) {
+                if (r.width() >= minW && r.height() in minH..maxH && r.top > topLimit &&
+                    r.top >= top && r.top < bottom
+                ) {
                     if (listItem) {
                         listRows.add(Rect(r))
                     } else if (node.isClickable || node.isLongClickable ||
@@ -110,6 +134,8 @@ class PlatformService : AccessibilityService() {
                 val child = node.getChild(i) ?: continue
                 queue.add(child)
                 inList.add(container)
+                clipTop.add(top)
+                clipBottom.add(bottom)
             }
         }
         // В Telegram берём только строки списков; если их не нашлось — всё остальное.
@@ -137,7 +163,7 @@ class PlatformService : AccessibilityService() {
 
     private companion object {
         const val SCAN_INTERVAL = 200L
-        const val MAX_NODES = 600
+        const val MAX_NODES = 900
         const val MAX_PLATFORMS = 48
         val TELEGRAM_PACKAGES = setOf(
             "org.telegram.messenger",
