@@ -21,6 +21,7 @@ import kotlin.random.Random
 class SpiritRenderer {
 
     private val body = Path()
+    private val face = Path()
     private val fill = Paint(Paint.ANTI_ALIAS_FLAG)
     private val glow = Paint(Paint.ANTI_ALIAS_FLAG)
     private val solid = Paint(Paint.ANTI_ALIAS_FLAG)
@@ -75,6 +76,7 @@ class SpiritRenderer {
         reacting: Boolean
     ) {
         build(s)
+        if (state == PetEngine.State.HIDDEN) return
 
         if (t >= glitchNext) {
             glitchEnd = t + 0.14f
@@ -82,6 +84,11 @@ class SpiritRenderer {
             glitchSeed = Random.nextLong()
         }
         val glitching = t < glitchEnd && state != PetEngine.State.SLEEP
+
+        if (state == PetEngine.State.FACE) {
+            drawFace(c, s, t, facing, reacting, glitching)
+            return
+        }
 
         val sleeping = state == PetEngine.State.SLEEP
         val sitting = state == PetEngine.State.SIT || sleeping
@@ -240,6 +247,54 @@ class SpiritRenderer {
                 c.drawLine(px, py - d, px, py + d, line)
             }
         }
+    }
+
+    /** Образ «только лицо»: два светящихся глаза и широкая улыбка, без тела. */
+    private fun drawFace(c: Canvas, s: Float, t: Float, facing: Int, winking: Boolean, glitching: Boolean) {
+        c.save()
+        if (glitching) c.translate(sin(t * 90f) * 0.06f * s, 0f)
+        c.translate(0f, sin(t * 2.2f) * 0.02f * s)
+
+        glow.alpha = (150 + 60 * sin(t * 2.3f)).toInt()
+        c.drawCircle(0.5f * s, 0.42f * s, 0.62f * s, glow)
+
+        // глаза бегают по сторонам рывками
+        val look = (if (sin(t * 0.9f) > 0.3f) 0.035f else if (sin(t * 0.9f) < -0.5f) -0.035f else 0f) * s * facing
+        val cy = 0.36f * s
+        val blink = (t % 3.1f) < 0.12f
+        val ew = 0.085f * s
+        val eh = 0.12f * s
+        for (i in 0..1) {
+            val ex = (if (i == 0) 0.3f else 0.7f) * s
+            val closed = blink || (winking && i == 0)
+            if (closed) {
+                line.color = CYAN
+                line.strokeWidth = 0.035f * s
+                c.drawLine(ex - ew, cy, ex + ew, cy, line)
+            } else {
+                solid.color = 0x5526E6FF
+                c.drawRoundRect(ex - ew * 1.35f, cy - eh * 1.25f, ex + ew * 1.35f, cy + eh * 1.25f, 0.04f * s, 0.04f * s, solid)
+                solid.color = CYAN
+                c.drawRoundRect(ex - ew, cy - eh, ex + ew, cy + eh, 0.03f * s, 0.03f * s, solid)
+                solid.color = 0xFF0B0B14.toInt()
+                c.drawRect(ex - 0.03f * s + look, cy - 0.045f * s, ex + 0.03f * s + look, cy + 0.045f * s, solid)
+            }
+        }
+
+        // улыбка
+        val grin = (if (winking) 0.2f else 0.13f + 0.03f * sin(t * 3f)) * s
+        face.reset()
+        face.moveTo(0.26f * s, 0.62f * s)
+        face.quadTo(0.5f * s, 0.62f * s + grin * 2f, 0.74f * s, 0.62f * s)
+        line.color = MAGENTA
+        line.alpha = 90
+        line.strokeWidth = 0.085f * s
+        c.drawPath(face, line)
+        line.alpha = 255
+        line.color = WHITE
+        line.strokeWidth = 0.035f * s
+        c.drawPath(face, line)
+        c.restore()
     }
 
     private fun drawLeg(c: Canvas, hx: Float, hy: Float, angle: Float, len: Float, s: Float) {

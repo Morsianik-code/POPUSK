@@ -3,6 +3,7 @@ package com.kapri.pet
 import android.graphics.Rect
 import kotlin.math.abs
 import kotlin.math.min
+import kotlin.math.pow
 import kotlin.math.sqrt
 import kotlin.random.Random
 
@@ -12,9 +13,10 @@ import kotlin.random.Random
  */
 class PetEngine(private val rnd: Random = Random.Default) {
 
-    enum class State { FALL, JUMP, IDLE, WALK, SIT, SLEEP, CLIMB, HANG, DRAG }
+    /** HIDDEN — питомца нет на экране; FACE — видно только лицо (глаза и улыбка). */
+    enum class State { HIDDEN, FACE, FALL, JUMP, IDLE, WALK, SIT, SLEEP, CLIMB, HANG, DRAG }
 
-    var state = State.FALL
+    var state = State.HIDDEN
         private set
 
     var x = 0f
@@ -53,6 +55,26 @@ class PetEngine(private val rnd: Random = Random.Default) {
     var reactTime = 0f
         private set
 
+    /** Появляться в случайные моменты и исчезать (иначе питомец всегда на экране). */
+    var randomAppear = true
+
+    /** Как часто появляется, 1..10. */
+    var frequency = 6
+
+    /** Можно ли показывать образ «только лицо» (у своего скина может не быть таких кадров). */
+    var faceAllowed = true
+
+    /** 0..1 — насколько питомец «проявился»: растёт при появлении, падает при исчезновении. */
+    var presence = 0f
+        private set
+
+    private var appearAge = 0f
+    private var vanish = 0f
+    private var session = 0f
+    private var tease = 0
+    private var nextFace = false
+    private var faceToBody = false
+
     private var screenW = 0f
     private var floorY = 0f
     private var topY = 0f
@@ -70,7 +92,8 @@ class PetEngine(private val rnd: Random = Random.Default) {
     /** Какую анимацию скина показывать. */
     val animKey: String
         get() = when (state) {
-            State.WALK -> "walk"
+            State.FACE -> "face"
+            State.WALK, State.HIDDEN -> "walk"
             State.IDLE, State.SIT -> "sit"
             State.SLEEP -> "sleep"
             State.CLIMB, State.HANG -> "climb"
@@ -89,13 +112,19 @@ class PetEngine(private val rnd: Random = Random.Default) {
         floorY = floor
         topY = top
         if (first) {
-            x = range(0f, maxX)
-            y = topY - size
-            startFall()
-        } else {
-            x = x.coerceIn(0f, maxX)
-            y = y.coerceIn(topY, (floorY - size).coerceAtLeast(topY))
-            if (state != State.DRAG) startFall()
+            state = State.HIDDEN
+            timer = 1.2f
+            presence = 0f
+            return
+        }
+        when (state) {
+            State.HIDDEN -> Unit
+            State.FACE -> startVanish()
+            else -> {
+                x = x.coerceIn(0f, maxX)
+                y = y.coerceIn(topY, (floorY - size).coerceAtLeast(topY))
+                if (state != State.DRAG) startFall()
+            }
         }
     }
 
@@ -116,7 +145,37 @@ class PetEngine(private val rnd: Random = Random.Default) {
         val dt = min(dtIn, 0.1f)
         animTime += dt
         if (reactTime > 0f) reactTime -= dt
+
+        if (state == State.HIDDEN) {
+            timer -= dt
+            if (timer <= 0f || !randomAppear) appear()
+            return
+        }
+        if (vanish > 0f) {
+            vanish -= dt
+            presence = (vanish / VANISH_TIME).coerceIn(0f, 1f)
+            if (vanish <= 0f) goHidden()
+            return
+        }
+        appearAge += dt
+        presence = (appearAge / APPEAR_TIME).coerceAtMost(1f)
+        if (randomAppear && state != State.FACE) {
+            session -= dt
+            val calm = state == State.IDLE || state == State.WALK || state == State.SIT || state == State.SLEEP
+            if (session <= 0f && calm) {
+                startVanish()
+                return
+            }
+        }
+
         when (state) {
+            State.HIDDEN -> Unit
+            State.FACE -> {
+                timer -= dt
+                if (timer <= 0f) {
+                    if (faceToBody) becomeBody() else startVanish()
+                }
+            }
             State.DRAG -> Unit
             State.FALL, State.JUMP -> {
                 // Физику считаем мелкими шагами, чтобы не проскочить платформу на медленном кадре.
@@ -149,6 +208,75 @@ class PetEngine(private val rnd: Random = Random.Default) {
             State.CLIMB -> climb(dt)
             State.HANG -> hang(dt)
         }
+    }
+
+    // ---------- появление и исчезновение ----------
+
+    private fun appear() {
+        appearAge = 0f
+        presence = 0f
+        vanish = 0f
+        if (randomAppear && faceAllowed && (nextFace || chance(0.4f))) {
+            nextFace = false
+            enterFace()
+            return
+        }
+        nextFace = false
+        tease = 0
+        session = range(40f, 110f)
+        x = range(0f, maxX)
+        if (chance(0.5f)) {
+            y = topY - size * 0.5f
+            startFall()
+        } else {
+            y = floorY - size
+            startFall()
+            enter(State.IDLE, range(0.8f, 2f))
+        }
+    }
+
+    /** Только лицо: выглядывает из-за края экрана или возникает прямо посреди него. */
+    private fun enterFace() {
+        support = null
+        target = null
+        vx = 0f
+        vy = 0f
+        faceToBody = chance(0.25f)
+        if (chance(0.4f)) {
+            val left = chance(0.5f)
+            x = if (left) -size * 0.45f else screenW - size * 0.55f
+            facing = if (left) 1 else -1
+        } else {
+            x = range(0f, maxX)
+            facing = if (chance(0.5f)) 1 else -1
+        }
+        val lo = topY + size * 0.5f
+        y = range(lo, (floorY - size * 2f).coerceAtLeast(lo))
+        enter(State.FACE, range(4f, 9f))
+    }
+
+    private fun becomeBody() {
+        x = x.coerceIn(0f, maxX)
+        tease = 0
+        session = range(40f, 110f)
+        startFall()
+    }
+
+    private fun startVanish() {
+        vanish = VANISH_TIME
+    }
+
+    private fun goHidden() {
+        val again = nextFace
+        support = null
+        target = null
+        vx = 0f
+        vy = 0f
+        presence = 0f
+        enter(State.HIDDEN, 0f)
+        // Дразнится: исчезла под пальцем — тут же выглянет в другом месте.
+        timer = if (again) range(0.5f, 1.2f)
+        else range(0.6f, 1.4f) * 600f / frequency.coerceIn(1, 10).toFloat().pow(1.5f)
     }
 
     // ---------- воздух ----------
@@ -507,6 +635,18 @@ class PetEngine(private val rnd: Random = Random.Default) {
     fun onTap() {
         reactTime = 1.2f
         when (state) {
+            State.FACE -> {
+                // Играет в прятки: пару раз перепрыгивает в другое место, потом выходит целиком.
+                tease++
+                if (tease <= 2 && chance(0.7f)) {
+                    nextFace = true
+                    faceToBody = false
+                    timer = 0.45f
+                } else {
+                    faceToBody = true
+                    timer = 0.5f
+                }
+            }
             State.SLEEP -> enter(State.IDLE, range(1f, 2f))
             State.IDLE, State.WALK, State.SIT -> {
                 // радостный подскок на месте
@@ -526,6 +666,9 @@ class PetEngine(private val rnd: Random = Random.Default) {
     }
 
     fun startDrag() {
+        if (state == State.HIDDEN) return
+        if (state == State.FACE) session = range(40f, 110f)
+        vanish = 0f
         support = null
         target = null
         thrown = false
@@ -559,5 +702,7 @@ class PetEngine(private val rnd: Random = Random.Default) {
         const val WALK_SPEED = 46f     // dp/с
         const val CLIMB_SPEED = 38f
         const val HANG_SPEED = 30f
+        const val APPEAR_TIME = 0.4f   // с
+        const val VANISH_TIME = 0.35f
     }
 }

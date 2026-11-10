@@ -27,7 +27,8 @@ class SkinActivity : Activity() {
         "climb" to R.string.anim_climb,
         "fall" to R.string.anim_fall,
         "drag" to R.string.anim_drag,
-        "sleep" to R.string.anim_sleep
+        "sleep" to R.string.anim_sleep,
+        "face" to R.string.anim_face
     )
 
     override fun onCreate(savedInstanceState: Bundle?) {

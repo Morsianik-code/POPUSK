@@ -26,9 +26,13 @@ class PetView(context: Context, private val engine: PetEngine) : View(context) {
     }
 
     override fun onDraw(c: Canvas) {
+        if (engine.state == PetEngine.State.HIDDEN) return
         val s = engine.size
         c.save()
         c.translate(s * PAD_SIDE, s * PAD_TOP)
+        // Появляется и исчезает, как картинка на старом экране: схлопывается в полоску.
+        val p = engine.presence
+        if (p < 1f) c.scale(1f + (1f - p) * 0.7f, (p * p).coerceAtLeast(0.03f), s / 2f, s / 2f)
         if (quiet) c.scale(QUIET_SCALE, QUIET_SCALE, s / 2f, s)
         val list = pickFrames()
         if (list != null) {

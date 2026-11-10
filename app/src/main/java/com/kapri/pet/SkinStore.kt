@@ -10,7 +10,7 @@ import java.io.FileOutputStream
 /** Кадры своего скина: лежат во внутреннем хранилище, в папке skin/<анимация>/NNN.png. */
 object SkinStore {
 
-    val ANIMS = listOf("walk", "sit", "climb", "fall", "drag", "sleep")
+    val ANIMS = listOf("walk", "sit", "climb", "fall", "drag", "sleep", "face")
 
     private const val MAX_FRAMES = 60
     private const val MAX_SIDE = 512

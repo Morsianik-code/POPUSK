@@ -78,6 +78,10 @@ class MainActivity : Activity(), SharedPreferences.OnSharedPreferenceChangeListe
         bindSeek(R.id.alpha_seek, R.id.alpha_label, Prefs.ALPHA_PCT,
             Prefs.ALPHA_MIN, Prefs.ALPHA_MAX, Prefs.ALPHA_DEFAULT, R.string.alpha_label)
 
+        bindSeek(R.id.freq_seek, R.id.freq_label, Prefs.FREQUENCY,
+            Prefs.FREQ_MIN, Prefs.FREQ_MAX, Prefs.FREQ_DEFAULT, R.string.freq_label)
+
+        bindCheck(R.id.random_check, Prefs.RANDOM_APPEAR)
         bindCheck(R.id.platforms_check, Prefs.PLATFORMS)
         bindCheck(R.id.quiet_check, Prefs.QUIET_FULLSCREEN)
 

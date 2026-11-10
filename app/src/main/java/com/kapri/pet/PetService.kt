@@ -49,6 +49,8 @@ class PetService : Service(), Choreographer.FrameCallback,
     private var quietOption = true
     private var fullscreen = false
     private var baseAlpha = 0.9f
+    private var shownAlpha = 0.9f
+    private var wasHidden = false
 
     // перетаскивание
     private var tracker: VelocityTracker? = null
@@ -82,6 +84,8 @@ class PetService : Service(), Choreographer.FrameCallback,
         }
 
         engine.density = resources.displayMetrics.density
+        engine.randomAppear = prefs.getBoolean(Prefs.RANDOM_APPEAR, true)
+        engine.frequency = prefs.getInt(Prefs.FREQUENCY, Prefs.FREQ_DEFAULT)
         engine.resize(sizePx())
         applyBounds()
 
@@ -113,6 +117,7 @@ class PetService : Service(), Choreographer.FrameCallback,
             return
         }
         petView = view
+        view.visibility = View.GONE
         addFullscreenSensor()
 
         applySettings()
@@ -221,6 +226,8 @@ class PetService : Service(), Choreographer.FrameCallback,
     private fun applySettings() {
         val view = petView ?: return
         engine.speedFactor = prefs.getInt(Prefs.SPEED_PCT, Prefs.SPEED_DEFAULT) / 100f
+        engine.randomAppear = prefs.getBoolean(Prefs.RANDOM_APPEAR, true)
+        engine.frequency = prefs.getInt(Prefs.FREQUENCY, Prefs.FREQ_DEFAULT)
         baseAlpha = prefs.getInt(Prefs.ALPHA_PCT, Prefs.ALPHA_DEFAULT) / 100f
         quietOption = prefs.getBoolean(Prefs.QUIET_FULLSCREEN, true)
         usePlatforms = prefs.getBoolean(Prefs.PLATFORMS, true)
@@ -235,7 +242,7 @@ class PetService : Service(), Choreographer.FrameCallback,
             runCatching { wm.updateViewLayout(view, lp) }
         }
         applyQuiet()
-        PlatformHub.wanted = active && usePlatforms
+        PlatformHub.wanted = wantPlatforms()
         hubVersion = -1
         view.invalidate()
     }
@@ -244,7 +251,8 @@ class PetService : Service(), Choreographer.FrameCallback,
         val view = petView ?: return
         val quiet = quietOption && fullscreen
         view.quiet = quiet
-        view.alpha = if (quiet) baseAlpha * 0.35f else baseAlpha
+        shownAlpha = if (quiet) baseAlpha * 0.35f else baseAlpha
+        view.alpha = shownAlpha * engine.presence
         view.invalidate()
     }
 
@@ -255,6 +263,8 @@ class PetService : Service(), Choreographer.FrameCallback,
         } else {
             emptyMap()
         }
+        // Со своим скином образ «только лицо» показываем, только если для него есть кадры.
+        engine.faceAllowed = view.frames.isEmpty() || view.frames.containsKey("face")
         view.invalidate()
     }
 
@@ -316,8 +326,9 @@ class PetService : Service(), Choreographer.FrameCallback,
     private fun resume() {
         if (active || petView == null) return
         active = true
+        wasHidden = engine.state == PetEngine.State.HIDDEN
         lastFrame = 0L
-        PlatformHub.wanted = usePlatforms
+        PlatformHub.wanted = wantPlatforms()
         hubVersion = -1
         Choreographer.getInstance().postFrameCallback(this)
     }
@@ -343,19 +354,35 @@ class PetService : Service(), Choreographer.FrameCallback,
 
         engine.update(dt)
 
-        val oldX = lp.x
-        val oldY = lp.y
-        placeWindow()
-        if (lp.x != oldX || lp.y != oldY) runCatching { wm.updateViewLayout(view, lp) }
-        view.invalidate()
+        val hidden = engine.state == PetEngine.State.HIDDEN
+        if (hidden != wasHidden) {
+            wasHidden = hidden
+            // Пока питомца нет, окно убрано совсем: не ловит касания и не рисуется.
+            view.visibility = if (hidden) View.GONE else View.VISIBLE
+            PlatformHub.wanted = wantPlatforms()
+            hubVersion = -1
+        }
+        if (!hidden) {
+            val oldX = lp.x
+            val oldY = lp.y
+            placeWindow()
+            if (lp.x != oldX || lp.y != oldY) runCatching { wm.updateViewLayout(view, lp) }
+            view.alpha = shownAlpha * engine.presence
+            view.invalidate()
+        }
 
-        // Спящему питомцу хватает десятка кадров в секунду.
-        if (engine.state == PetEngine.State.SLEEP) {
+        // Пока питомца нет на экране, хватает четырёх проверок в секунду; спящему — десятка кадров.
+        if (hidden) {
+            Choreographer.getInstance().postFrameCallbackDelayed(this, 250L)
+        } else if (engine.state == PetEngine.State.SLEEP) {
             Choreographer.getInstance().postFrameCallbackDelayed(this, 90L)
         } else {
             Choreographer.getInstance().postFrameCallback(this)
         }
     }
+
+    private fun wantPlatforms() =
+        active && usePlatforms && engine.state != PetEngine.State.HIDDEN
 
     private fun placeWindow() {
         lp.x = (engine.x - engine.size * PetView.PAD_SIDE).toInt()
