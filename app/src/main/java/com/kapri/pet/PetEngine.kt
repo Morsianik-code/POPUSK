@@ -74,6 +74,7 @@ class PetEngine(private val rnd: Random = Random.Default) {
     private var tease = 0
     private var nextFace = false
     private var faceToBody = false
+    private var eager = false
 
     private var screenW = 0f
     private var floorY = 0f
@@ -142,7 +143,8 @@ class PetEngine(private val rnd: Random = Random.Default) {
     }
 
     fun update(dtIn: Float) {
-        val dt = min(dtIn, 0.1f)
+        // Таймеры идут по настоящему времени даже на редких кадрах; физика ниже дробится на мелкие шаги.
+        val dt = min(dtIn, 0.5f)
         animTime += dt
         if (reactTime > 0f) reactTime -= dt
 
@@ -225,9 +227,12 @@ class PetEngine(private val rnd: Random = Random.Default) {
         tease = 0
         session = range(40f, 110f)
         x = range(0f, maxX)
+        // Только что появилась — первым делом ищет, куда бы запрыгнуть.
+        eager = true
         if (chance(0.5f)) {
             y = topY - size * 0.5f
             startFall()
+            catchAny = true
         } else {
             y = floorY - size
             startFall()
@@ -394,6 +399,10 @@ class PetEngine(private val rnd: Random = Random.Default) {
     }
 
     private fun decide() {
+        if (eager) {
+            eager = false
+            if (support == null && tryJump()) return
+        }
         val r = rnd.nextFloat()
         if (support != null) {
             when {
@@ -465,7 +474,8 @@ class PetEngine(private val rnd: Random = Random.Default) {
         enter(State.FALL, 0f)
     }
 
-    private fun usable(p: Rect) =
+    /** Подходит ли элемент, чтобы на него сесть: достаточно широкий и целиком помещается на экране. */
+    fun usable(p: Rect) =
         p.width() >= size * 0.7f && p.top - size >= topY && p.top < floorY - size * 0.4f
 
     private fun tryJump(): Boolean {

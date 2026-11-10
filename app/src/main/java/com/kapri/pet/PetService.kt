@@ -40,6 +40,8 @@ class PetService : Service(), Choreographer.FrameCallback,
     private val engine = PetEngine()
     private var petView: PetView? = null
     private var sensorView: View? = null
+    private var debugView: DebugView? = null
+    private var showPlatforms = false
     private lateinit var lp: WindowManager.LayoutParams
 
     private var active = false
@@ -154,6 +156,8 @@ class PetService : Service(), Choreographer.FrameCallback,
         }
         petView?.let { runCatching { wm.removeView(it) } }
         sensorView?.let { runCatching { wm.removeView(it) } }
+        debugView?.let { runCatching { wm.removeView(it) } }
+        debugView = null
         petView = null
         sensorView = null
         super.onDestroy()
@@ -242,6 +246,8 @@ class PetService : Service(), Choreographer.FrameCallback,
             runCatching { wm.updateViewLayout(view, lp) }
         }
         applyQuiet()
+        showPlatforms = prefs.getBoolean(Prefs.SHOW_PLATFORMS, false) && usePlatforms
+        updateDebugLayer()
         PlatformHub.wanted = wantPlatforms()
         hubVersion = -1
         view.invalidate()
@@ -349,7 +355,9 @@ class PetService : Service(), Choreographer.FrameCallback,
         val v = PlatformHub.version
         if (v != hubVersion) {
             hubVersion = v
-            engine.setPlatforms(if (usePlatforms) PlatformHub.platforms else emptyList())
+            val list = if (usePlatforms) PlatformHub.platforms else emptyList()
+            engine.setPlatforms(list)
+            debugView?.show(list.filter { engine.usable(it) })
         }
 
         engine.update(dt)
@@ -382,7 +390,40 @@ class PetService : Service(), Choreographer.FrameCallback,
     }
 
     private fun wantPlatforms() =
-        active && usePlatforms && engine.state != PetEngine.State.HIDDEN
+        active && usePlatforms && (showPlatforms || engine.state != PetEngine.State.HIDDEN)
+
+    /** Проверочный слой на весь экран; касания сквозь него проходят. */
+    private fun updateDebugLayer() {
+        if (showPlatforms && debugView == null) {
+            val view = DebugView(this)
+            val p = WindowManager.LayoutParams(
+                WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.MATCH_PARENT,
+                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                        WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or
+                        WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
+                        WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+                PixelFormat.TRANSLUCENT
+            )
+            p.gravity = Gravity.TOP or Gravity.LEFT
+            // Полупрозрачное окно: Android 12+ пропускает касания только под такими оверлеями.
+            p.alpha = 0.6f
+            if (Build.VERSION.SDK_INT >= 30) {
+                p.fitInsetsTypes = 0
+                p.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
+            } else if (Build.VERSION.SDK_INT >= 28) {
+                p.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+            }
+            try {
+                wm.addView(view, p)
+                debugView = view
+            } catch (e: Exception) {
+            }
+        } else if (!showPlatforms && debugView != null) {
+            debugView?.let { runCatching { wm.removeView(it) } }
+            debugView = null
+        }
+    }
 
     private fun placeWindow() {
         lp.x = (engine.x - engine.size * PetView.PAD_SIDE).toInt()

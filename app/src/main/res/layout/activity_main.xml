@@ -130,6 +130,21 @@
             android:text="@string/opt_platforms_hint" />
 
         <CheckBox
+            android:id="@+id/show_check"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:minHeight="48dp"
+            android:text="@string/opt_show"
+            android:textColor="@color/text"
+            android:textSize="16sp" />
+
+        <TextView
+            style="@style/Hint"
+            android:paddingStart="32dp"
+            android:text="@string/opt_show_hint" />
+
+        <CheckBox
             android:id="@+id/quiet_check"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

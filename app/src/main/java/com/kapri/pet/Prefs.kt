@@ -15,6 +15,7 @@ object Prefs {
     const val QUIET_FULLSCREEN = "quiet_fullscreen"
     const val RANDOM_APPEAR = "random_appear"
     const val FREQUENCY = "frequency"
+    const val SHOW_PLATFORMS = "show_platforms"
     const val SKIN_ON = "skin_on"
     const val SKIN_FPS = "skin_fps"
     const val SKIN_VERSION = "skin_version"

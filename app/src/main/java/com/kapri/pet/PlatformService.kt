@@ -78,7 +78,8 @@ class PlatformService : AccessibilityService() {
         val maxH = (dm.heightPixels * 0.5f).toInt()
         val topLimit = (28 * d).toInt()
 
-        val found = ArrayList<Rect>()
+        val listRows = ArrayList<Rect>()
+        val others = ArrayList<Rect>()
         val queue = ArrayDeque<AccessibilityNodeInfo>()
         val inList = ArrayDeque<Boolean>()
         queue.add(root)
@@ -90,20 +91,31 @@ class PlatformService : AccessibilityService() {
             val listItem = inList.removeFirst()
             visited++
             if (!node.isVisibleToUser) continue
-            val scrollable = node.isScrollable
-            if (visited > 1 && !scrollable) {
+            // Список считается списком и тогда, когда прокручивать нечего (короткий чат):
+            // в этом случае isScrollable ложно, поэтому смотрим ещё и на класс.
+            val container = node.isScrollable || isListClass(node.className)
+            if (visited > 1 && !container) {
                 node.getBoundsInScreen(r)
-                val interesting = listItem || (!listItemsOnly && (node.isClickable || node.isLongClickable ||
-                        !node.text.isNullOrEmpty() || !node.contentDescription.isNullOrEmpty()))
-                if (interesting && r.width() >= minW && r.height() in minH..maxH && r.top > topLimit) {
-                    found.add(Rect(r))
+                if (r.width() >= minW && r.height() in minH..maxH && r.top > topLimit) {
+                    if (listItem) {
+                        listRows.add(Rect(r))
+                    } else if (node.isClickable || node.isLongClickable ||
+                        !node.text.isNullOrEmpty() || !node.contentDescription.isNullOrEmpty()
+                    ) {
+                        others.add(Rect(r))
+                    }
                 }
             }
             for (i in 0 until node.childCount) {
                 val child = node.getChild(i) ?: continue
                 queue.add(child)
-                inList.add(scrollable)
+                inList.add(container)
             }
+        }
+        // В Telegram берём только строки списков; если их не нашлось — всё остальное.
+        val found = if (listItemsOnly && listRows.isNotEmpty()) listRows else {
+            listRows.addAll(others)
+            listRows
         }
 
         // Убираем дубли: вложенные элементы с тем же верхним краем.
@@ -116,6 +128,11 @@ class PlatformService : AccessibilityService() {
             if (out.size >= MAX_PLATFORMS) break
         }
         return out
+    }
+
+    private fun isListClass(name: CharSequence?): Boolean {
+        val n = name?.toString() ?: return false
+        return n.endsWith("RecyclerView") || n.endsWith("ListView") || n.endsWith("GridView")
     }
 
     private companion object {

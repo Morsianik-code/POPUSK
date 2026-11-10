@@ -84,6 +84,7 @@ class MainActivity : Activity(), SharedPreferences.OnSharedPreferenceChangeListe
         bindCheck(R.id.random_check, Prefs.RANDOM_APPEAR)
         bindCheck(R.id.platforms_check, Prefs.PLATFORMS)
         bindCheck(R.id.quiet_check, Prefs.QUIET_FULLSCREEN)
+        bindCheck(R.id.show_check, Prefs.SHOW_PLATFORMS, false)
 
         findViewById<Button>(R.id.skin_button).setOnClickListener {
             startActivity(Intent(this, SkinActivity::class.java))
@@ -163,9 +164,9 @@ class MainActivity : Activity(), SharedPreferences.OnSharedPreferenceChangeListe
         })
     }
 
-    private fun bindCheck(id: Int, key: String) {
+    private fun bindCheck(id: Int, key: String, def: Boolean = true) {
         val box = findViewById<CheckBox>(id)
-        box.isChecked = prefs.getBoolean(key, true)
+        box.isChecked = prefs.getBoolean(key, def)
         box.setOnCheckedChangeListener { _, checked ->
             prefs.edit().putBoolean(key, checked).apply()
         }
