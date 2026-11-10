@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Капри</string>
+    <string name="tagline">Неоновый кибер-дух, который живёт поверх всех приложений</string>
+
+    <string name="pet_switch">Питомец на экране</string>
+    <string name="need_overlay">Сначала разреши показ поверх других приложений</string>
+
+    <string name="section_perms">Разрешения</string>
+    <string name="granted">Выдано ✓</string>
+    <string name="grant">Выдать</string>
+    <string name="cant_open">Не получилось открыть настройки — найди этот пункт вручную</string>
+
+    <string name="perm_overlay_title">Поверх других приложений</string>
+    <string name="perm_overlay_desc">Обязательно. Без него питомца негде рисовать: он живёт в маленьком окошке поверх экрана. Касания мимо питомца проходят в приложение как обычно.</string>
+
+    <string name="perm_acc_title">Специальные возможности</string>
+    <string name="perm_acc_desc">По желанию. Нужно, чтобы питомец видел, где на экране сообщения, иконки и кнопки, и садился на них сверху. Читаются только координаты элементов — ничего не сохраняется и никуда не отправляется. Если Android пишет «Настройка ограничена»: открой «О приложении» → меню ⋮ → «Разрешить ограниченные настройки» и вернись сюда.</string>
+
+    <string name="perm_notif_title">Уведомления</string>
+    <string name="perm_notif_desc">По желанию. Пока питомец включён, в шторке висит тихое уведомление с кнопкой «Выключить». Без разрешения питомец тоже работает, просто уведомление не видно.</string>
+
+    <string name="perm_battery_title">Не усыплять приложение</string>
+    <string name="perm_battery_desc">Желательно. Иначе система может закрыть питомца через какое-то время, чтобы сэкономить заряд. Сам он почти не тратит батарею и замирает, когда экран выключен.</string>
+
+    <string name="section_look">Вид и поведение</string>
+    <string name="size_label">Размер: %1$d dp</string>
+    <string name="speed_label">Скорость: %1$d%%</string>
+    <string name="alpha_label">Непрозрачность: %1$d%%</string>
+    <string name="opt_platforms">Садиться на элементы интерфейса</string>
+    <string name="opt_platforms_hint">Прыгает на сообщения, иконки и кнопки и болтает ножками. Нужны «Специальные возможности».</string>
+    <string name="opt_quiet">Не мешать в полноэкранном видео</string>
+    <string name="opt_quiet_hint">В полноэкранном режиме питомец становится меньше и прозрачнее.</string>
+
+    <string name="open_skin">Свой скин…</string>
+    <string name="hint_touch">Питомца можно тапнуть, перетащить и кинуть.</string>
+
+    <string name="skin_title">Свой скин</string>
+    <string name="skin_intro">Выбери картинки-кадры для каждой анимации (лучше PNG с прозрачным фоном). Кадры копируются внутрь приложения и идут в том порядке, в каком выбраны. Рисуй персонажа лицом вправо, для «лезет» — у левой стены: в другую сторону кадры отразятся сами. Если для анимации кадров нет, берутся кадры «идёт».</string>
+    <string name="skin_use">Использовать свой скин</string>
+    <string name="skin_fps">Скорость анимации: %1$d кадров/с</string>
+    <string name="skin_pick">Выбрать кадры</string>
+    <string name="skin_clear">Очистить</string>
+    <string name="skin_count">Кадров: %1$d</string>
+    <string name="skin_none">Кадров нет</string>
+    <string name="skin_saved">Сохранено кадров: %1$d</string>
+    <string name="skin_failed">Не получилось прочитать картинки</string>
+    <string name="anim_walk">Идёт</string>
+    <string name="anim_sit">Сидит</string>
+    <string name="anim_climb">Лезет и висит</string>
+    <string name="anim_fall">Падает и прыгает</string>
+    <string name="anim_drag">Его тащат</string>
+    <string name="anim_sleep">Спит</string>
+
+    <string name="notif_channel">Питомец на экране</string>
+    <string name="notif_title">Капри гуляет по экрану</string>
+    <string name="notif_text">Нажми, чтобы открыть настройки</string>
+    <string name="notif_stop">Выключить</string>
+
+    <string name="acc_label">Капри — платформы для питомца</string>
+    <string name="acc_description">Позволяет питомцу видеть, где на экране находятся сообщения, иконки и другие крупные элементы, чтобы запрыгивать на них. Сервис читает только координаты элементов, ничего не сохраняет и никуда не отправляет.</string>
+</resources>
